@@ -7,13 +7,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-public class ProductUpdateRequest {
-    private String name;
-    private Integer price;
-    private Integer stock;
-    private Long categoryId;
-    private String description;
-    private String thumbnailUrl;    // 목록/카드 UI용 대표 이미지
-    private ProductStatus status;
+public class ProductUpdateRequest {     // 부분 수정
+    private Long categoryId;            // 변경 시에만
+    private String name;                // 변경 시에만
+    private Integer price;              // null 이면 변경 안함
+    private Integer stock;              // null 이면 변경 안함
+    private String description;         // null 이면 변경 안함 (설명 삭제는 빈 문자열로)
+    private Boolean active;             // null 이면 변경 안함
+    // wrapper 타입 : 수정 요청에서 active를 보내지 않았을 경우 null로 처리하기 위함 (null로 변경 없음 표현 가능)
 }

@@ -17,6 +17,11 @@ import java.util.List;
 * 검증/흐름 제어 O
 * 도메인 조작 X*/
 
+//생성 생공 -> 201 Created + body
+//조회 성공 -> 200 OK + body
+//수정 성공 -> 204 No Content
+//삭제 성공 -> 204 No Content
+
 @RestController                     // HTTP 요청을 처리하는데 반환값을 View가 아니라 JSON(Response Body) 로 보내고자 하는 의도
 @RequiredArgsConstructor            // 필수 의존성만 받는 생성자를 자동으로 만들어주는 어노테이션
 @RequestMapping("/categories")
@@ -26,16 +31,16 @@ public class CategoryController {
     // 컨트롤러는 서비스에만 의존한다.
     // Repository/Entity 접근 X
 
-    /* @RequestBody : HTTP 요청 Body(JSON)를 자바 객체로 변환
-    * 작동 과정
-    * 1. 요청이 들어옴
-    * 2. @RequestBody 발견
-    * 3. HttpMessageConverter 작동
-    * 4. Jackson(ObjectMapper)이 JSON 읽음
-    * 5. CategoryCreateRequest 객체 생성
-    * 6. 필드 주입 */
     @PostMapping
     public ResponseEntity<CategoryCreateResponse> create(@RequestBody CategoryCreateRequest request) {
+        /* @RequestBody : HTTP 요청 Body(JSON)를 자바 객체로 변환
+         * 작동 과정
+         * 1. 요청이 들어옴
+         * 2. @RequestBody 발견
+         * 3. HttpMessageConverter 작동
+         * 4. Jackson(ObjectMapper)이 JSON 읽음
+         * 5. CategoryCreateRequest 객체 생성
+         * 6. 필드 주입 */
         // Service 호출 시 컨트롤러는 값만 전달한다.
         // 로직 판단이나 규칙을 넣지 않음.
         Long id = categoryService.create(request.getName(), request.getParentId());
@@ -68,16 +73,21 @@ public class CategoryController {
         return ResponseEntity.ok(result);
     }
 
+
+    // Void : 응답 바디가 없다는 것을 명시한다. (JSON 응답 X, 데이터 반환 X, 오직 상태코드만 전달) 스프링은 기본적으로 200 반환하는데 다른 상태코드 반환하기 위해서
+    // 수정 API에서 Void를 사용하는 이유 : PATCH / PUT의 관례
+    // 리소스 수정, 성공 여부만 중요, 수정된 데이터 전체를 다시 줄 필요 없음.
     @PatchMapping("/{id}")
     public ResponseEntity<Void> update(@PathVariable Long id, @RequestBody CategoryUpdateRequest request) {
         categoryService.update(id, request.getName(), request.getParentId(), request.getActive());
         return ResponseEntity.noContent().build();
+        // HTTP 상태 코드는 204 No Content (요청은 성공했고 응답 본문은 없다.)
+        // .build() : ResponseEntity 객체 생성 완료
     }
 
+    // Void : 응답 바디가 없다는 것을 명시한다. (JSON 응답 X, 데이터 반환 X, 오직 상태코드만 전달) 스프링은 기본적으로 200 반환하는데 다른 상태코드 반환하기 위해서
     @DeleteMapping("/{id}")     // HTTP DELETE 메서드 처리
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        // Void : 응답 본문이 없다는 것을 명시
-        // 삭제 성공 시 반환할 리소스가 없고 JSON도 없는 것.
         categoryService.delete(id);     // 컨트롤러는 삭제하라고 지시만 하고 실제 정책은 서비스가 책임진다. (컨트롤러는 정책을 모름)
         return ResponseEntity.noContent().build();
         // HTTP 상태 코드는 204 No Content (요청은 성공했고 응답 본문은 없다.)
