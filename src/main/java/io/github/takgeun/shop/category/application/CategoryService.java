@@ -2,6 +2,7 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,7 @@ public class CategoryService {
         // 최상위 카테고리 생성할 때는 어차피 parentId가 categoryRepository에 존재하지 않으니(null) 아래 조건문은 정상 통과함.
         if (parentId != null) {
             categoryRepository.findById(parentId)
-                    .orElseThrow(() -> new IllegalArgumentException("부모 카테고리가 존재하지 않습니다."));
+                    .orElseThrow(() -> new NotFoundException("부모 카테고리가 존재하지 않습니다."));
         }
 
         Category category = Category.create(name, parentId);
@@ -36,7 +37,7 @@ public class CategoryService {
     // 단건 조회
     public Category get(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
     }
 
     // 목록 조회
@@ -50,7 +51,7 @@ public class CategoryService {
     public void update(Long id, String name, Long parentId, Boolean active) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         // name 변경만 들어온 경우
         if(name != null) {
@@ -75,7 +76,7 @@ public class CategoryService {
 
             // 부모 카테고리가 존재하지 않을 경우 예외 처리
             categoryRepository.findById(parentId)
-                    .orElseThrow(() -> new IllegalArgumentException("부모 카테고리가 존재하지 않습니다."));
+                    .orElseThrow(() -> new NotFoundException("부모 카테고리가 존재하지 않습니다."));
 
             category.changeParent(parentId);
         }
@@ -97,7 +98,7 @@ public class CategoryService {
     public void delete(Long id) {
         // 정책 : 없으면 예외 처리
         categoryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         categoryRepository.deleteById(id);
     }

@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class ProductService {
     public Long create(Long categoryId, String name, int price, int stock, String description) {
         // 카테고리 존재 체크
         categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         Product product = Product.create(categoryId, name, price, stock, description);
         Product saved = productRepository.save(product);
@@ -31,14 +32,14 @@ public class ProductService {
     // 단건 조회
     public Product get(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
     }
 
     // 카테고리별 목록 조회
     public List<Product> getByCategory(Long categoryId) {
         // 카테고리 존재 체크
         categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         return productRepository.findAllByCategoryId(categoryId);
     }
@@ -51,11 +52,11 @@ public class ProductService {
 
         // 상품이 없을 경우 예외 처리
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
         // 카테고리 변경 시
         if(categoryId != null) {
             categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다."));
+                    .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
             product.changeCategory(categoryId);
         }
         // 상품명 변경 시
@@ -87,7 +88,7 @@ public class ProductService {
     // 삭제
     public void delete(Long productId) {
         productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
         productRepository.deleteById(productId);
     }
 }
