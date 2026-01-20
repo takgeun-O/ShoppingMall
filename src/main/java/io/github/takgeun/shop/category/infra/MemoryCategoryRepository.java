@@ -54,7 +54,7 @@ public class MemoryCategoryRepository implements CategoryRepository {
             return false;
         }
 
-        String normalized = name.trim();
+        String normalized = name.trim().toLowerCase();
         if(normalized.isEmpty()) {
             return false;
         }

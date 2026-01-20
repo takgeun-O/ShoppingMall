@@ -1,10 +1,16 @@
 package io.github.takgeun.shop.global.error;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -19,17 +25,77 @@ public class GlobalExceptionHandler {
     // handleIllegalArgument() 실행
     // @RestController이므로 handleIllegalArgument()에도 @ResponseBody가 적용된다. 따라서 HTTP컨버터가 사용되고 응답이 JSON으로 반환된다.
     // @ResponseStatus(HttpStatus.BAD_REQUEST)를 사용하는 방법도 있으나, 이러한 방식은 HTTP 제어가 static하다. (상태코드가 컴파일 시점에 고정되므로 추후 조건에 따른 변경이 어려움)
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
+
+    // 1) DTO Validation 실패 (@Valid @RequestBody)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException e, HttpServletRequest request
+    ) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        // 메시지 정책: 필드 에러를 "field: message" 형태로 한 줄
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .findFirst()
+                .orElse("요청 값이 올바르지 않습니다.");
 
         ApiErrorResponse body = ApiErrorResponse.of(
                 "BAD_REQUEST",
-                e.getMessage(),
+                message,
                 status.value(),
                 request.getRequestURI()
         );
 
+        return ResponseEntity.status(status).body(body);
+    }
+
+    // 2) 파라미터 Validation 실패 (@RequestParam @PathVariable) 그러니까 숫자 타입에 문자가 들어온다던지 등등
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        // getByCategory.categoryId: categoryId는 필수입니다.
+        String message = e.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .findFirst()
+                .orElse("요청 값이 올바르지 않습니다.");
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "BAD_REQUEST",
+                message,
+                status.value(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
+    // 요청 파싱 문제 확인용
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotReadable(
+            HttpMessageNotReadableException e, HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "BAD_REQUEST",
+                "요청 본문(JSON)이 올바르지 않습니다.",
+                status.value(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMediaType(
+            HttpMediaTypeNotSupportedException e, HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "UNSUPPORTED_MEDIA_TYPE",
+                "Content-Type을 application/json으로 설정해야 합니다.",
+                status.value(),
+                request.getRequestURI()
+        );
         return ResponseEntity.status(status).body(body);
     }
 

@@ -10,9 +10,12 @@ import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
 import io.github.takgeun.shop.product.dto.request.ProductUpdateRequest;
 import io.github.takgeun.shop.product.dto.response.ProductCreateResponse;
 import io.github.takgeun.shop.product.dto.response.ProductResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.List;
 * 검증/흐름 제어 O
 * 도메인 조작 X*/
 
+@Validated              // @RequestParam 이나 @PathVariable 검증할 때 필요
 @RestController                     // HTTP 요청을 처리하는데 반환값을 View가 아니라 JSON(Response Body) 로 보내고자 하는 의도
 @RequiredArgsConstructor            // 필수 의존성만 받는 생성자를 자동으로 만들어주는 어노테이션
 @RequestMapping("/products")
@@ -33,7 +37,7 @@ public class ProductController {
 
     // 상품 생성
     @PostMapping
-    public ResponseEntity<ProductCreateResponse> create(@RequestBody ProductCreateRequest request) {
+    public ResponseEntity<ProductCreateResponse> create(@Valid @RequestBody ProductCreateRequest request) {
         Long id = productService.create(request.getCategoryId(), request.getName(),
                 request.getPrice(), request.getStock(), request.getDescription());
 
@@ -48,7 +52,9 @@ public class ProductController {
 
     // 카테고리별 상품 목록 조회: /products?categoryId=1
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getByCategory(@RequestParam Long categoryId) {
+    public ResponseEntity<List<ProductResponse>> getByCategory(
+            @RequestParam @NotNull(message = "categoryId는 필수입니다.") Long categoryId
+    ) {
         // @RequestParam : URL 뒤에 붙는 ?key=value 형태의 값을 메서드 파라미터로 받기 위해 사용
         List<ProductResponse> result = productService.getByCategory(categoryId).stream()
                 .map(ProductResponse::from)
@@ -71,7 +77,7 @@ public class ProductController {
     // 수정 API에서 Void를 사용하는 이유 : PATCH / PUT의 관례
     // 리소스 수정, 성공 여부만 중요, 수정된 데이터 전체를 다시 줄 필요 없음.
     @PatchMapping("/{productId}")
-    public ResponseEntity<Void> update(@PathVariable Long productId, @RequestBody ProductUpdateRequest request) {
+    public ResponseEntity<Void> update(@PathVariable Long productId, @Valid @RequestBody ProductUpdateRequest request) {
         productService.update(productId, request.getCategoryId(), request.getName(), request.getPrice(),
                 request.getStock(), request.getDescription(), request.getActive());
         return ResponseEntity.noContent().build();

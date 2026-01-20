@@ -31,6 +31,9 @@ public class Category {
     // 우선 assignId 메서드를 직접 만들고 임시로 사용할 것.
     // 추후 JPA를 통해 해결할 예정
     public void assignId(Long id) {
+        if(id==null || id <= 0) {
+            throw new IllegalArgumentException("id는 양수여야 합니다.");
+        }
         this.id = id;
     }
 
@@ -43,11 +46,11 @@ public class Category {
     }
 
     public void changeName(String name) {
-        if(name == null || name.isBlank()) {
-            throw new IllegalArgumentException("카테고리 이름은 필수입니다.");
+        if(name == null || name.trim().isBlank()) {
+            throw new IllegalArgumentException("카테고리명은 비어 있을 수 없습니다.");
         }
         if(name.length() > 50) {
-            throw new IllegalArgumentException("카테고리 이름은 50자 이하입니다.");
+            throw new IllegalArgumentException("카테고리 이름은 50자 이상을 넘을 수 없습니다.");
         }
         this.name = name;
     }

@@ -5,9 +5,11 @@ import io.github.takgeun.shop.category.dto.request.CategoryCreateRequest;
 import io.github.takgeun.shop.category.dto.request.CategoryUpdateRequest;
 import io.github.takgeun.shop.category.dto.response.CategoryCreateResponse;
 import io.github.takgeun.shop.category.dto.response.CategoryResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.List;
 //수정 성공 -> 204 No Content
 //삭제 성공 -> 204 No Content
 
+@Validated          // @RequestParam 이나 @PathVariable 검증할 때 필요
 @RestController                     // HTTP 요청을 처리하는데 반환값을 View가 아니라 JSON(Response Body) 로 보내고자 하는 의도
 @RequiredArgsConstructor            // 필수 의존성만 받는 생성자를 자동으로 만들어주는 어노테이션
 @RequestMapping("/categories")
@@ -32,7 +35,7 @@ public class CategoryController {
     // Repository/Entity 접근 X
 
     @PostMapping
-    public ResponseEntity<CategoryCreateResponse> create(@RequestBody CategoryCreateRequest request) {
+    public ResponseEntity<CategoryCreateResponse> create(@Valid @RequestBody CategoryCreateRequest request) {
         /* @RequestBody : HTTP 요청 Body(JSON)를 자바 객체로 변환
          * 작동 과정
          * 1. 요청이 들어옴
@@ -78,7 +81,7 @@ public class CategoryController {
     // 수정 API에서 Void를 사용하는 이유 : PATCH / PUT의 관례
     // 리소스 수정, 성공 여부만 중요, 수정된 데이터 전체를 다시 줄 필요 없음.
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id, @RequestBody CategoryUpdateRequest request) {
+    public ResponseEntity<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryUpdateRequest request) {
         categoryService.update(id, request.getName(), request.getParentId(), request.getActive());
         return ResponseEntity.noContent().build();
         // HTTP 상태 코드는 204 No Content (요청은 성공했고 응답 본문은 없다.)
