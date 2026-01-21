@@ -84,24 +84,16 @@ public class ProductController {
             @PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId,
             @Valid @RequestBody ProductUpdateRequest request
     ) {
-        productService.update(
-                productId,
-                request.getCategoryId(),
-                request.getName(),
-                request.getPrice(),
-                request.getStock(),
-                request.getDescription(),
-                request.getActive()
-        );
+        productService.update(productId, request);
         return ResponseEntity.noContent().build();
         // HTTP 상태 코드는 204 No Content (요청은 성공했고 응답 본문은 없다.)
         // .build() : ResponseEntity 객체 생성 완료
     }
 
-    // 상품 삭제
+    // 상품 비활성화
     @DeleteMapping("/{productId}")
-    public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId) {
-        productService.delete(productId);
+    public ResponseEntity<Void> hide(@PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId) {
+        productService.hide(productId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.dto.response;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.product.domain.Product;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,7 +15,7 @@ public class ProductResponse {
     private int price;
     private int stock;
     private String description;
-    private boolean active;
+    private ProductStatus status;
 
     // 도메인 객체(Product)를 응답 DTO(ProductResponse)로 변환할 때 쓰는 전용 메서드
     // 컨트롤러나 서비스 등 다른 곳에서 아래 코드가 반복되는 걸 방지하기 위함.
@@ -27,7 +28,7 @@ public class ProductResponse {
                 product.getPrice(),
                 product.getStock(),
                 product.getDescription(),
-                product.isActive()
+                product.getStatus()
         );
     }
 }

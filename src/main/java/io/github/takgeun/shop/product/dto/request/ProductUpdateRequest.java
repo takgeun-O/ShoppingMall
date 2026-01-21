@@ -29,7 +29,19 @@ public class ProductUpdateRequest {     // 부분 수정
     @Size(max = 2000, message = "설명은 2000자 이하입니다.")
     private String description;         // null 이면 변경 안함 (설명 삭제는 빈 문자열로)
 
-
-    private Boolean active;             // null 이면 변경 안함
-    // wrapper 타입 : 수정 요청에서 active를 보내지 않았을 경우 null로 처리하기 위함 (null로 변경 없음 표현 가능)
+    public static ProductUpdateRequest of(
+            Long categoryId,
+            String name,
+            Integer price,
+            Integer stock,
+            String description
+    ) {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.categoryId = categoryId;
+        request.name = name;
+        request.price = price;
+        request.stock = stock;
+        request.description = description;
+        return request;
+    }
 }

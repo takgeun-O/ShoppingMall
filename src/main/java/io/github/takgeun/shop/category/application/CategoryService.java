@@ -2,7 +2,9 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
     // 카테고리 생성
     public Long create(String name, Long parentId) {
@@ -99,6 +102,14 @@ public class CategoryService {
         // 정책 : 없으면 예외 처리
         categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
+
+        // 하위 카테고리가 존재하거나 상품이 존재할 때 삭제 막기 (409 Conflict)
+        if(categoryRepository.existsByParentId(id)) {
+            throw new ConflictException("하위 카테고리가 존재하여 삭제할 수 없습니다.");
+        }
+        if(productRepository.existsByCategoryId(id)) {
+            throw new ConflictException("해당 카테고리에 상품이 존재하여 삭제할 수 없습니다.");
+        }
 
         categoryRepository.deleteById(id);
     }

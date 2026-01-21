@@ -1,7 +1,13 @@
 package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
+import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
+import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.product.application.ProductService;
+import io.github.takgeun.shop.product.domain.ProductRepository;
+import io.github.takgeun.shop.product.infra.MemoryProductRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,11 +18,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CategoryServiceTest {
 
+    private CategoryRepository categoryRepository;
+    private ProductRepository productRepository;
+
     private CategoryService categoryService;
+    private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        categoryService = new CategoryService(new MemoryCategoryRepository());
+        categoryRepository = new MemoryCategoryRepository();
+        productRepository = new MemoryProductRepository();
+
+        categoryService = new CategoryService(categoryRepository, productRepository);
+        productService = new ProductService(productRepository, categoryService);
     }
 
     @Test
@@ -36,7 +50,7 @@ class CategoryServiceTest {
 
     @Test
     void 부모_카테고리_존재하지_않음_예외() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NotFoundException.class,
                 () -> categoryService.create("노트북", 999L));
     }
 
@@ -54,7 +68,7 @@ class CategoryServiceTest {
 
     @Test
     void 카테고리_조회_실패_카테고리_없음() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        NotFoundException e = assertThrows(NotFoundException.class,
                 () -> categoryService.get(999L));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
@@ -175,7 +189,7 @@ class CategoryServiceTest {
         categoryService.delete(electronicsId);
 
         // then
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        NotFoundException e = assertThrows(NotFoundException.class,
                 () -> categoryService.get(electronicsId));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
@@ -187,10 +201,36 @@ class CategoryServiceTest {
 
 
         // when
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        NotFoundException e = assertThrows(NotFoundException.class,
                 () -> categoryService.delete(999L));
 
         // then
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
+    }
+
+    @Test
+    void 카테고리_삭제_실패_하위_카테고리_존재() {
+
+        // given
+        Long electronicsId = categoryService.create("전자", null);
+        Long computerId = categoryService.create("컴퓨터", electronicsId);
+
+        // when & then
+        ConflictException e = assertThrows(ConflictException.class,
+                () -> categoryService.delete(electronicsId));
+        assertEquals("하위 카테고리가 존재하여 삭제할 수 없습니다.", e.getMessage());
+    }
+
+    @Test
+    void 카테고리_삭제_실패_해당_카테고리_해당_상품_존재() {
+
+        // given
+        Long electronicsId = categoryService.create("전자", null);
+        Long productId = productService.create(electronicsId, "냉장고", 100000, 10, "튼튼냉장");
+
+        // when & then
+        ConflictException e = assertThrows(ConflictException.class,
+                () -> categoryService.delete(electronicsId));
+        assertEquals("해당 카테고리에 상품이 존재하여 삭제할 수 없습니다.", e.getMessage());
     }
 }

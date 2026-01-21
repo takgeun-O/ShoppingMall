@@ -14,4 +14,6 @@ public interface CategoryRepository {
     void deleteById(Long id);
 
     boolean existsByName(String name);
+
+    boolean existsByParentId(Long parentId);
 }

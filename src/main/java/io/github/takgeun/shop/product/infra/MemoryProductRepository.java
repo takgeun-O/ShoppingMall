@@ -55,8 +55,8 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
-    public void deleteById(Long id) {
-        // id 존재 여부 판단은 Service 책임
-        store.remove(id);
+    public boolean existsByCategoryId(Long categoryId) {
+        return store.values().stream()
+                .anyMatch(p -> categoryId != null && categoryId.equals(p.getCategoryId()));
     }
 }
