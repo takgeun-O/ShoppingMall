@@ -70,41 +70,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 
-    // 요청 파싱 문제 확인용
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiErrorResponse> handleNotReadable(
-            HttpMessageNotReadableException e, HttpServletRequest request
-    ) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        ApiErrorResponse body = ApiErrorResponse.of(
-                "BAD_REQUEST",
-                "요청 본문(JSON)이 올바르지 않습니다.",
-                status.value(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(status).body(body);
-    }
-
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ApiErrorResponse> handleMediaType(
-            HttpMediaTypeNotSupportedException e, HttpServletRequest request
-    ) {
-        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
-        ApiErrorResponse body = ApiErrorResponse.of(
-                "UNSUPPORTED_MEDIA_TYPE",
-                "Content-Type을 application/json으로 설정해야 합니다.",
-                status.value(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(status).body(body);
-    }
-
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handlerNotFound(NotFoundException e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.NOT_FOUND;
 
         ApiErrorResponse body = ApiErrorResponse.of(
                 "NOT_FOUND",
+                e.getMessage(),
+                status.value(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "BAD_REQUEST",
                 e.getMessage(),
                 status.value(),
                 request.getRequestURI()

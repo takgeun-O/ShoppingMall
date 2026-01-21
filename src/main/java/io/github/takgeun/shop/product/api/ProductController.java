@@ -12,6 +12,7 @@ import io.github.takgeun.shop.product.dto.response.ProductCreateResponse;
 import io.github.takgeun.shop.product.dto.response.ProductResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,7 +69,9 @@ public class ProductController {
 
     // 상품 단건 조회
     @GetMapping("/{productId}")
-    public ResponseEntity<ProductResponse> get(@PathVariable Long productId) {
+    public ResponseEntity<ProductResponse> get(
+            @PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId
+    ) {
         return ResponseEntity.ok(ProductResponse.from(productService.get(productId)));
     }
 
@@ -77,9 +80,19 @@ public class ProductController {
     // 수정 API에서 Void를 사용하는 이유 : PATCH / PUT의 관례
     // 리소스 수정, 성공 여부만 중요, 수정된 데이터 전체를 다시 줄 필요 없음.
     @PatchMapping("/{productId}")
-    public ResponseEntity<Void> update(@PathVariable Long productId, @Valid @RequestBody ProductUpdateRequest request) {
-        productService.update(productId, request.getCategoryId(), request.getName(), request.getPrice(),
-                request.getStock(), request.getDescription(), request.getActive());
+    public ResponseEntity<Void> update(
+            @PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId,
+            @Valid @RequestBody ProductUpdateRequest request
+    ) {
+        productService.update(
+                productId,
+                request.getCategoryId(),
+                request.getName(),
+                request.getPrice(),
+                request.getStock(),
+                request.getDescription(),
+                request.getActive()
+        );
         return ResponseEntity.noContent().build();
         // HTTP 상태 코드는 204 No Content (요청은 성공했고 응답 본문은 없다.)
         // .build() : ResponseEntity 객체 생성 완료
@@ -87,7 +100,7 @@ public class ProductController {
 
     // 상품 삭제
     @DeleteMapping("/{productId}")
-    public ResponseEntity<Void> delete(@PathVariable Long productId) {
+    public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive(message = "productId는 양수여야 합니다.") Long productId) {
         productService.delete(productId);
         return ResponseEntity.noContent().build();
     }

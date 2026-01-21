@@ -18,25 +18,26 @@ public class Product {
     protected Product() {
     }
 
-    public Product(Long categoryId, String name, int price, int stock, String description, boolean active) {
-        // 생성자 생성 시점에서 검증 로직을 넣고 싶은 건 따로 메소드에 빼놓기.
-//        this.categoryId = categoryId;
-//        this.name = name;
-//        this.price = price;
-//        this.stock = stock;
-//        this.description = description;
+    private Product(Long categoryId, String name, int price, int stock, String description, boolean active) {
+        // 생성자 생성 시점에서 검증 로직을 넣기
         changeCategory(categoryId);
         changeName(name);
         changePrice(price);
         changeStock(stock);
         changeDescription(description);
-        this.active = active;
+        this.active = true;
     }
 
     // 상품 생성 시 id가 필요한데, 엔티티에서는 setter 방식으로 id를 만들 수 없으니
     // 우선 assignId 메서드를 직접 만들고 임시로 사용할 것.
     // 추후 JPA를 통해 해결할 예정
     public void assignId(Long id) {
+        if(id == null || id <= 0) {
+            throw new IllegalArgumentException("id는 양수여야 합니다.");
+        }
+        if(this.id != null) {
+            throw new IllegalStateException("id는 이미 할당되었습니다.");
+        }
         this.id = id;
     }
 
@@ -52,17 +53,25 @@ public class Product {
         if(categoryId == null) {
             throw new IllegalArgumentException("categoryId는 필수입니다.");
         }
+        if(categoryId <= 0) {
+            throw new IllegalArgumentException("categoryId는 양수여야 합니다.");
+        }
         this.categoryId = categoryId;
     }
 
     public void changeName(String name) {
-        if(name == null || name.isBlank()) {
+        if(name == null) {
             throw new IllegalArgumentException("상품명은 필수입니다.");
         }
-        if(name.length() > 100) {
+
+        String normalized = name.trim();
+        if(normalized.isEmpty()) {
+            throw new IllegalArgumentException("상품명은 필수입니다.");
+        }
+        if(normalized.length() > 100) {
             throw new IllegalArgumentException("상품명은 100자 이하입니다.");
         }
-        this.name = name;
+        this.name = normalized;
     }
 
     public void changePrice(int price) {
@@ -80,8 +89,13 @@ public class Product {
     }
 
     public void changeDescription(String description) {
-        // 상품 설명은 선택임
-        if(description != null && description.length() > 2000) {
+        if(description == null) {
+            this.description = null;
+            return;
+        }
+
+        String normalized = description.trim();
+        if(normalized.length() > 2000) {
             throw new IllegalArgumentException("상품 설명은 2000자 이하입니다.");
         }
         this.description = description;

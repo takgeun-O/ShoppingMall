@@ -34,6 +34,9 @@ public class Category {
         if(id==null || id <= 0) {
             throw new IllegalArgumentException("id는 양수여야 합니다.");
         }
+        if(this.id != null) {
+            throw new IllegalStateException("id는 이미 할당되었습니다.");
+        }
         this.id = id;
     }
 
@@ -63,8 +66,13 @@ public class Category {
         this.active = false;
     }
 
-    // 자기 자신을 부모로 못 둔다 라는 규칙은 id 생긴 뒤에 가능
     public void changeParent(Long parentId) {
+        if(parentId != null && parentId <= 0) {
+            throw new IllegalArgumentException("parentId는 양수 또는 null이어야 합니다.");
+        }
+        if(this.id != null && parentId != null && parentId.equals(this.id)) {
+            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
+        }
         this.parentId = parentId;
     }
 }
