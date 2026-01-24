@@ -1,9 +1,9 @@
-package io.github.takgeun.shop.member.application;
+package io.github.takgeun.shop.member.api;
 
+import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.dto.request.MemberRoleUpdateRequest;
 import io.github.takgeun.shop.member.dto.request.MemberStatusUpdateRequest;
-import io.github.takgeun.shop.member.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.dto.response.MemberResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
