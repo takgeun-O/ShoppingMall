@@ -16,4 +16,6 @@ public interface CategoryRepository {
     boolean existsByName(String name);
 
     boolean existsByParentId(Long parentId);
+
+    boolean existsByNameExceptId(String name, Long excludeId);
 }

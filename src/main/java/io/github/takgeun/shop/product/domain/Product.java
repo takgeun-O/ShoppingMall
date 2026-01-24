@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.domain;
 
 // Domain(Entity/Model)
 
+import io.github.takgeun.shop.global.error.ConflictException;
 import lombok.Getter;
 
 @Getter
@@ -36,7 +37,7 @@ public class Product {
             throw new IllegalArgumentException("id는 양수여야 합니다.");
         }
         if(this.id != null) {
-            throw new IllegalStateException("id는 이미 할당되었습니다.");
+            throw new ConflictException("id는 이미 할당되었습니다.");
         }
         this.id = id;
     }
@@ -90,6 +91,9 @@ public class Product {
         if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
             this.status = ProductStatus.SOLD_OUT;
         }
+        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
+            this.status = ProductStatus.ON_SALE;
+        }
     }
 
     public void changeDescription(String description) {
@@ -106,23 +110,39 @@ public class Product {
         if(normalized.length() > 2000) {
             throw new IllegalArgumentException("상품 설명은 2000자 이하여야 합니다.");
         }
-        this.description = description;
+        this.description = normalized;
+    }
+
+    public boolean isPublicVisible() {
+        if(this.status == ProductStatus.HIDDEN || this.status == ProductStatus.DISCONTINUED) {
+            return false;
+        }
+        return true;
     }
 
     public void onSale() {
         if(this.status == ProductStatus.DISCONTINUED) {
-            throw new IllegalStateException("판매 종료된 상품은 판매중으로 변경할 수 없습니다.");
+            throw new ConflictException("판매 종료된 상품은 판매중으로 변경할 수 없습니다.");
         }
+        if(this.stock == 0) {
+            throw new ConflictException("재고가 0인 상품은 판매중으로 변경할 수 없습니다.");
+        }
+        if(this.status == ProductStatus.ON_SALE) return;        // 멱등 처리
         this.status = ProductStatus.ON_SALE;
     }
 
     public void hide() {
         if(this.status == ProductStatus.DISCONTINUED) {
-            throw new IllegalStateException("판매 종료된 상품은 숨김으로 변경할 수 없습니다.");
+            throw new ConflictException("판매 종료된 상품은 숨김으로 변경할 수 없습니다.");
         }
         if(this.status == ProductStatus.HIDDEN) {
             return;     // 멱등 처리
         }
         this.status = ProductStatus.HIDDEN;
+    }
+
+    public void discontinue() {
+        if(this.status == ProductStatus.DISCONTINUED) return;
+        this.status = ProductStatus.DISCONTINUED;
     }
 }

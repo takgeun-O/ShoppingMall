@@ -68,4 +68,13 @@ public class MemoryCategoryRepository implements CategoryRepository {
         return store.values().stream()
                 .anyMatch(c -> parentId != null && parentId.equals(c.getParentId()));
     }
+
+    @Override
+    public boolean existsByNameExceptId(String name, Long excludeId) {
+        return store.values().stream()
+                .anyMatch(c -> c.getId() != null
+                        && !c.getId().equals(excludeId)
+                        && c.getName() != null
+                        && c.getName().trim().equals(name.trim()));
+    }
 }

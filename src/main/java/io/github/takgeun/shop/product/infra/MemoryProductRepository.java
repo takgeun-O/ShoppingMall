@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.infra;
 
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -58,5 +59,14 @@ public class MemoryProductRepository implements ProductRepository {
     public boolean existsByCategoryId(Long categoryId) {
         return store.values().stream()
                 .anyMatch(p -> categoryId != null && categoryId.equals(p.getCategoryId()));
+    }
+
+    @Override
+    public List<Product> findAllPublicByCategoryId(Long categoryId) {
+        return store.values().stream()
+                .filter(p -> p.getCategoryId().equals(categoryId))
+                .filter(p -> (p.getStatus() == ProductStatus.ON_SALE)
+                        || (p.getStatus() == ProductStatus.SOLD_OUT))
+                .toList();
     }
 }

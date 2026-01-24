@@ -5,6 +5,7 @@ import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.dto.request.ProductUpdateRequest;
 import io.github.takgeun.shop.product.infra.MemoryProductRepository;
 import org.assertj.core.api.Assertions;
@@ -74,27 +75,60 @@ class ProductServiceTest {
     }
 
     @Test
-    void 카테고리별_상품_목록_조회_성공() {
+    void 카테고리별_상품_목록_조회_성공_공개용() {
 
         // given
         Long categoryId = categoryService.create("전자", null);
         Long productId1 = productService.create(categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치");
         Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치");
+        Long productId3 = productService.create(categoryId, "비활성화템", 20000, 20, "비활성화된거");
+
+        Product product1 = productService.get(productId1);
+        Product product2 = productService.get(productId2);
+        Product product3 = productService.get(productId3);
+        product1.onSale();          // ON_SALE
+        product2.changeStock(0);    // SOLD_OUT
+        product3.discontinue();     // DISCONTINUE
 
         // when
-        List<Product> productList = productService.getByCategory(categoryId);
+        List<Product> productList = productService.getByCategoryPublic(categoryId);
 
         // then
-        assertEquals(2, productList.size());
+        assertEquals(1, productList.size());
         assertTrue(productList.stream()
                 .allMatch(p -> p.getCategoryId().equals(categoryId)));
     }
 
     @Test
-    void 카테고리별_상품_목록_조회_실패_카테고리_없음() {
+    void 카테고리별_상품_목록_조회_성공_관리자용() {
+
+        // given
+        Long categoryId = categoryService.create("전자", null);
+        Long productId1 = productService.create(categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치");
+        Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치");
+        Long productId3 = productService.create(categoryId, "비활성화템", 20000, 20, "비활성화된거");
+
+        Product product1 = productService.get(productId1);
+        Product product2 = productService.get(productId2);
+        Product product3 = productService.get(productId3);
+        product1.onSale();          // ON_SALE
+        product2.changeStock(0);    // SOLD_OUT
+        product3.discontinue();     // DISCONTINUE
+
+        // when
+        List<Product> productList = productService.getByCategoryAdmin(categoryId);
+
+        // then
+        assertEquals(3, productList.size());
+        assertTrue(productList.stream()
+                .allMatch(p -> p.getCategoryId().equals(categoryId)));
+    }
+
+    @Test
+    void 카테고리별_상품_목록_조회_실패_공개용_카테고리_없음() {
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.getByCategory(999L));
+                () -> productService.getByCategoryPublic(999L));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
 
@@ -112,7 +146,8 @@ class ProductServiceTest {
                 null
         );
         // when
-        productService.update(productId, request);
+        productService.update(productId, request.getCategoryId(), request.getName(),
+                request.getPrice(), request.getStock(), request.getDescription());
 
         // then
         Product updated = productService.get(productId);
@@ -139,7 +174,8 @@ class ProductServiceTest {
         );
 
         // when
-        productService.update(productId,request);
+        productService.update(productId, request.getCategoryId(), request.getName(),
+                request.getPrice(), request.getStock(), request.getDescription());
 
         // then
         Product updated = productService.get(productId);
@@ -161,7 +197,8 @@ class ProductServiceTest {
 
         // when
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.update(999L, request));
+                () -> productService.update(999L, request.getCategoryId(), request.getName(),
+                        request.getPrice(), request.getStock(), request.getDescription()));
 
         // then
         assertEquals("상품이 존재하지 않습니다.", e.getMessage());
@@ -183,7 +220,8 @@ class ProductServiceTest {
 
         // when
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.update(productId, request));
+                () -> productService.update(productId, request.getCategoryId(), request.getName(),
+                        request.getPrice(), request.getStock(), request.getDescription()));
 
         // then
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
@@ -196,7 +234,7 @@ class ProductServiceTest {
         Long productId = productService.create(electronicsId, "맥북", 2_000_000, 20, "빠른 맥북");
 
         // when
-        productService.hide(productId);
+        productService.changeStatus(productId, ProductStatus.HIDDEN);
 
         // then
         NotFoundException e = assertThrows(NotFoundException.class,
@@ -208,7 +246,7 @@ class ProductServiceTest {
     void 상품_숨김_실패_상품_없음() {
         // when
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.hide(999L));
+                () -> productService.changeStatus(999L, ProductStatus.HIDDEN));
 
         // then
         assertEquals("상품이 존재하지 않습니다.", e.getMessage());

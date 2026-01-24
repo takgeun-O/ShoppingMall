@@ -2,6 +2,7 @@ package io.github.takgeun.shop.global.error;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -28,9 +30,8 @@ public class GlobalExceptionHandler {
 
     // 1) DTO Validation 실패 (@Valid @RequestBody)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException e, HttpServletRequest request
-    ) {
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         // 메시지 정책: 필드 에러를 "field: message" 형태로 한 줄
@@ -52,6 +53,7 @@ public class GlobalExceptionHandler {
     // 2) 파라미터 Validation 실패 (@RequestParam @PathVariable) 그러니까 숫자 타입에 문자가 들어온다던지 등등
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         // getByCategory.categoryId: categoryId는 필수입니다.
@@ -71,7 +73,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handlerNotFound(NotFoundException e, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
         HttpStatus status = HttpStatus.NOT_FOUND;
 
         ApiErrorResponse body = ApiErrorResponse.of(
@@ -86,6 +89,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
         ApiErrorResponse body = ApiErrorResponse.of(
@@ -98,12 +102,86 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "CONFLICT",
+                e.getMessage(),
+                status.value(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "UNAUTHORIZED",
+                e.getMessage(),
+                status.value(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
+        HttpStatus status = HttpStatus.FORBIDDEN;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "FORBIDDEN",
+                e.getMessage(),
+                status.value(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "BAD_REQUEST",
+                "요청 본문(JSON)이 올바르지 않습니다.",
+                status.value(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMediaType(HttpMediaTypeNotSupportedException e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
+        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+        ApiErrorResponse body = ApiErrorResponse.of(
+                "UNSUPPORTED_MEDIA_TYPE",
+                "지원하지 않는 Content-Type 입니다.",
+                status.value(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(body);
+    }
+
     /**
      * 그 외 예상 못한 예외 (서버 오류)
      * 운영에서는 message를 고정하는 게 보안상 더 안전함
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleException(Exception e, HttpServletRequest request) {
+        log.error("Unhandled exception, path={}", request.getRequestURI(), e);
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         ApiErrorResponse body = ApiErrorResponse.of(

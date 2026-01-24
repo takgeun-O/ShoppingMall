@@ -43,9 +43,18 @@ class CategoryServiceTest {
     }
 
     @Test
-    void 이름_중복이면_예외() {
+    void 카테고리_생성_실패_이름_중복_trim_기준() {
         categoryService.create("전자", null);
-        assertThrows(IllegalArgumentException.class, () -> categoryService.create("전자", null));
+        ConflictException e = assertThrows(ConflictException.class,
+                () -> categoryService.create(" 전자 ", null));
+        assertEquals("이미 존재하는 카테고리 이름입니다.", e.getMessage());
+    }
+
+    @Test
+    void 카테고리_생성_실패_공백만() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> categoryService.create(" ", null));
+        assertEquals("카테고리명은 비어 있을 수 없습니다.", e.getMessage());
     }
 
     @Test
@@ -137,6 +146,55 @@ class CategoryServiceTest {
     }
 
     @Test
+    void 카테고리_수정_성공_activate() {
+
+        // given
+        Long id = categoryService.create("전자", null);
+
+        // when
+        categoryService.update(id, null, null, false);
+        Category updated = categoryService.get(id);
+
+        // then
+        assertFalse(updated.isActive());
+    }
+
+    @Test
+    void 카테고리_수정_성공_deactivate() {
+
+        // given
+        Long id = categoryService.create("전자", null);
+
+        // when
+        categoryService.update(id, null, null, true);
+        Category updated = categoryService.get(id);
+
+        // then
+        assertTrue(updated.isActive());
+    }
+
+    @Test
+    void 카테고리_수정_성공_아무_값도_안_들어왔을_떄() {
+
+        // given
+        Long id = categoryService.create("전자", null);
+        Category before = categoryService.get(id);
+
+        String beforeName = before.getName();
+        Long beforeParentId = before.getParentId();
+        boolean beforeActive = before.isActive();
+
+        // when
+        categoryService.update(id, null, null, null);
+        Category updated = categoryService.get(id);
+
+        // then
+        assertEquals(beforeName, updated.getName());
+        assertEquals(beforeParentId, updated.getParentId());
+        assertEquals(beforeActive, updated.isActive());
+    }
+
+    @Test
     void 카테고리_수정_실패_이름중복() {
 
         // given
@@ -146,9 +204,23 @@ class CategoryServiceTest {
         // when
 
         // then
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        ConflictException e = assertThrows(ConflictException.class,
                 () -> categoryService.update(id2, "전자", null, null));
         assertEquals("이미 존재하는 카테고리 이름입니다.", e.getMessage());
+    }
+
+    @Test
+    void 카테고리_수정_실패_부모_카테고리_존재하지_않음() {
+
+        // given
+
+
+        // when
+        NotFoundException e = assertThrows(NotFoundException.class,
+                () -> categoryService.create("노트북", 999L));
+
+        // then
+        assertEquals("부모 카테고리가 존재하지 않습니다.", e.getMessage());
     }
 
     @Test
@@ -166,17 +238,19 @@ class CategoryServiceTest {
     }
 
     @Test
-    void 카테고리_수정_성공_active() {
+    void 카테고리_수정_실패_부모순환구조() {
 
         // given
-        Long id = categoryService.create("전자", null);
+        Long electronicsId = categoryService.create("전자", null);
+        Long computerCategoryId = categoryService.create("컴퓨터", electronicsId);
+        Long notebookCategoryId = categoryService.create("노트북", computerCategoryId);
 
         // when
-        Category category = categoryService.get(id);
+        ConflictException e = assertThrows(ConflictException.class,
+                () -> categoryService.update(electronicsId, null, notebookCategoryId, null));
 
         // then
-        category.deactivate();
-        assertFalse(category.isActive());
+        assertEquals("부모 카테고리 수정으로 인해 순환 구조가 발생합니다.", e.getMessage());
     }
 
     @Test
@@ -208,6 +282,7 @@ class CategoryServiceTest {
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
 
+    // 직계 삭제만 구현
     @Test
     void 카테고리_삭제_실패_하위_카테고리_존재() {
 
@@ -219,6 +294,12 @@ class CategoryServiceTest {
         ConflictException e = assertThrows(ConflictException.class,
                 () -> categoryService.delete(electronicsId));
         assertEquals("하위 카테고리가 존재하여 삭제할 수 없습니다.", e.getMessage());
+    }
+
+    // 추후 손자 존재 시 삭제 실패도 구현할 예정
+    @Test
+    void 카테고리_삭제_실패_손자_하위_카테고리_존재() {
+
     }
 
     @Test

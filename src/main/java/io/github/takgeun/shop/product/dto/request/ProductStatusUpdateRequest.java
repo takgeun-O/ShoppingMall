@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ProductStatusUpdateRequest {
 
-    @NotNull
+    @NotNull(message = "status는 필수입니다.")
     private ProductStatus status;
 }

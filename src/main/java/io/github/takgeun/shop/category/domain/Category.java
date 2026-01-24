@@ -1,6 +1,8 @@
 package io.github.takgeun.shop.category.domain;
 
 // Domain(Entity/Model)
+
+import io.github.takgeun.shop.global.error.ConflictException;
 import lombok.Data;
 import lombok.Getter;
 
@@ -17,13 +19,13 @@ public class Category {
     }
 
 
-//    Boolean : 외부 입력의 선택성을 표현
+    //    Boolean : 외부 입력의 선택성을 표현
 //    boolean : 도메인 상태의 확정값을 표현
 //    Entity는 생성되는 순간부터 항상 유효해야 한다.
     private Category(String name, Long parentId, boolean active) {
 //        this.name = name;           // 이렇게 하면 생성자 생성 시 검증 로직을 넣을 수 없음.
         changeName(name);
-        this.parentId = parentId;
+        changeParent(parentId);
         this.active = active;
     }
 
@@ -31,11 +33,11 @@ public class Category {
     // 우선 assignId 메서드를 직접 만들고 임시로 사용할 것.
     // 추후 JPA를 통해 해결할 예정
     public void assignId(Long id) {
-        if(id==null || id <= 0) {
+        if (id == null || id <= 0) {
             throw new IllegalArgumentException("id는 양수여야 합니다.");
         }
-        if(this.id != null) {
-            throw new IllegalStateException("id는 이미 할당되었습니다.");
+        if (this.id != null) {
+            throw new ConflictException("id는 이미 할당되었습니다.");
         }
         this.id = id;
     }
@@ -49,29 +51,35 @@ public class Category {
     }
 
     public void changeName(String name) {
-        if(name == null || name.trim().isBlank()) {
+        if (name == null) {
+            throw new IllegalArgumentException("카테고리명은 필수입니다.");
+        }
+        String normalized = name.trim();
+        if (normalized.isEmpty()) {
             throw new IllegalArgumentException("카테고리명은 비어 있을 수 없습니다.");
         }
-        if(name.length() > 50) {
-            throw new IllegalArgumentException("카테고리 이름은 50자 이상을 넘을 수 없습니다.");
+        if (normalized.length() > 50) {
+            throw new IllegalArgumentException("카테고리명은 50자 이하입니다.");
         }
-        this.name = name;
+        this.name = normalized;
     }
 
     public void activate() {
+        if (this.active) return;
         this.active = true;
     }
 
     public void deactivate() {
+        if (!this.active) return;
         this.active = false;
     }
 
     public void changeParent(Long parentId) {
-        if(parentId != null && parentId <= 0) {
+        if (parentId != null && parentId <= 0) {
             throw new IllegalArgumentException("parentId는 양수 또는 null이어야 합니다.");
         }
-        if(this.id != null && parentId != null && parentId.equals(this.id)) {
-            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
+        if (this.id != null && parentId != null && parentId.equals(this.id)) {
+            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");   // parentId 입력 자체가 잘못됨 -> 400
         }
         this.parentId = parentId;
     }
