@@ -145,4 +145,16 @@ public class Product {
         if(this.status == ProductStatus.DISCONTINUED) return;
         this.status = ProductStatus.DISCONTINUED;
     }
+
+    public void decreaseStock(int quantity) {
+
+        if(quantity <= 0) {
+            throw new IllegalArgumentException("감소 수량은 1 이상이어야 합니다.");
+        }
+
+        if(this.stock < quantity) {
+            throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다.");
+        }
+        this.stock = this.stock - quantity;
+    }
 }

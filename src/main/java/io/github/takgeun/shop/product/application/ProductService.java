@@ -118,4 +118,11 @@ public class ProductService {
 
         productRepository.save(product);        // 메모리 저장소 반영
     }
+
+    public Product save(Product product) {
+        if(product == null) {
+            throw new IllegalArgumentException("productId는 필수입니다.");
+        }
+        return productRepository.save(product);
+    }
 }

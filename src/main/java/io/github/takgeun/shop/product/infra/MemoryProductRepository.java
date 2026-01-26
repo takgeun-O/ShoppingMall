@@ -20,8 +20,6 @@ public class MemoryProductRepository implements ProductRepository {
         if(product.getId() == null) {
             long id = ++sequence;
             product.assignId(id);
-            store.put(id, product);
-            return product;
         }
 
         // 수정할 때 기존 id로 덮어쓰기.

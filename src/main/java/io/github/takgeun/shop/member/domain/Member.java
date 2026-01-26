@@ -136,10 +136,10 @@ public class Member {
     }
 
     public void deactivate() {
-        if(this.status == MemberStatus.DEACTIVATED) {
+        if(this.status == MemberStatus.INACTIVE) {
             return;     // 멱등
         }
-        this.status = MemberStatus.DEACTIVATED;
+        this.status = MemberStatus.INACTIVE;
     }
 
     public void activate() {

@@ -84,7 +84,7 @@ public class MemberService {
 
         switch (status) {
             case ACTIVE -> member.activate();
-            case DEACTIVATED -> member.deactivate();
+            case INACTIVE -> member.deactivate();
             default -> throw new IllegalArgumentException("지원하지 않는 status 입니다.");
         }
 

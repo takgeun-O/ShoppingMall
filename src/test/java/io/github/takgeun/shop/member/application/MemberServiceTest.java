@@ -201,7 +201,7 @@ class MemberServiceTest {
         memberService.deactivate(memberId);
 
         // then
-        assertEquals(MemberStatus.DEACTIVATED, member.getStatus());
+        assertEquals(MemberStatus.INACTIVE, member.getStatus());
     }
 
     @Test
