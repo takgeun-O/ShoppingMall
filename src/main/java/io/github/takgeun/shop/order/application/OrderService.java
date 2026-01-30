@@ -9,12 +9,15 @@ import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
+import io.github.takgeun.shop.order.dto.response.OrderListResponse;
 import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor    // 필수 인자를 가진 생성자 자동 생성
@@ -83,6 +86,13 @@ public class OrderService {
         return orderRepository.save(order).getId();
     }
 
+    // 내 주문 목록 조회
+    public List<Order> getMyOrders(Long memberId) {
+        validateAuthenticated(memberId);
+
+        return orderRepository.findAllByMemberId(memberId);
+    }
+
     // 주문 상세 조회
     public OrderResponse getDetail(Long memberId, Long orderId) {
         validateAuthenticated(memberId);
@@ -96,6 +106,30 @@ public class OrderService {
         }
 
         return OrderResponse.from(order);
+    }
+
+    // 단일 주문 취소
+    public void cancel(Long memberId, Long orderId) {
+        validateAuthenticated(memberId);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
+
+        // 본인 주문 여부
+        if(!memberId.equals(order.getMemberId())) {
+            throw new ForbiddenException("본인 주문만 취소할 수 있습니다.");
+        }
+
+        // 주문 상태 변경
+        order.cancel();
+
+        // 재고 원복
+        Product product = productService.get(order.getProductId());
+        product.increaseStock(order.getQuantity());
+
+        // 저장 반영
+        productService.save(product);
+        orderRepository.save(order);
     }
 
     private void validateAuthenticated(Long memberId) {

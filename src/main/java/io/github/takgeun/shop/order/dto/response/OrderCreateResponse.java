@@ -7,6 +7,4 @@ import lombok.Getter;
 @AllArgsConstructor
 public class OrderCreateResponse {
     private Long orderId;
-    private String status;
-    private int totalPrice;
 }

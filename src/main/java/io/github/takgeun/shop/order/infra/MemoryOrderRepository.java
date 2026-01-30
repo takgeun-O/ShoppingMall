@@ -55,6 +55,11 @@ public class MemoryOrderRepository implements OrderRepository {
         return result;
     }
 
+    @Override
+    public List<Order> findAll() {
+        return new ArrayList<>(store.values());
+    }
+
     // 테스트용
     public void clear() {
         store.clear();

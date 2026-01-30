@@ -12,4 +12,6 @@ public interface OrderRepository {
     boolean existsById(Long id);        // 주문이 존재하는지 체크
 
     List<Order> findAllByMemberId(Long memberId);
+
+    List<Order> findAll();
 }

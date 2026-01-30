@@ -6,23 +6,19 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
 public class OrderListResponse {
 
-    private Long orderId;
-    private OrderStatus status;
+    private List<OrderResponse> orders;
 
-    private String productName;
-    private int totalPrice;
-    private LocalDateTime orderedAt;
-
-    public static OrderListResponse from(Order order) {
+    public static OrderListResponse from(List<Order> orders) {
         return new OrderListResponse(
-                order.getId(), order.getStatus(),
-                order.getProductNameSnapshot(), order.getTotalPrice(),
-                order.getOrderedAt()
+                orders.stream()
+                        .map(OrderResponse::from)
+                        .toList()
         );
     }
 }

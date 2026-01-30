@@ -157,4 +157,11 @@ public class Product {
         }
         this.stock = this.stock - quantity;
     }
+
+    public void increaseStock(int quantity) {
+        if(quantity <= 0) {
+            throw new IllegalArgumentException("증가 수량은 1 이상이어야 합니다.");
+        }
+        this.stock = this.stock + quantity;
+    }
 }

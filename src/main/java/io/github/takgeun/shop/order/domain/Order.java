@@ -81,7 +81,7 @@ public class Order {
 
     public void cancel() {
         if (this.status != OrderStatus.ORDERED) {
-            throw new IllegalArgumentException("ORDERED 상태에서만 취소할 수 있습니다.");
+            throw new ConflictException("ORDERED 상태에서만 취소할 수 있습니다.");
         }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
