@@ -1,8 +1,8 @@
 package io.github.takgeun.shop.product.api;
 
 import io.github.takgeun.shop.product.application.ProductService;
+import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.dto.response.ProductResponse;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.List;
 @Validated              // @RequestParam 이나 @PathVariable 검증할 때 필요
 @RestController                     // HTTP 요청을 처리하는데 반환값을 View가 아니라 JSON(Response Body) 로 보내고자 하는 의도
 @RequiredArgsConstructor            // 필수 의존성만 받는 생성자를 자동으로 만들어주는 어노테이션
-@RequestMapping("/products")
+@RequestMapping("/api/v1/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -27,14 +27,16 @@ public class ProductController {
     // Repository/Entity 접근 X
 
     // 카테고리별 상품 목록 조회: /products?categoryId=1
+    // @RequestParam : URL 뒤에 붙는 ?key=value 형태의 값을 메서드 파라미터로 받기 위해 사용
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getByCategory(
-            @RequestParam
-            @NotNull(message = "categoryId는 필수입니다.")
+    public ResponseEntity<List<ProductResponse>> list(
+            @RequestParam(required = false)
             @Positive(message = "categoryId는 양수여야 합니다.") Long categoryId
     ) {
-        // @RequestParam : URL 뒤에 붙는 ?key=value 형태의 값을 메서드 파라미터로 받기 위해 사용
-        List<ProductResponse> result = productService.getByCategoryPublic(categoryId).stream()
+        List<Product> products = (categoryId == null)
+                ? productService.getAllPublic()
+                : productService.getAllPublicByCategoryId(categoryId);
+        List<ProductResponse> result = products.stream()
                 .map(ProductResponse::from)
                 .toList();
         // .map(product -> ProductResponse.from(product))
@@ -48,7 +50,6 @@ public class ProductController {
     @GetMapping("/{productId}")
     public ResponseEntity<ProductResponse> get(
             @PathVariable
-            @NotNull(message = "productId는 필수입니다.")
             @Positive(message = "productId는 양수여야 합니다.") Long productId
     ) {
         return ResponseEntity.ok(ProductResponse.from(productService.getPublic(productId)));

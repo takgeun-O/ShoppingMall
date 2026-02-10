@@ -26,7 +26,7 @@ public class Product {
         changePrice(price);
         changeStock(stock);
         changeDescription(description);
-        this.status = ProductStatus.READY;
+        this.status = ProductStatus.ON_SALE;
     }
 
     // 상품 생성 시 id가 필요한데, 엔티티에서는 setter 방식으로 id를 만들 수 없으니

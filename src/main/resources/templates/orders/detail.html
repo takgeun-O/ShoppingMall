@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>주문 상세</title>
+    <style>
+        .wrap { max-width: 720px; margin: 0 auto; }
+        .box { border: 1px solid #ddd; padding: 16px; }
+        .row { margin-bottom: 10px; }
+        .label { font-weight: bold; }
+        .muted { color: #666; font-size: 14px; }
+        .actions { margin-top: 16px; display: flex; gap: 8px; }
+        .btn { padding: 10px 12px; border: 1px solid #333; background: #fff; cursor: pointer; text-decoration: none; }
+        .danger { border-color: #c00; color: #c00; }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <h1>주문 상세</h1>
+
+    <!-- flash message -->
+    <div th:if="${error}" th:text="${error}" style="color: red;"></div>
+    <div th:if="${success}" th:text="${success}" style="color: green;"></div>
+
+    <div class="box">
+        <div class="row">
+            <span class="label">주문번호:</span>
+            <span th:text="${order.orderId}">1</span>
+        </div>
+
+        <div class="row">
+            <span class="label">상태:</span>
+            <span th:text="${order.status}">ORDERED</span>
+        </div>
+
+        <hr/>
+
+        <div class="row">
+            <span class="label">상품:</span>
+            <span th:text="${order.productName}">노트북</span>
+            <span class="muted">
+                (단가 <span th:text="${order.unitPrice}">1000</span>원)
+            </span>
+        </div>
+
+        <div class="row">
+            <span class="label">수량:</span>
+            <span th:text="${order.quantity}">2</span>
+        </div>
+
+        <div class="row">
+            <span class="label">총 결제금액:</span>
+            <strong><span th:text="${order.totalPrice}">2000</span>원</strong>
+        </div>
+
+        <div class="row">
+            <span class="label">수령인:</span>
+            <span th:text="${order.recipientName}">테스트</span>
+        </div>
+
+        <div class="row">
+            <span class="label">연락처:</span>
+            <span th:text="${order.recipientPhone}">010-1111-2222</span>
+        </div>
+
+        <div class="row">
+            <span class="label">주소:</span>
+            <span th:text="${order.shippingZipCode}">12345</span>
+            <span th:text="${order.shippingAddress}">서울</span>
+        </div>
+
+        <div class="row" th:if="${order.requestMessage != null}">
+            <span class="label">요청사항:</span>
+            <span th:text="${order.requestMessage}">문 앞</span>
+        </div>
+
+        <div class="row muted">
+            주문일시: <span th:text="${order.orderedAt}">2026-01-01T00:00</span>
+        </div>
+        <div class="row muted" th:if="${order.canceledAt != null}">
+            취소일시: <span th:text="${order.canceledAt}">2026-01-01T00:00</span>
+        </div>
+
+        <div class="actions">
+            <a class="btn" th:href="@{/orders}">내 주문 목록</a>
+
+            <!-- 주문 취소: 상태가 ORDERED일 때만 버튼 보이게끔 -->
+            <form th:if="${order.status.name() == 'ORDERED'}"
+                  th:action="@{/orders/{id}/cancel(id=${order.orderId})}" method="post" style="margin:0;">
+                <button class="btn danger" type="submit">주문 취소</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

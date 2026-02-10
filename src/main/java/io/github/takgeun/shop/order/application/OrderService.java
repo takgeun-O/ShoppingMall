@@ -15,10 +15,12 @@ import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor    // 필수 인자를 가진 생성자 자동 생성
 // requestDTO로 곧바로 받기보다는 컨트롤러에서 풀어서 넘겨오도록 할 것.
@@ -39,6 +41,9 @@ public class OrderService {
     public Long create(Long memberId, Long productId, int quantity,
                        String recipientName, String recipientPhone,
                        String shippingZipCode, String shippingAddress, String requestMessage) {
+
+        log.info("memberId={}, productId={}, productStatus={}",
+                memberId, productId, productService.get(productId).getStatus());
 
         // 로그인 상태 검증
         validateAuthenticated(memberId);

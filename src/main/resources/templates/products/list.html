@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 목록</title>
+    <style>
+        .container {
+            display: flex;
+            gap: 24px;
+        }
+
+        .sidebar {
+            width: 220px;
+        }
+
+        .content {
+            flex: 1;
+        }
+
+        .active {
+            font-weight: bold;
+        }
+
+        .product {
+            padding: 12px;
+            border: 1px solid #ddd;
+            margin-bottom: 12px;
+        }
+
+        .muted {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>상품 목록</h1>
+
+<!-- flash message -->
+<div th:if="${error}" th:text="${error}" style="color: red;"></div>
+<div th:if="${success}" th:text="${success}" style="color: green;"></div>
+
+<div class="container">
+
+    <!-- 카테고리 필터 -->
+    <aside class="sidebar">
+        <h3>카테고리</h3>
+        <ul>
+            <li>
+                <a th:href="@{/products}"
+                   th:classappend="${selectedCategoryId == null} ? 'active' : ''">전체
+                </a>
+            </li>
+
+            <li th:each="c : ${categories}">
+                <a th:href="@{/products(categoryId=${c.id})}"
+                   th:text="${c.name}"
+                   th:classappend="${selectedCategoryId != null and selectedCategoryId == c.id} ? 'active' : ''">
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- 상품 리스트 -->
+    <section class="content">
+        <div class="muted" th:if="${selectedCategoryId != null}">
+            선택된 카테고리: <span th:text="${selectedCategoryId}"></span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(products)}">
+            표시할 상품이 없습니다.
+        </div>
+
+        <div th:each="p : ${products}" class="product">
+            <div>
+                <a th:href="@{/products/{id}(id=${p.id})}"
+                   th:text="${p.name}">상품명</a>
+            </div>
+
+            <div class="muted">
+                가격: <span th:text="${p.price}"></span> 원 /
+                재고: <span th:text="${p.stock}"></span>
+            </div>
+
+            <div class="muted" th:if="${p.description != null}">
+                <span th:text="${p.description}"></span>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>

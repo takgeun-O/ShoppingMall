@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 목록</title>
+    <style>
+        .wrap {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .box {
+            border: 1px solid #ddd;
+            padding: 16px;
+        }
+
+        .muted {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 12px;
+            border: 1px solid #333;
+            background: #fff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <h1>상품 상세</h1>
+
+    <!-- flash message -->
+    <div th:if="${error}" th:text="${error}" style="color: red;"></div>
+    <div th:if="${success}" th:text="${success}" style="color: green;"></div>
+
+    <div class="box">
+        <h2 th:text="${product.name}">상품명</h2>
+
+        <div class="muted">
+            상품ID: <span th:text="${product.id}"></span>
+        </div>
+
+        <p>
+            가격: <strong><span th:text="${product.price}"></span></strong>
+        </p>
+
+        <p class="muted">
+            재고: <span th:text="${product.stock}"></span>
+        </p>
+
+        <p th:if="${product.description != null}">
+            <span th:text="${product.description}"></span>
+        </p>
+
+        <div class="actions">
+            <a class="btn" th:href="@{/products}">목록으로</a>
+
+            <a class="btn" th:href="@{/orders/new(productId=${product.id})}">주문하기</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

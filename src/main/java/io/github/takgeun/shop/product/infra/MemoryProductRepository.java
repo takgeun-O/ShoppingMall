@@ -62,9 +62,15 @@ public class MemoryProductRepository implements ProductRepository {
     @Override
     public List<Product> findAllPublicByCategoryId(Long categoryId) {
         return store.values().stream()
-                .filter(p -> p.getCategoryId().equals(categoryId))
-                .filter(p -> (p.getStatus() == ProductStatus.ON_SALE)
-                        || (p.getStatus() == ProductStatus.SOLD_OUT))
+                .filter(p -> categoryId.equals(p.getCategoryId()))
+                .filter(Product::isPublicVisible)
+                .toList();
+    }
+
+    @Override
+    public List<Product> findAllPublic() {
+        return store.values().stream()
+                .filter(Product::isPublicVisible)
                 .toList();
     }
 }

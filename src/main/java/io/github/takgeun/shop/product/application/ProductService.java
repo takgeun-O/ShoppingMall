@@ -49,8 +49,13 @@ public class ProductService {
         return product;
     }
 
+    // 사용자(공개) 전체 목록 조회
+    public List<Product> getAllPublic() {
+        return productRepository.findAllPublic();
+    }
+
     // 카테고리별 목록 조회 (숨김/종료된 상품은 안 보여주기)
-    public List<Product> getByCategoryPublic(Long categoryId) {
+    public List<Product> getAllPublicByCategoryId(Long categoryId) {
         categoryService.get(categoryId);        // 존재 검증
         return productRepository.findAllPublicByCategoryId(categoryId);
     }

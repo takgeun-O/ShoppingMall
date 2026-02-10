@@ -16,4 +16,6 @@ public interface ProductRepository {
     boolean existsByCategoryId(Long categoryId);
 
     List<Product> findAllPublicByCategoryId(Long categoryId);
+
+    List<Product> findAllPublic();
 }

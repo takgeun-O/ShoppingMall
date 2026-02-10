@@ -1,7 +1,6 @@
 package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
@@ -91,7 +90,7 @@ class ProductServiceTest {
         product3.discontinue();     // DISCONTINUE
 
         // when
-        List<Product> productList = productService.getByCategoryPublic(categoryId);
+        List<Product> productList = productService.getAllPublicByCategoryId(categoryId);
 
         // then
         assertEquals(1, productList.size());
@@ -128,7 +127,7 @@ class ProductServiceTest {
     void 카테고리별_상품_목록_조회_실패_공개용_카테고리_없음() {
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.getByCategoryPublic(999L));
+                () -> productService.getAllPublicByCategoryId(999L));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
 
