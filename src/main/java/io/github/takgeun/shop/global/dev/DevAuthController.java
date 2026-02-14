@@ -38,4 +38,10 @@ public class DevAuthController {
         session.setAttribute(SessionConst.LOGIN_MEMBER_ID, member.getId());
         return "redirect:/products";
     }
+
+    @GetMapping("/logout-test")
+    public String logoutTest(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
 }

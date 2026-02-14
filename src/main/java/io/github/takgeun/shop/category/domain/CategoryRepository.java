@@ -13,9 +13,13 @@ public interface CategoryRepository {
 
     void deleteById(Long id);
 
-    boolean existsByName(String name);
-
+    // 하위 카테고리 존재 여부 (삭제에 사용)
     boolean existsByParentId(Long parentId);
 
-    boolean existsByNameExceptId(String name, Long excludeId);
+    // 중복 체크 (case-insensitive)
+    // 서비스에서 Category.normalizeKey(name)로 키 만들고 전달하는 방식
+    boolean existsByNameKey(String nameKey);
+
+    // 수정 시 내 자신 제외 중복 체크
+    boolean existsByNameKeyExceptId(String name, Long excludeId);
 }

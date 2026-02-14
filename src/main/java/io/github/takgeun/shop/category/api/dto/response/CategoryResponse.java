@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.category.dto.response;
+package io.github.takgeun.shop.category.api.dto.response;
 
 import io.github.takgeun.shop.category.domain.Category;
 import lombok.AllArgsConstructor;

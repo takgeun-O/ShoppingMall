@@ -20,7 +20,7 @@ import java.util.List;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/products")
+@RequestMapping("api/v1/admin/products")
 public class AdminProductController {
 
     private final ProductService productService;
@@ -48,7 +48,7 @@ public class AdminProductController {
             @NotNull(message = "productId는 필수입니다.")
             @Positive(message = "productId는 양수여야 합니다.") Long productId
     ) {
-        return ResponseEntity.ok(ProductResponse.from(productService.get(productId)));
+        return ResponseEntity.ok(ProductResponse.from(productService.getAdmin(productId)));
     }
 
     // 카테고리별 상품 목록 조회(관리자) -> GET /admin/products -> 200 OK + body

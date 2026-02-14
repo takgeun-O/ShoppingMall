@@ -153,7 +153,7 @@ public class Product {
         }
 
         if(this.stock < quantity) {
-            throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다.");
+            throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다. 현재 재고 : " + this.stock);
         }
         this.stock = this.stock - quantity;
     }
@@ -163,5 +163,10 @@ public class Product {
             throw new IllegalArgumentException("증가 수량은 1 이상이어야 합니다.");
         }
         this.stock = this.stock + quantity;
+
+        // 재고가 0 -> 양수로 바뀌면 자동 ON_SALE 전환
+        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
+            this.status = ProductStatus.ON_SALE;
+        }
     }
 }

@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.category.dto.request;
+package io.github.takgeun.shop.category.api.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

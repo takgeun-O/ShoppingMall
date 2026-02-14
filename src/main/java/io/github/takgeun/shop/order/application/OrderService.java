@@ -9,6 +9,7 @@ import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
+import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.dto.response.OrderListResponse;
 import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.product.application.ProductService;
@@ -43,7 +44,7 @@ public class OrderService {
                        String shippingZipCode, String shippingAddress, String requestMessage) {
 
         log.info("memberId={}, productId={}, productStatus={}",
-                memberId, productId, productService.get(productId).getStatus());
+                memberId, productId, productService.getPublic(productId).getStatus());
 
         // 로그인 상태 검증
         validateAuthenticated(memberId);
@@ -55,7 +56,7 @@ public class OrderService {
         }
 
         // 상품 상태 검증
-        Product product = productService.get(productId);
+        Product product = productService.getPublic(productId);
         if(product.getStatus() != ProductStatus.ON_SALE) {
             throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
         }
@@ -125,15 +126,20 @@ public class OrderService {
             throw new ForbiddenException("본인 주문만 취소할 수 있습니다.");
         }
 
+        // 이미 취소된 주문
+        if(order.getStatus() == OrderStatus.CANCELED) {
+            throw new ConflictException("이미 취소된 주문입니다.");
+        }
+
         // 주문 상태 변경
         order.cancel();
 
         // 재고 원복
-        Product product = productService.get(order.getProductId());
-        product.increaseStock(order.getQuantity());
+//        Product product = productService.get(order.getProductId());   // 아 뭔가 Order도메인이 Product 도메인 건드는 게 마음에 안 들음.
+//        product.increaseStock(order.getQuantity());
+        productService.increaseStock(order.getProductId(), order.getQuantity());
 
         // 저장 반영
-        productService.save(product);
         orderRepository.save(order);
     }
 

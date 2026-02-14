@@ -2,6 +2,7 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.category.domain.CategoryStatus;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.ProductRepository;
@@ -19,8 +20,11 @@ public class CategoryService {
 
     // 카테고리 생성
     public Long create(String name, Long parentId) {
-        String normalized = (name == null) ? null : name.trim();
-        if (categoryRepository.existsByName(normalized)) {
+        String key = Category.normalizeKey(name);
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("카테고리명은 필수입니다.");
+        }
+        if (categoryRepository.existsByNameKey(key)) {
             throw new ConflictException("이미 존재하는 카테고리 이름입니다.");
         }
 
@@ -32,47 +36,69 @@ public class CategoryService {
                     .orElseThrow(() -> new NotFoundException("부모 카테고리가 존재하지 않습니다."));
         }
 
-        Category category = Category.create(normalized, parentId);
+        Category category = Category.create(name, parentId);
         Category saved = categoryRepository.save(category);
 
         return saved.getId();
     }
 
-    // 단건 조회
-    public Category get(Long id) {
+    // 단건 조회 (유저)
+    public Category getPublic(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
+
+        if (!category.isActive()) {
+            throw new NotFoundException("카테고리가 존재하지 않습니다.");
+        }
+
+        return category;
+    }
+
+    // 단건 조회 (관리자)
+    public Category getAdmin(Long id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
     }
 
-    // 목록 조회
-    public List<Category> getAll() {
+    // 목록 조회 (유저)
+    public List<Category> getAllPublic() {
+        return categoryRepository.findAll().stream()
+                .filter(Category::isActive)
+                .toList();
+    }
+
+    // 목록 조회 (관리자)
+    public List<Category> getAllAdmin() {
         return categoryRepository.findAll();
     }
 
     // 수정 (해당 메서드는 전체 수정 PUT이 아니라 부분 수정 PATCH로 구현할 것)
     // 들어온 값만 바꾸고, 안 들어온 값은 그대로 둘거니까 여기에 들어가는 모든 파라미터 타입들은 객체 타입이어야 한다.
     // 외부 입력(PATCH/DTO/Service 경계)에서는 Boolean, 도메인 내부(Entity)에서는 boolean
-    public void update(Long id, String name, Long parentId, Boolean active) {
+    public void update(Long id, String name, Long parentId, CategoryStatus status) {
 
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         // name 변경만 들어온 경우
-        if(name != null) {
-            String normalized = name.trim();
+        if (name != null) {
+            String key = Category.normalizeKey(name);
+            if(key == null || key.isBlank()) {
+                throw new IllegalArgumentException("카테고리명은 필수입니다.");
+            }
             // 내 자신 제외 중복 체크 필요
-            if(categoryRepository.existsByNameExceptId(normalized, id)) {
+            if (categoryRepository.existsByNameKeyExceptId(key, id)) {
                 throw new ConflictException("이미 존재하는 카테고리 이름입니다.");
             }
-            category.changeName(normalized);
+            category.changeName(name);  // 원본을 넘기고 도메인에서 책임지도록
         }
 
         // parentId 변경만 들어온 경우
         // 부모를 null로 바꾸는 것을 허용하지 않음. (UC-C04 참고)
-        if(parentId != null) {
+        if (parentId != null) {
 
             // 자기 자신을 부모로 지정 --> 400 Bad Request
-            if(parentId.equals(id)) {
+            if (parentId.equals(id)) {
                 throw new IllegalArgumentException("자기 자신을 부모로 지정할 수 없습니다.");
             }
             // 부모 존재 검증
@@ -87,11 +113,11 @@ public class CategoryService {
         }
 
         // active 변경만 들어온 경우
-        if(active != null) {
-            if(active) {
-                category.activate();
-            } else {
-                category.deactivate();
+        if (status != null) {
+            switch (status) {
+                case ACTIVE -> category.activate();
+                case INACTIVE -> category.deactivate();
+                default -> throw new IllegalArgumentException("지원하지 않는 status 입니다.");
             }
         }
 
@@ -106,10 +132,10 @@ public class CategoryService {
                 .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
 
         // 하위 카테고리가 존재하거나 상품이 존재할 때 삭제 막기 (409 Conflict)
-        if(categoryRepository.existsByParentId(id)) {
+        if (categoryRepository.existsByParentId(id)) {
             throw new ConflictException("하위 카테고리가 존재하여 삭제할 수 없습니다.");
         }
-        if(productRepository.existsByCategoryId(id)) {
+        if (productRepository.existsByCategoryId(id)) {
             throw new ConflictException("해당 카테고리에 상품이 존재하여 삭제할 수 없습니다.");
         }
 
@@ -118,8 +144,8 @@ public class CategoryService {
 
     private void validateNoCycle(Long categoryId, Long newParentId) {
         Long now = newParentId;
-        while(now != null) {
-            if(now.equals(categoryId)) {
+        while (now != null) {
+            if (now.equals(categoryId)) {
                 throw new ConflictException("부모 카테고리 수정으로 인해 순환 구조가 발생합니다.");
             }
             Category parent = categoryRepository.findById(now)

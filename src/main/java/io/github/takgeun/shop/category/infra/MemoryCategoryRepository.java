@@ -18,15 +18,9 @@ public class MemoryCategoryRepository implements CategoryRepository {
         if(category.getId() == null) {
             long id = ++sequence;
             category.assignId(id);
-            store.put(id, category);
-            return category;
         }
 
-        // 수정할 때 기존 id로 덮어쓰기.
-        // 수정은 Service에서 findById(id)를 활용해서 엔티티를 가져온 후
-        // 엔티티의 의미 있는 메서드로 상태를 바꾼다. (changeName, changeParent 등등)
-        // 이후 Service에서 repository.save(entity) 를 호출해서 저장한다.
-        // 우선 메모리 저장이니까 Map에 덮어쓰기.
+        // 신규, 수정 모두 덮어쓰기
         store.put(category.getId(), category);
         return category;
     }
@@ -48,33 +42,32 @@ public class MemoryCategoryRepository implements CategoryRepository {
     }
 
     @Override
-    public boolean existsByName(String name) {
-        // trim + 공백 방지 + 대소문자 무시
-        if(name == null) {
-            return false;
-        }
-
-        String normalized = name.trim().toLowerCase();
-        if(normalized.isEmpty()) {
-            return false;
-        }
-
-        return store.values().stream()
-                .anyMatch(c -> c.getName() != null && c.getName().trim().toLowerCase().equals(normalized));
-    }
-
-    @Override
     public boolean existsByParentId(Long parentId) {
+        if(parentId == null) return false;
+
         return store.values().stream()
-                .anyMatch(c -> parentId != null && parentId.equals(c.getParentId()));
+                .anyMatch(c ->  parentId.equals(c.getParentId()));
+    }
+
+    /**
+     * nameKey는 서비스에서 Category.normalizeKey(name)로 만들어서 넘겨주기.
+     * repository에서는 추가 정규화 없이 그대로 비교만
+     */
+    @Override
+    public boolean existsByNameKey(String nameKey) {
+        if(nameKey == null || nameKey.isEmpty()) return false;
+
+        return store.values().stream()
+                .anyMatch(c -> nameKey.equals(c.getNameKey()));
     }
 
     @Override
-    public boolean existsByNameExceptId(String name, Long excludeId) {
+    public boolean existsByNameKeyExceptId(String nameKey, Long excludeId) {
+        if(nameKey == null || nameKey.isEmpty()) return false;
+
         return store.values().stream()
                 .anyMatch(c -> c.getId() != null
                         && !c.getId().equals(excludeId)
-                        && c.getName() != null
-                        && c.getName().trim().equals(name.trim()));
+                        && nameKey.equals(c.getNameKey()));
     }
 }

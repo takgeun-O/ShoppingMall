@@ -1,9 +1,9 @@
 package io.github.takgeun.shop.category.api;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.dto.request.CategoryCreateRequest;
-import io.github.takgeun.shop.category.dto.request.CategoryUpdateRequest;
-import io.github.takgeun.shop.category.dto.response.CategoryCreateResponse;
+import io.github.takgeun.shop.category.api.dto.request.CategoryCreateRequest;
+import io.github.takgeun.shop.category.api.dto.request.CategoryUpdateRequest;
+import io.github.takgeun.shop.category.api.dto.response.CategoryCreateResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/categories")
+@RequestMapping("/api/v1/admin/categories")
 public class AdminCategoryController {
 
     private final CategoryService categoryService;
@@ -30,7 +30,7 @@ public class AdminCategoryController {
     // 카테고리 수정 성공 -> 204 No Content
     @PatchMapping("/{id}")
     public ResponseEntity<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryUpdateRequest request) {
-        categoryService.update(id, request.getName(), request.getParentId(), request.getActive());
+        categoryService.update(id, request.getName(), request.getParentId(), request.getStatus());
         return ResponseEntity.noContent().build();
     }
 

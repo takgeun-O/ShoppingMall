@@ -25,7 +25,7 @@ public class ProductService {
     public Long create(Long categoryId, String name, int price, int stock, String description) {
 
         // 카테고리 존재 검증 (카테고리 서비스 책임)
-        categoryService.get(categoryId);
+        categoryService.getAdmin(categoryId);
 
         Product product = Product.create(categoryId, name, price, stock, description);
         Product saved = productRepository.save(product);
@@ -34,14 +34,14 @@ public class ProductService {
     }
 
     // 단건 조회
-    public Product get(Long productId) {
+    public Product getAdmin(Long productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
     }
 
     // 사용자(공개) 조회
     public Product getPublic(Long productId) {
-        Product product = get(productId);
+        Product product = getAdmin(productId);
         if(!product.isPublicVisible()) {
             throw new NotFoundException("상품이 존재하지 않습니다.");
         }
@@ -54,14 +54,15 @@ public class ProductService {
         return productRepository.findAllPublic();
     }
 
-    // 카테고리별 목록 조회 (숨김/종료된 상품은 안 보여주기)
+    // 카테고리별 목록 조회 (유저)
     public List<Product> getAllPublicByCategoryId(Long categoryId) {
-        categoryService.get(categoryId);        // 존재 검증
+        categoryService.getPublic(categoryId);        // 존재 검증
         return productRepository.findAllPublicByCategoryId(categoryId);
     }
+
     // 카테고리별 목록 조회 (관리자는 전체 보여주기)
     public List<Product> getByCategoryAdmin(Long categoryId) {
-        categoryService.get(categoryId);
+        categoryService.getAdmin(categoryId);
         return productRepository.findAllByCategoryId(categoryId);
     }
 
@@ -81,7 +82,7 @@ public class ProductService {
             // 카테고리 존재 검증은 위에처럼 하기 보다는 카테고리 서비스 책임으로 두는 게 좋다. (단일 출처)
             // 예를 들어 비활성화되거나 삭제된 카테고리 같은 것들을 여러 서비스에서 각자 repo로 검사하기 시작하면
             // 코드 중복이 발생하고 누락이 발생할 가능성이 있기 때문임.
-            categoryService.get(categoryId);
+            categoryService.getAdmin(categoryId);
             product.changeCategory(categoryId);
         }
         // 상품명 변경 시
@@ -129,5 +130,20 @@ public class ProductService {
             throw new IllegalArgumentException("productId는 필수입니다.");
         }
         return productRepository.save(product);
+    }
+
+    public void increaseStock(Long productId, int quantity) {
+        if(productId == null) {
+            throw new IllegalArgumentException("productId는 필수입니다.");
+        }
+        if(quantity <= 0) {
+            throw new IllegalArgumentException("증가 수량은 1 이상이어야 합니다.");
+        }
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
+
+        product.increaseStock(quantity);    // 도메인 책임
+        productRepository.save(product);
     }
 }

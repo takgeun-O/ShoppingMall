@@ -1,5 +1,8 @@
 package io.github.takgeun.shop.order.api;
 
+import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.order.domain.Order;
@@ -41,7 +44,7 @@ public class OrderViewController {
             @RequestParam @NotNull @Positive Long productId,
             Model model
     ) {
-        Product product = productService.get(productId);
+        Product product = productService.getPublic(productId);
 
         // 폼 초깃값
         OrderCreateRequest form = new OrderCreateRequest(productId);
@@ -71,19 +74,16 @@ public class OrderViewController {
                 form.getProductId(), form.getQuantity(), form.getRecipientName(), form.getRecipientPhone(),
                 form.getShippingZipCode(), form.getShippingAddress(), form.getRequestMessage());
 
-        Product product = productService.get(form.getProductId());
-        log.info("productStatus={}", product.getStatus());
-        model.addAttribute("product", product);
-
-        if(bindingResult.hasErrors()) {
+        // 폼 검증 실패 시 -> 주문서로 forward (입력값 유지 + 에러 표시)
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("product", productService.getPublic(form.getProductId()));
             return "orders/new";
         }
 
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        log.info("memberId={}", memberId);
 
         // 로그인 여부 확인
-        if(memberId == null) {
+        if (memberId == null) {
             ra.addFlashAttribute("error", "로그인이 필요합니다.");
             ra.addAttribute("productId", form.getProductId());
             return "redirect:/orders/new";      // 로그인 뷰가 없으니 임시로 주문페이지로 돌아오도록 하기
@@ -91,22 +91,27 @@ public class OrderViewController {
         }
 
         // 서비스 호출
-        Long orderId = orderService.create(
-                memberId, form.getProductId(), form.getQuantity(), form.getRecipientName(),
-                form.getRecipientPhone(), form.getShippingZipCode(), form.getShippingAddress(),
-                form.getRequestMessage()
-        );
-
-        if(orderId == null || orderId <= 0) {
-            ra.addFlashAttribute("error", "주문 생성에 실패했습니다.");
-            return "redirect:/orders";
+        try {
+            Long orderId = orderService.create(
+                    memberId,
+                    form.getProductId(),
+                    form.getQuantity(),
+                    form.getRecipientName(),
+                    form.getRecipientPhone(),
+                    form.getShippingZipCode(),
+                    form.getShippingAddress(),
+                    form.getRequestMessage()
+            );
+            ra.addFlashAttribute("success", "주문이 완료되었습니다.");
+            return "redirect:/orders/" + orderId;
+        } catch (ConflictException e) {
+            // 재고 부족 비즈니스 충돌 -> quantity 필드에 에러 붙이고 주문서로 forward
+            bindingResult.rejectValue(
+                    "quantity", "order.quantity.insufficientStock", e.getMessage()
+            );
+            model.addAttribute("product", productService.getPublic(form.getProductId()));
+            return "orders/new";
         }
-
-        // 성공메시지
-        ra.addFlashAttribute("success", "주문이 완료되었습니다.");
-
-        // PRG redirect : 내 주문 상세로 리다이렉트
-        return "redirect:/orders/" + orderId;
     }
 
     /**
@@ -114,11 +119,16 @@ public class OrderViewController {
      * GET /orders
      */
     @GetMapping
-    public String myOrders(HttpSession session, Model model) {
+    public String myOrders(HttpSession session, Model model, RedirectAttributes ra) {
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
+        // 로그인 여부 체크
+        if(memberId == null) {
+            ra.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/";    // 로그인 뷰 만들면 로그인 뷰로 바꾸기
+            // return "redirect:/login";
+        }
         List<Order> orders = orderService.getMyOrders(memberId);
-
         model.addAttribute("orders", orders);
 
         return "orders/list";
@@ -132,16 +142,28 @@ public class OrderViewController {
     public String detail(
             @PathVariable @NotNull @Positive Long orderId,
             HttpSession session,
-            Model model
+            Model model,
+            RedirectAttributes ra
     ) {
 
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
-        OrderResponse order = orderService.getDetail(memberId, orderId);
+        // 로그인 체크
+        if (memberId == null) {
+            ra.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/orders";
+//            return "redirect:/login";
+        }
 
-        model.addAttribute("order", order);
-
-        return "orders/detail";
+        try {
+            OrderResponse order = orderService.getDetail(memberId, orderId);
+            model.addAttribute("order", order);
+            return "orders/detail";
+        } catch (NotFoundException | ForbiddenException e) {
+            // 존재하지 않거나 본인 주문이 아닐 경우 -> 목록으로 이동
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/orders";
+        }
     }
 
     /**
@@ -156,10 +178,25 @@ public class OrderViewController {
     ) {
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
-        orderService.cancel(memberId, orderId);
+        // 로그인 체크
+        if (memberId == null) {
+            ra.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/orders";
+//            return "redirect:/login";
+        }
 
-        ra.addFlashAttribute("success", "주문이 취소되었습니다.");
-
-        return "redirect:/orders/" + orderId;
+        try {
+            orderService.cancel(memberId, orderId);
+            ra.addFlashAttribute("success", "주문이 취소되었습니다.");
+            return "redirect:/orders/" + orderId;       // 주문 취소 후 주문 상세로
+        } catch (NotFoundException| ForbiddenException e) {
+            // 존재하지 않거나 본인 주문이 아닐 경우 -> 목록으로 이동
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/orders";
+        } catch (ConflictException e) {
+            // 이미 취소된 주문 or 취소 불가 상태 -> 주문 상세로 이동
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/orders/" + orderId;
+        }
     }
 }
