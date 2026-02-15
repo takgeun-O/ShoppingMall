@@ -2,7 +2,6 @@ package io.github.takgeun.shop.product.infra;
 
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
-import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -44,25 +43,20 @@ public class MemoryProductRepository implements ProductRepository {
     @Override
     public List<Product> findAllByCategoryId(Long categoryId) {
         return store.values().stream()
-                .filter(p -> p.getCategoryId().equals(categoryId))
-                .collect(Collectors.toList());
-        // [컬렉션] → stream() → 중간연산(filter) → 최종연산(collect)
-        // collect :스트림을 다시 컬렉션으로 모아라.
-        // Stream<Product> 필터링된 상태를 collect 사용해서 List<Product>로 수거(collect)
-        // Collectors.toList() : 비어 있는 List 생성 -> 스트림의 각 요소(Product)를 List에 하나씩 add -> 최종 List 반환
-        // stream은 그 자체로 반환할 수 없기 때문에 반드시 최종 연산으로 끝내서 반환해야 함.
+                .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
+                .toList();
     }
 
     @Override
     public boolean existsByCategoryId(Long categoryId) {
         return store.values().stream()
-                .anyMatch(p -> categoryId != null && categoryId.equals(p.getCategoryId()));
+                .anyMatch(p -> Objects.equals(p.getCategoryId(), categoryId));
     }
 
     @Override
     public List<Product> findAllPublicByCategoryId(Long categoryId) {
         return store.values().stream()
-                .filter(p -> categoryId.equals(p.getCategoryId()))
+                .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
                 .filter(Product::isPublicVisible)
                 .toList();
     }
@@ -71,6 +65,19 @@ public class MemoryProductRepository implements ProductRepository {
     public List<Product> findAllPublic() {
         return store.values().stream()
                 .filter(Product::isPublicVisible)
+                .toList();
+    }
+
+    @Override
+    public List<Product> findAllAdmin() {
+        return store.values().stream()
+                .toList();
+    }
+
+    @Override
+    public List<Product> findAllAdminByCategoryId(Long categoryId) {
+        return store.values().stream()
+                .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
                 .toList();
     }
 }

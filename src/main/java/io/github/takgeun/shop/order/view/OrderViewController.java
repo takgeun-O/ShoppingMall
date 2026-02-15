@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.order.api;
+package io.github.takgeun.shop.order.view;
 
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -53,7 +52,7 @@ public class OrderViewController {
         // 화면 표시용 상품 정보
         model.addAttribute("product", product);
 
-        return "orders/new";
+        return "public/orders/new";
     }
 
     /**
@@ -77,7 +76,7 @@ public class OrderViewController {
         // 폼 검증 실패 시 -> 주문서로 forward (입력값 유지 + 에러 표시)
         if (bindingResult.hasErrors()) {
             model.addAttribute("product", productService.getPublic(form.getProductId()));
-            return "orders/new";
+            return "public/orders/new";
         }
 
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
@@ -110,7 +109,7 @@ public class OrderViewController {
                     "quantity", "order.quantity.insufficientStock", e.getMessage()
             );
             model.addAttribute("product", productService.getPublic(form.getProductId()));
-            return "orders/new";
+            return "public/orders/new";
         }
     }
 
@@ -131,7 +130,7 @@ public class OrderViewController {
         List<Order> orders = orderService.getMyOrders(memberId);
         model.addAttribute("orders", orders);
 
-        return "orders/list";
+        return "public/orders/list";
     }
 
     /**
@@ -158,7 +157,7 @@ public class OrderViewController {
         try {
             OrderResponse order = orderService.getDetail(memberId, orderId);
             model.addAttribute("order", order);
-            return "orders/detail";
+            return "public/orders/detail";
         } catch (NotFoundException | ForbiddenException e) {
             // 존재하지 않거나 본인 주문이 아닐 경우 -> 목록으로 이동
             ra.addFlashAttribute("error", e.getMessage());

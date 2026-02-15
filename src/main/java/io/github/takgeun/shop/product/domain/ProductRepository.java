@@ -18,4 +18,8 @@ public interface ProductRepository {
     List<Product> findAllPublicByCategoryId(Long categoryId);
 
     List<Product> findAllPublic();
+
+    List<Product> findAllAdminByCategoryId(Long categoryId);
+
+    List<Product> findAllAdmin();
 }

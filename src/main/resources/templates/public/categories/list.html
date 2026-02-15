@@ -1,0 +1,21 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <title>카테고리 목록</title>
+</head>
+<body>
+<h1>카테고리</h1>
+
+<div th:if="${success}" th:text="${success}" style="padding:8px; border:1px solid #ddd;"></div>
+
+<ul>
+    <li th:each="c : ${categories}">
+        <span th:text="${c.name}">카테고리명</span>
+        <!-- 카테고리별 상품 페이지가 있다면 아래 링크로 연결 -->
+        <!-- <a th:href="@{/products(categoryId=${c.id})}">상품 보기</a> -->
+    </li>
+</ul>
+
+</body>
+</html>

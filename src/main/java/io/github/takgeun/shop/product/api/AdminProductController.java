@@ -58,7 +58,7 @@ public class AdminProductController {
             @NotNull(message = "categoryId는 필수입니다.")
             @Positive(message = "categoryId는 양수여야 합니다.") Long categoryId
     ) {
-        List<ProductResponse> result = productService.getByCategoryAdmin(categoryId).stream()
+        List<ProductResponse> result = productService.getAllAdminByCategoryId(categoryId).stream()
                 .map(ProductResponse::from)
                 .toList();
         return ResponseEntity.ok(result);

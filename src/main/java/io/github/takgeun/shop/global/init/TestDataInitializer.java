@@ -2,7 +2,10 @@ package io.github.takgeun.shop.global.init;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.member.application.MemberService;
+import io.github.takgeun.shop.member.domain.Member;
+import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -22,7 +25,10 @@ public class TestDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
 
         // 회원 생성
-        memberService.signup("test1@test.com", "pw12341234!", "테스트", "010-1111-2222");
+        Long userId1 = memberService.signup("test1@test.com", "pw12341234!", "테스트", "010-1111-2222");
+
+        Long adminId1 = memberService.signup("testAdmin1@test.com", "pw12341234!", "테스트관리자", "010-1111-3333");
+        memberService.changeRole(adminId1, MemberRole.ADMIN);
 
         // 카테고리
         Long electronics = categoryService.create("전자", null);
@@ -37,5 +43,8 @@ public class TestDataInitializer implements ApplicationRunner {
 
         productService.create(phone, "아이폰 15", 1_500_000, 0, "품절 상태");
         productService.create(phone, "갤럭시 S24", 1_400_000, 7, "삼성 최신폰");
+        Long readyProductId = productService.create(phone, "판매준비중", 1_500_000, 10, "판매 준비");
+        productService.changeStatus(readyProductId, ProductStatus.READY);
+//        System.out.println("READY id= " + readyProductId + ", status= " + productService.getAdmin(readyProductId).getStatus());
     }
 }

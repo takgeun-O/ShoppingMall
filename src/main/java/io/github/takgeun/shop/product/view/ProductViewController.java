@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.product.api;
+package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.domain.Category;
@@ -19,8 +19,8 @@ import java.util.List;
 @Validated
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/admin/products")
-public class AdminProductViewController {
+@RequestMapping("/products")
+public class ProductViewController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
@@ -36,13 +36,13 @@ public class AdminProductViewController {
     ) {
 
         // 카테고리 목록 (필터 UI용)
-        List<Category> categories = categoryService.getAllAdmin();
+        List<Category> categories = categoryService.getAllPublic();
         model.addAttribute("categories", categories);
 
         // 선택된 카테고리 표시용
         model.addAttribute("selectedCategoryId", categoryId);
 
-        // 상품 목록
+        // 상품 목록(공개/판매중만)
         List<Product> products;
         if(categoryId == null) {
             products = productService.getAllPublic();
@@ -51,7 +51,7 @@ public class AdminProductViewController {
         }
         model.addAttribute("products", products);
 
-        return "products/list";
+        return "public/products/list";
     }
 
     /**
@@ -61,9 +61,9 @@ public class AdminProductViewController {
     @GetMapping("/{productId}")
     public String detail(@PathVariable @Positive Long productId, Model model) {
 
-        Product product = productService.getAdmin(productId);
+        Product product = productService.getPublic(productId);
         model.addAttribute("product", product);
 
-        return "products/detail";
+        return "public/products/detail";
     }
 }

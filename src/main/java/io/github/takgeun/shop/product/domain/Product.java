@@ -114,10 +114,7 @@ public class Product {
     }
 
     public boolean isPublicVisible() {
-        if(this.status == ProductStatus.HIDDEN || this.status == ProductStatus.DISCONTINUED) {
-            return false;
-        }
-        return true;
+        return this.status == ProductStatus.ON_SALE || this.status == ProductStatus.SOLD_OUT;
     }
 
     public void onSale() {
@@ -129,6 +126,10 @@ public class Product {
         }
         if(this.status == ProductStatus.ON_SALE) return;        // 멱등 처리
         this.status = ProductStatus.ON_SALE;
+    }
+
+    public void ready() {
+        this.status = ProductStatus.READY;
     }
 
     public void hide() {

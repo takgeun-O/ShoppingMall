@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>주문서</title>
+    <style>
+        .wrap { max-width: 720px; margin: 0 auto; }
+        .box { border: 1px solid #ddd; padding: 16px; }
+        .row { margin-bottom: 12px; }
+        .label { display: block; font-weight: bold; margin-bottom: 6px; }
+        .input { width: 100%; padding: 10px; box-sizing: border-box; }
+        .error { color: red; font-size: 13px; }
+        .muted { color: #666; font-size: 14px; }
+        .actions { margin-top: 16px; display: flex; gap: 8px; }
+        .btn { padding: 10px 12px; border: 1px solid #333; background: #fff; cursor: pointer; text-decoration: none; }
+        .summary { background: #fafafa; padding: 12px; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <h1>주문서</h1>
+
+    <!-- flash message -->
+    <div th:if="${error}" th:text="${error}" style="color: red;"></div>
+    <div th:if="${success}" th:text="${success}" style="color: green;"></div>
+
+    <!-- 상품 요약 -->
+    <div class="summary">
+        <div><strong th:text="${product.name}">상품명</strong></div>
+        <div class="muted">
+            가격: <span th:text="${product.price}"></span>원 /
+            재고: <span th:text="${product.stock}"></span>
+        </div>
+    </div>
+
+    <div class="box">
+        <form th:action="@{/orders}" th:object="${form}" method="post" novalidate>
+
+            <!-- productId는 숨김 -->
+            <input type="hidden" th:field="*{productId}"/>
+
+            <div class="row">
+                <label class="label">수량</label>
+                <input class="input" type="number" th:field="*{quantity}"/>
+                <div class="error" th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"></div>
+            </div>
+
+            <hr/>
+
+            <div class="row">
+                <label class="label">수령인 이름</label>
+                <input class="input" type="text" th:field="*{recipientName}" placeholder="이름"/>
+                <div class="error" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}"></div>
+            </div>
+
+            <div class="row">
+                <label class="label">수령인 전화번호</label>
+                <input class="input" type="text" th:field="*{recipientPhone}" placeholder="010-1234-5678"/>
+                <div class="error" th:if="${#fields.hasErrors('recipientPhone')}" th:errors="*{recipientPhone}"></div>
+            </div>
+
+            <div class="row">
+                <label class="label">우편번호</label>
+                <input class="input" type="text" th:field="*{shippingZipCode}" placeholder="12345"/>
+                <div class="error" th:if="${#fields.hasErrors('shippingZipCode')}" th:errors="*{shippingZipCode}"></div>
+            </div>
+
+            <div class="row">
+                <label class="label">주소</label>
+                <input class="input" type="text" th:field="*{shippingAddress}" placeholder="서울시 ..."/>
+                <div class="error" th:if="${#fields.hasErrors('shippingAddress')}" th:errors="*{shippingAddress}"></div>
+            </div>
+
+            <div class="row">
+                <label class="label">요청 메시지</label>
+                <input class="input" type="text" th:field="*{requestMessage}" placeholder="문 앞에 두세요"/>
+                <div class="error" th:if="${#fields.hasErrors('requestMessage')}" th:errors="*{requestMessage}"></div>
+            </div>
+
+            <div class="actions">
+                <a class="btn" th:href="@{/products/{id}(id=${product.id})}">상품으로</a>
+                <button class="btn" type="submit">주문하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

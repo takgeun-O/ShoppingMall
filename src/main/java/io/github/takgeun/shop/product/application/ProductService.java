@@ -54,6 +54,11 @@ public class ProductService {
         return productRepository.findAllPublic();
     }
 
+    // 관리자 전체 목록 조회
+    public List<Product> getAllAdmin() {
+        return productRepository.findAllAdmin();
+    }
+
     // 카테고리별 목록 조회 (유저)
     public List<Product> getAllPublicByCategoryId(Long categoryId) {
         categoryService.getPublic(categoryId);        // 존재 검증
@@ -61,9 +66,9 @@ public class ProductService {
     }
 
     // 카테고리별 목록 조회 (관리자는 전체 보여주기)
-    public List<Product> getByCategoryAdmin(Long categoryId) {
+    public List<Product> getAllAdminByCategoryId(Long categoryId) {
         categoryService.getAdmin(categoryId);
-        return productRepository.findAllByCategoryId(categoryId);
+        return productRepository.findAllAdminByCategoryId(categoryId);
     }
 
     // 상품 수정 (부분 수정)
@@ -116,6 +121,7 @@ public class ProductService {
         }
 
         switch (status) {
+            case READY -> product.ready();
             case ON_SALE -> product.onSale();
             case HIDDEN -> product.hide();
             case DISCONTINUED -> product.discontinue();
