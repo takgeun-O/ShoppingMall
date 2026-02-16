@@ -27,7 +27,7 @@ public class AdminProductViewController {
 
     /**
      * 상품 목록 페이지
-     * GET /products?categoryId={categoryId}
+     * GET /admin/products?categoryId={categoryId}
      */
     @GetMapping
     public String list(

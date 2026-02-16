@@ -8,16 +8,11 @@ package io.github.takgeun.shop.member.api;
 import io.github.takgeun.shop.global.error.UnauthorizedException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;
-import io.github.takgeun.shop.member.dto.request.MemberSignupRequest;
 import io.github.takgeun.shop.member.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.dto.response.MemberResponse;
-import io.github.takgeun.shop.member.dto.response.MemberSignupResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,24 +20,10 @@ import org.springframework.web.bind.annotation.*;
 @Validated              // @RequestParam 이나 @PathVariable 검증할 때 필요
 @RestController                     // HTTP 요청을 처리하는데 반환값을 View가 아니라 JSON(Response Body) 로 보내고자 하는 의도
 @RequiredArgsConstructor            // 필수 의존성만 받는 생성자를 자동으로 만들어주는 어노테이션
-@RequestMapping("/members")
+@RequestMapping("/api/v1/members")
 public class MemberController {
 
     private final MemberService memberService;
-
-    // 회원가입
-    @PostMapping
-    public ResponseEntity<MemberSignupResponse> signup(@Valid @RequestBody MemberSignupRequest request) {
-        Long id = memberService.signup(
-                request.getEmail(),
-                request.getPassword(),
-                request.getName(),
-                request.getPhone()
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new MemberSignupResponse(id));
-    }
 
     // 내 정보 조회 (세션 기반)
     @GetMapping("/me")
