@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.category.api.dto.response;
 
 import io.github.takgeun.shop.category.domain.Category;
+import io.github.takgeun.shop.category.domain.CategoryStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,9 +9,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public class CategoryResponse {
     private Long id;
-    private String name;
+    private String name;        // 화면 표시용 : 앞뒤 공백 trim만 사용
+    private String nameKey;     // 중복/검색용 키 : case-insensitive 비교용, trim + lowerCase (DB 사용 시 이 컬럼에 UNIQUE 걸기)
     private Long parentId;
-    private boolean active;
+    private CategoryStatus status;
 
     // 도메인 객체(Category)를 응답 DTO(CategoryResponse)로 변환할 때 쓰는 전용 메서드
     // 컨트롤러나 서비스 등 다른 곳에서 아래 코드가 반복되는 걸 방지하기 위함.
@@ -19,8 +21,9 @@ public class CategoryResponse {
         return new CategoryResponse(
                 category.getId(),
                 category.getName(),
+                category.getNameKey(),
                 category.getParentId(),
-                category.isActive()
+                category.getStatus()
         );
     }
 }

@@ -9,7 +9,9 @@ public interface CategoryRepository {
 
     Optional<Category> findById(Long id);
 
-    List<Category> findAll();
+    List<Category> findAllAdmin();
+
+    List<Category> findAllPublic();
 
     void deleteById(Long id);
 

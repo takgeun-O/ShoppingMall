@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.category.application;
 
+import io.github.takgeun.shop.category.api.dto.response.CategoryResponse;
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.domain.CategoryStatus;
@@ -17,6 +18,23 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+
+    // 헤더 상단 대표 카테고리
+    public List<CategoryResponse> getTopCategories() {
+        // 1뎁스(parentId==null) 중에서 상단에 노출할 것만
+        return categoryRepository.findAllPublic().stream()
+                .filter(c -> c.getParentId() == null)
+                .limit(8)       // 상단에 몇 개만 할건지
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
+    // 전체 카테고리(트리용)
+    public List<CategoryResponse> getAllPublicCategories() {
+        return categoryRepository.findAllPublic().stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
 
     // 카테고리 생성
     public Long create(String name, Long parentId) {
@@ -62,14 +80,14 @@ public class CategoryService {
 
     // 목록 조회 (유저)
     public List<Category> getAllPublic() {
-        return categoryRepository.findAll().stream()
+        return categoryRepository.findAllAdmin().stream()
                 .filter(Category::isActive)
                 .toList();
     }
 
     // 목록 조회 (관리자)
     public List<Category> getAllAdmin() {
-        return categoryRepository.findAll();
+        return categoryRepository.findAllAdmin();
     }
 
     // 수정 (해당 메서드는 전체 수정 PUT이 아니라 부분 수정 PATCH로 구현할 것)

@@ -101,5 +101,7 @@ public class Category {
         this.parentId = parentId;
     }
 
-
+    public boolean isPublicVisible() {
+        return this.status == CategoryStatus.ACTIVE;
+    }
 }

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 @Repository
 public class MemoryProductRepository implements ProductRepository {
 
-    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAll 안정적)
+    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAllAdmin 안정적)
     private final Map<Long, Product> store = new LinkedHashMap<>();
     private long sequence = 0L;     // 동시성 문제는 추후 해결할 것.
 

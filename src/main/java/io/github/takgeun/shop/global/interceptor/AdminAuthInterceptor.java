@@ -21,6 +21,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
                              Object handler) throws Exception {
+
         HttpSession session = request.getSession(false);
 
         // 로그인 여부 체크
