@@ -32,8 +32,16 @@ public class TestDataInitializer implements ApplicationRunner {
 
         // 카테고리
         Long electronics = categoryService.create("전자", null);
+        Long furniture = categoryService.create("가구", null);
+        Long clothing = categoryService.create("의류", null);
         Long computer = categoryService.create("컴퓨터", electronics);
         Long phone = categoryService.create("휴대폰", electronics);
+        Long seating = categoryService.create("의자", furniture);
+        Long Bed = categoryService.create("침대", furniture);
+        Long storage = categoryService.create("수납가구", furniture);
+        Long tops = categoryService.create("상의", clothing);
+        Long bottoms = categoryService.create("하의", clothing);
+        Long outerwear = categoryService.create("아우터", clothing);
 
         // 상품
         productService.create(electronics, "전자제품 랜덤", 10000, 10, "전자 카테고리 테스트 상품");

@@ -1,7 +1,8 @@
 package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.domain.Category;
+import io.github.takgeun.shop.category.view.CategorySidebarService;
+import io.github.takgeun.shop.category.view.dto.CategoryNode;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import jakarta.validation.constraints.Positive;
@@ -24,6 +25,7 @@ public class ProductViewController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
+    private final CategorySidebarService categorySidebarService;
 
     /**
      * 상품 목록 페이지
@@ -36,11 +38,14 @@ public class ProductViewController {
     ) {
 
         // 카테고리 목록 (필터 UI용)
-        List<Category> categories = categoryService.getAllPublic();
-        model.addAttribute("categories", categories);
+//        List<Category> categories = categoryService.getAllPublic();
+//        model.addAttribute("categories", categories);
 
         // 선택된 카테고리 표시용
         model.addAttribute("selectedCategoryId", categoryId);
+
+        List<CategoryNode> sidebarRoots = categorySidebarService.buildSidebarTrees(categoryId);
+        model.addAttribute("sidebarRoots", sidebarRoots);
 
         // 상품 목록(공개/판매중만)
         List<Product> products;
