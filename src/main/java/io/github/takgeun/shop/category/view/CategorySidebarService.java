@@ -29,16 +29,16 @@ public class CategorySidebarService {
 
         if (all == null || all.isEmpty()) return List.of();
 
-        // id 기준 Map 변환
-        // id -> CategoryResponse 형태의 Map으로 변환하기
-        Map<Long, CategoryResponse> byId = all.stream()
-                .collect(Collectors.toMap(CategoryResponse::getId, c -> c));
+//        // id 기준 Map 변환
+//        // id -> CategoryResponse 형태의 Map으로 변환하기
+//        Map<Long, CategoryResponse> byId = all.stream()
+//                .collect(Collectors.toMap(CategoryResponse::getId, c -> c));
 
         // parentId -> children
         Map<Long, List<CategoryResponse>> childrenByParent = new HashMap<>();
         for (CategoryResponse c : all) {
             childrenByParent
-                    .computeIfAbsent(c.getParentId(), k-> new ArrayList<>())
+                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
                     .add(c);
         }
 
@@ -46,26 +46,30 @@ public class CategorySidebarService {
         childrenByParent.values().forEach(list ->
                 list.sort(Comparator.comparing(CategoryResponse::getName)));
 
-        // 선택한 카테고리가 없으면 전체 루트 모두 반환하기
-        if(selectedCategoryId == null) {
-            List<CategoryResponse> roots = childrenByParent.getOrDefault(null, List.of());
-            return roots.stream()
-                    .map(root -> buildNode(root, childrenByParent))
-                    .toList();
-        }
+        // 선택 카테고리와 무관하게 전체 루트 항상 반환
+        List<CategoryResponse> roots = childrenByParent.getOrDefault(null, List.of());
+        return roots.stream()
+                .map(root -> buildNode(root, childrenByParent))
+                .toList();
+    }
 
-        // 선택한 카테고리가 있으면 선택 카테고리의 루트를 찾아 그 루트만 반환하기
-        CategoryResponse selected = byId.get(selectedCategoryId);
-        if(selected == null) {
-            // 선택한 카테고리가 없으면 fallback: 전체 루트
-            List<CategoryResponse> roots = childrenByParent.getOrDefault(null, List.of());
-            return roots.stream()
-                    .map(root -> buildNode(root, childrenByParent))
-                    .toList();
-        }
+    // DFS로 선택 카테고리 + 모든 하위 카테고리를 모으기
+    public Set<Long> buildSubtreeIds(Long selectedCategoryId, Map<Long, List<CategoryResponse>> childrenByParent) {
+        if(selectedCategoryId == null) return Set.of();
 
-        CategoryResponse root = findRoot(selected, byId);
-        return List.of(buildNode(root, childrenByParent));
+        Set<Long> ids = new LinkedHashSet<>();
+        Deque<Long> stack = new ArrayDeque<>();
+        stack.push(selectedCategoryId);
+
+        while(!stack.isEmpty()) {
+            Long id = stack.pop();
+            if(!ids.add(id)) continue;  // 중복 방지
+
+            for (CategoryResponse child : childrenByParent.getOrDefault(id, List.of())) {
+                stack.push(child.getId());
+            }
+        }
+        return ids;
     }
 
     // (현재 처리 중인 카테고리, parentId -> 자식 목록 Map)
@@ -80,11 +84,50 @@ public class CategorySidebarService {
 
     private CategoryResponse findRoot(CategoryResponse c, Map<Long, CategoryResponse> byId) {
         CategoryResponse cur = c;
-        while(cur.getParentId() != null) {
+        while (cur.getParentId() != null) {
             CategoryResponse parent = byId.get(cur.getParentId());
-            if(parent == null) break;
+            if (parent == null) break;
             cur = parent;
         }
         return cur;
+    }
+
+    // 선택된 id의 조상들을 open으로 만든다.
+    public Set<Long> buildOpenIds(Long selectedCategoryId, List<CategoryResponse> all) {
+        if (selectedCategoryId == null) return Set.of();        // 정책 : 선택 없으면 모두 접기
+        if (all == null || all.isEmpty()) return Set.of();
+
+        Map<Long, CategoryResponse> byId = all.stream()
+                .collect(Collectors.toMap(CategoryResponse::getId, c -> c));
+
+        Set<Long> open = new HashSet<>();
+        CategoryResponse cur = byId.get(selectedCategoryId);
+        while (cur != null) {
+            open.add(cur.getId());      // 자기 자신 open
+            Long pid = cur.getParentId();
+            if (pid == null) break;     // 루트 도달
+            cur = byId.get(pid);
+        }
+        return open;
+    }
+
+    // 트리 렌더링용 : parentId -> children 목록 맵
+    // categoryTree.html에서 사용 예정
+    public Map<Long, List<CategoryResponse>> groupByParent(List<CategoryResponse> all) {
+        if(all == null || all.isEmpty()) return Map.of();
+
+        Map<Long, List<CategoryResponse>> childrenByParent = new LinkedHashMap<>();
+        for (CategoryResponse c : all) {
+            Long parentId = c.getParentId();        // null 이면 루트
+            childrenByParent.computeIfAbsent(parentId, k -> new ArrayList<>())
+                    .add(c);
+        }
+
+        List<CategoryResponse> roots = childrenByParent.get(null);
+        if(roots != null) {
+            roots.sort(Comparator.comparing(CategoryResponse::getName));
+        }
+
+        return childrenByParent;
     }
 }

@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.domain;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface ProductRepository {
 
@@ -16,6 +17,10 @@ public interface ProductRepository {
     boolean existsByCategoryId(Long categoryId);
 
     List<Product> findAllPublicByCategoryId(Long categoryId);
+
+    List<Product> findAllPublicByCategoryIds(Set<Long> categoryIds);
+
+    List<Product> findAllAdminByCategoryIds(Set<Long> categoryIds);
 
     List<Product> findAllPublic();
 

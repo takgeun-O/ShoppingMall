@@ -88,6 +88,7 @@ public class AuthViewController {
             HttpSession session = request.getSession(true); // 세션이 있으면 그 세션을 반환하고 없으면 새로 만들어서 반환
             session.setAttribute(SessionConst.LOGIN_MEMBER_ID, memberId);
             session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());
+            session.setAttribute(SessionConst.LOGIN_MEMBER_NAME, member.getName());
 
             ra.addFlashAttribute("success", "로그인되었습니다.");
 

@@ -1,12 +1,17 @@
 package io.github.takgeun.shop.product.view;
 
+import io.github.takgeun.shop.category.api.dto.response.CategoryResponse;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.view.CategorySidebarService;
 import io.github.takgeun.shop.category.view.dto.CategoryNode;
+import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
@@ -16,7 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+@Slf4j
 @Validated
 @Controller
 @RequiredArgsConstructor
@@ -34,27 +42,48 @@ public class ProductViewController {
     @GetMapping
     public String list(
             @RequestParam(required = false) @Positive Long categoryId,
-            Model model
+            Model model,
+            HttpSession session
     ) {
 
-        // 카테고리 목록 (필터 UI용)
-//        List<Category> categories = categoryService.getAllPublic();
-//        model.addAttribute("categories", categories);
+        boolean admin = isAdmin(session);
 
-        // 선택된 카테고리 표시용
+        // 카테고리 목록은 권한에 따라
+        List<CategoryResponse> categories = admin
+                ? categoryService.getAllAdminCategories()
+                : categoryService.getAllPublicCategories();
+
+        // 트리 렌더링 데이터
+        Map<Long, List<CategoryResponse>> childrenByParent = categorySidebarService.groupByParent(categories);
+        Set<Long> openIds = categorySidebarService.buildOpenIds(categoryId, categories);
+
+        // 상품 조회 (예: 카테고리 필터)
+        Set<Long> categoryIdsForProducts = (categoryId == null)
+                ? null
+                : categorySidebarService.buildSubtreeIds(categoryId, childrenByParent);
+
+        // 상품조회도 권한에 따라
+        List<Product> products = (categoryId == null)
+                ? (admin ? productService.getAllAdmin() : productService.getAllPublic())
+                : (admin ? productService.getAllAdminByCategoryIds(categoryIdsForProducts)
+                         : productService.getAllPublicByCategoryIds(categoryIdsForProducts));
+
+        model.addAttribute("products", products);
+        model.addAttribute("selectedCategoryName",
+                categories.stream()
+                        .filter(c -> categoryId != null && categoryId.equals(c.getId()))
+                        .map(CategoryResponse::getName)
+                        .findFirst()
+                        .orElse(null)
+        );
+
         model.addAttribute("selectedCategoryId", categoryId);
 
-        List<CategoryNode> sidebarRoots = categorySidebarService.buildSidebarTrees(categoryId);
-        model.addAttribute("sidebarRoots", sidebarRoots);
-
-        // 상품 목록(공개/판매중만)
-        List<Product> products;
-        if(categoryId == null) {
-            products = productService.getAllPublic();
-        } else {
-            products = productService.getAllPublicByCategoryId(categoryId);
-        }
-        model.addAttribute("products", products);
+        // sidebar model
+        model.addAttribute("categories", categories);
+        model.addAttribute("childrenByParent", childrenByParent);
+        model.addAttribute("openIds", openIds);
+        model.addAttribute("treeMode", admin ? "admin" : "public");   // 템플릿 분기용
 
         return "public/products/list";
     }
@@ -64,11 +93,22 @@ public class ProductViewController {
      * GET /products/{productId}
      */
     @GetMapping("/{productId}")
-    public String detail(@PathVariable @Positive Long productId, Model model) {
+    public String detail(@PathVariable @Positive Long productId, Model model, HttpSession session) {
 
-        Product product = productService.getPublic(productId);
+        boolean admin = isAdmin(session);
+
+        Product product = admin
+                ? productService.getAdmin(productId)
+                : productService.getPublic(productId);
+
         model.addAttribute("product", product);
+        model.addAttribute("treeMode", admin ? "admin" : "public");
 
         return "public/products/detail";
+    }
+
+    private boolean isAdmin(HttpSession session) {
+        MemberRole role = (MemberRole) session.getAttribute(SessionConst.LOGIN_ROLE);
+        return role == MemberRole.ADMIN;
     }
 }

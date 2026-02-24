@@ -20,6 +20,8 @@ public class CategoryViewController {
     @GetMapping
     public String categories(Model model) {
         List<Category> categories = categoryService.getAllPublic();
+        categoryService.getAllPublic().forEach(c ->
+                System.out.println(c.getId() + " " + c.getName() + " parent=" + c.getParentId()));
         model.addAttribute("categories", categories);
         return "public/categories/list";
     }

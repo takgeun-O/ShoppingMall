@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor        // 필수 인자를 가진 생성자 자동 생성
@@ -63,6 +64,16 @@ public class ProductService {
     public List<Product> getAllPublicByCategoryId(Long categoryId) {
         categoryService.getPublic(categoryId);        // 존재 검증
         return productRepository.findAllPublicByCategoryId(categoryId);
+    }
+
+    // 여러 카테고리로 조회
+    public List<Product> getAllPublicByCategoryIds(Set<Long> categoryIds) {
+        return productRepository.findAllPublicByCategoryIds(categoryIds);
+    }
+
+    // 여러 카테고리로 조회
+    public List<Product> getAllAdminByCategoryIds(Set<Long> categoryIds) {
+        return productRepository.findAllAdminByCategoryIds(categoryIds);
     }
 
     // 카테고리별 목록 조회 (관리자는 전체 보여주기)

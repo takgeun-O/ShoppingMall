@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.infra;
 
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -58,6 +59,31 @@ public class MemoryProductRepository implements ProductRepository {
         return store.values().stream()
                 .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
                 .filter(Product::isPublicVisible)
+                .toList();
+    }
+
+    @Override
+    public List<Product> findAllPublicByCategoryIds(Set<Long> categoryIds) {
+
+        if(categoryIds == null || categoryIds.isEmpty()) {
+            return List.of();
+        }
+
+        return store.values().stream()
+                .filter(p -> categoryIds.contains(p.getCategoryId()))
+                .filter(p -> p.getStatus() == ProductStatus.ON_SALE || p.getStatus() == ProductStatus.SOLD_OUT)
+                .toList();
+    }
+
+    @Override
+    public List<Product> findAllAdminByCategoryIds(Set<Long> categoryIds) {
+
+        if(categoryIds == null || categoryIds.isEmpty()) {
+            return List.of();
+        }
+
+        return store.values().stream()
+                .filter(p -> categoryIds.contains(p.getCategoryId()))
                 .toList();
     }
 

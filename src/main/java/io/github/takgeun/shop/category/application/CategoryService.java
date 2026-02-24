@@ -8,10 +8,12 @@ import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor        // 필수 인자를 가진 생성자 자동 생성
 public class CategoryService {
@@ -24,14 +26,21 @@ public class CategoryService {
         // 1뎁스(parentId==null) 중에서 상단에 노출할 것만
         return categoryRepository.findAllPublic().stream()
                 .filter(c -> c.getParentId() == null)
-                .limit(8)       // 상단에 몇 개만 할건지
+                .sorted(Comparator.comparing(Category::getName))
                 .map(CategoryResponse::from)
                 .toList();
     }
 
-    // 전체 카테고리(트리용)
+    // 전체 카테고리(트리용) - 공개용
     public List<CategoryResponse> getAllPublicCategories() {
         return categoryRepository.findAllPublic().stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
+    // 전체 카테고리(트리용) - 관리자용
+    public List<CategoryResponse> getAllAdminCategories() {
+        return categoryRepository.findAllAdmin().stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
@@ -80,7 +89,7 @@ public class CategoryService {
 
     // 목록 조회 (유저)
     public List<Category> getAllPublic() {
-        return categoryRepository.findAllAdmin().stream()
+        return categoryRepository.findAllPublic().stream()
                 .filter(Category::isActive)
                 .toList();
     }
@@ -170,5 +179,46 @@ public class CategoryService {
                     .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
             now = parent.getParentId();     // 부모의 다음 부모 넣기
         }
+    }
+
+    public List<Long> getDescendantIdsInclusive(Long rootId) {
+        // 공개 카테고리 전체 가져오기
+        List<CategoryResponse> all = getAllPublicCategories();
+        log.info("allPublic.size={}", all.size());
+
+        // parentId -> children 리스트 맵 만들기
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (CategoryResponse c : all) {
+            childrenByParent
+                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
+                    .add(c.getId());
+        }
+
+        // BFS로 root 포함 자손 id 수집
+        List<Long> result = new ArrayList<>();
+        Deque<Long> q = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+
+        q.add(rootId);
+        visited.add(rootId);
+
+        while(!q.isEmpty()) {
+            Long cur = q.poll();
+            result.add(cur);
+
+            for (Long childId : childrenByParent.getOrDefault(cur, List.of())) {
+                if(visited.add(childId)) {
+                    q.add(childId);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public String getCategoryName(Long id) {
+        return categoryRepository.findById(id)
+                .map(Category::getName)
+                .orElseThrow();
     }
 }
