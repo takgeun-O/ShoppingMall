@@ -54,8 +54,11 @@ public class ProductViewController {
                 : categoryService.getAllPublicCategories();
 
         // 트리 렌더링 데이터
+        // public 사용자에게 보여질 카테고리 리스트 반환 (단, 루트 노드가 비공개면 자식 노드가 공개여도 전부 비공개 처리)
+        // null -> [전자, 의류]
+        // 1 -> [노트북, 휴대폰, 상의]
         Map<Long, List<CategoryResponse>> childrenByParent = categorySidebarService.groupByParent(categories);
-        Set<Long> openIds = categorySidebarService.buildOpenIds(categoryId, categories);
+        Set<Long> openIds = categorySidebarService.buildOpenIds(categoryId, categories);    // 선택된 카테고리와 선택된 카테고리의 조상까지 오픈 대상
 
         // 상품 조회 (예: 카테고리 필터)
         Set<Long> categoryIdsForProducts = (categoryId == null)

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('415 Unsupported Media Type', ~{::body})}">
+
+<body>
+<div class="wrap error-page">
+    <h1>415</h1>
+    <h2>지원하지 않는 요청 형식입니다.</h2>
+    <p th:text="${message} ?: '지원하지 않는 Content-Type 입니다.'"></p>
+    <div class="actions">
+        <a href="/" class="btn">홈으로</a>
+    </div>
+</div>
+</body>
+</html>

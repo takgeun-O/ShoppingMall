@@ -4,6 +4,7 @@ import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
+import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class TestDataInitializer implements ApplicationRunner {
     private final CategoryService categoryService;
     private final ProductService productService;
     private final MemberService memberService;
+    private final OrderService orderService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -125,5 +127,50 @@ public class TestDataInitializer implements ApplicationRunner {
         productService.create(bottoms, "데님 팬츠", 59_900, 18, "기본 데님");
         Long readyOuterId = productService.create(outerwear, "신상 코트", 189_000, 10, "판매 준비");
         productService.changeStatus(readyOuterId, ProductStatus.READY);
+
+        // =========================
+        // 주문 더미 (관리자 화면 테스트용)
+        // =========================
+
+        // 1) user1이 맥북 1개 주문 (정상: PAYMENT_COMPLETED)
+        Long orderId1 = orderService.create(
+                userId1,
+                macbookId,
+                1,
+                "테스트",
+                "010-1111-2222",
+                "06236",
+                "서울특별시 강남구 테헤란로 123",
+                "문 앞에 놔주세요"
+        );
+
+        // 2) user2가 무선마우스 2개 주문 (정상: PAYMENT_COMPLETED)
+        // ※ 무선 마우스 id 변수가 없으니, 아래처럼 변수로 받아두는 게 좋음.
+        //    productService.create(mouse, ...) 반환값을 mouseId로 받아두자.
+        Long mouseId = productService.create(mouse, "무선 마우스(주문용)", 59_000, 30, "사무용"); // 이미 만들었다면 이 줄은 제거하고 기존 id 사용
+        Long orderId2 = orderService.create(
+                userId2,
+                mouseId,
+                2,
+                "테스트2",
+                "010-1111-4444",
+                "04157",
+                "서울특별시 마포구 월드컵북로 1",
+                null
+        );
+
+        // 3) user1이 QHD 모니터 1개 주문 (정상: PAYMENT_COMPLETED)
+        // 마찬가지로 monitor 상품 id가 필요하니 create 반환값을 변수로 받아두는 게 깔끔함.
+        Long qhdMonitorId = productService.create(monitor, "27인치 QHD 모니터(주문용)", 350_000, 12, "가성비 모니터"); // 이미 만들었다면 제거
+        Long orderId3 = orderService.create(
+                userId1,
+                qhdMonitorId,
+                1,
+                "테스트",
+                "010-1111-2222",
+                "06236",
+                "서울특별시 강남구 테헤란로 123",
+                "경비실 맡겨주세요"
+        );
     }
 }

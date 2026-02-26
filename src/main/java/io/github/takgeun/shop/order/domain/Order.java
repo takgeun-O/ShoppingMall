@@ -25,7 +25,7 @@ public class Order {
     private String shippingAddress;
     private String requestMessage;
 
-    private LocalDateTime orderedAt;
+    private LocalDateTime orderedAt;        // 주문 생성 시간
     private LocalDateTime canceledAt;
     private LocalDateTime updatedAt;
 
@@ -60,7 +60,7 @@ public class Order {
         this.shippingAddress = shippingAddress;
         this.requestMessage = requestMessage;
 
-        this.status = OrderStatus.ORDERED;
+        this.status = OrderStatus.PAYMENT_COMPLETED;
         this.orderedAt = LocalDateTime.now();
         this.updatedAt = this.orderedAt;
     }
@@ -80,12 +80,36 @@ public class Order {
     }
 
     public void cancel() {
-        if (this.status != OrderStatus.ORDERED) {
-            throw new ConflictException("ORDERED 상태에서만 취소할 수 있습니다.");
+        if (this.status != OrderStatus.PAYMENT_COMPLETED) {
+            throw new ConflictException("PAYMENT_COMPLETED 상태에서만 취소할 수 있습니다.");
         }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
         this.updatedAt = this.canceledAt;
+    }
+
+    public void changeStatus(OrderStatus newStatus) {
+        if(newStatus == null) throw new IllegalArgumentException("상태는 필수입니다.");
+
+        // 이미 같은 상태 (멱등)
+        if(this.status == newStatus) return;
+
+        // DELIVERED 이후에는 변경 불가
+        if(this.status == OrderStatus.DELIVERED) {
+            throw new ConflictException("배송 완료된 주문은 상태를 변경할 수 없습니다.");
+        }
+
+        // CANCELED 이후에는 변경 불가
+        if(this.status == OrderStatus.CANCELED) {
+            throw new ConflictException("취소된 주문은 상태를 변경할 수 없습니다.");
+        }
+
+        // 결제완료 -> 배송중 -> 배송완료만 허용
+        if(this.status == OrderStatus.PAYMENT_COMPLETED && newStatus == OrderStatus.DELIVERED) {
+            throw new ConflictException("결제완료에서 배송완료로 바로 변경할 수 없습니다.");
+        }
+
+        this.status = newStatus;
     }
 
     private static void validateCreate(Long memberId, Long productId, String productNameSnapshot,

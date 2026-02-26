@@ -11,11 +11,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
-
 @Slf4j
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(
+        basePackages = "io.github.takgeun.shop",    // 루트
+        annotations = org.springframework.web.bind.annotation.RestController.class  // @RestController가 붙은 컨트롤러만 대상
+)
+public class ApiGlobalExceptionHandler {
 
     /**
      * 잘못된 요청(검증 실패/규칙 위반 등)

@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.member.view;
 
+import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -23,14 +24,14 @@ import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/members")
-public class MemberViewController {
+@RequestMapping("/admin/members")
+public class AdminMemberViewController {
 
     private final MemberService memberService;
 
     /**
-     * 마이 페이지 조회
-     * GET /members/me
+     * 관리자 마이 페이지 조회
+     * GET /admin/members/me
      */
     @GetMapping("/me")
     public String me(HttpServletRequest request, Model model) {
@@ -42,11 +43,12 @@ public class MemberViewController {
 
         Member member = memberService.get(memberId);
         model.addAttribute("member", member);
-        return "public/members/me";
+        return "admin/members/me";
     }
 
     /**
-     * 마이페이지 수정폼
+     * 관리자 마이페이지 수정폼
+     * GET /admin/members/me/edit
      */
     @GetMapping("/me/edit")
     public String editForm(HttpServletRequest request, Model model) {
@@ -64,41 +66,47 @@ public class MemberViewController {
         form.setPhone(member.getPhone());
 
         model.addAttribute("form", form);
-        return "public/members/edit";
+        return "admin/members/edit";
     }
 
     /**
-     * 마이페이지 수정 처리
+     * 관리자 마이페이지 수정 처리
      */
     @PostMapping("/me/edit")
     public String edit(@Valid @ModelAttribute("form") MemberEditForm form,
                        BindingResult bindingResult,
                        HttpServletRequest request,
                        RedirectAttributes ra) {
+
         Long memberId = getLoginMemberId(request);
         if(memberId == null) {
             return redirectToLoginWithNext(request);
         }
 
         if(bindingResult.hasErrors()) {
-            return "public/members/edit";
+            return "admin/members/edit";
         }
 
-        // 비밀번호 변경은 UI상에서 분리할 예정 (여기서는 name, phone만 변경)
+        // 비밀번호 변경은 별도 UI상에서 분리할 예정 (여기서는 name, phone만 변경)
         memberService.updateProfile(memberId, form.getName(), null, form.getPhone());
 
-        ra.addFlashAttribute("success", "회원 정보가 수정되었습니다.");
-        return "redirect:/members/me";
+        ra.addFlashAttribute("success", "관리자 정보가 수정되었습니다.");
+        return "redirect:/admin/members/me";
     }
 
     /**
-     * 탈퇴(비활성화) - 폼에서 POST로 호출
+     * 관리자 비활성화
      */
     @PostMapping("/me/deactivate")
     public String deactivate(HttpServletRequest request, RedirectAttributes ra) {
         Long memberId = getLoginMemberId(request);
         if(memberId == null) {
             return redirectToLoginWithNext(request);
+        }
+
+        Member member = memberService.get(memberId);
+        if(member == null || member.getRole() != MemberRole.ADMIN) {
+            throw new ForbiddenException("관리자 권한이 필요합니다.");
         }
 
         memberService.deactivate(memberId);
@@ -109,7 +117,7 @@ public class MemberViewController {
             session.invalidate();
         }
 
-        ra.addFlashAttribute("success", "탈퇴 처리되었습니다.");
+        ra.addFlashAttribute("success", "관리자 비활성화 처리되었습니다.");
         return "redirect:/";
     }
 

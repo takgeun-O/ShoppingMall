@@ -92,10 +92,21 @@ public class CategorySidebarService {
         return cur;
     }
 
-    // 선택된 id의 조상들을 open으로 만든다.
+    //
     public Set<Long> buildOpenIds(Long selectedCategoryId, List<CategoryResponse> all) {
         if (selectedCategoryId == null) return Set.of();        // 정책 : 선택 없으면 모두 접기
-        if (all == null || all.isEmpty()) return Set.of();
+        if (all == null || all.isEmpty()) return Set.of();      // 카테고리가 전부 없거나 비활성화면 바로 끝내기
+
+        /*
+            [ {id:1}, {id:2}, {id:3} ] 형태의 리스트 all을 아래와 같이 변환
+            { 1 -> 객체1,
+              2 -> 객체2,
+              3 -> 객체3 }
+         */
+//        Map<Long, CategoryResponse> byId = new HashMap<>();
+//        for (CategoryResponse c : all) {
+//            byId.put(c.getId(), c);
+//        }
 
         Map<Long, CategoryResponse> byId = all.stream()
                 .collect(Collectors.toMap(CategoryResponse::getId, c -> c));
@@ -103,7 +114,8 @@ public class CategorySidebarService {
         Set<Long> open = new HashSet<>();
         CategoryResponse cur = byId.get(selectedCategoryId);
         while (cur != null) {
-            open.add(cur.getId());      // 자기 자신 open
+            // (선택된 카테고리 노드 -> 부모 카테고리 노드 -> 부모의 부모 카테고리 노드 -> ...)를 open할 대상으로 추가
+            open.add(cur.getId());
             Long pid = cur.getParentId();
             if (pid == null) break;     // 루트 도달
             cur = byId.get(pid);

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>접근 권한이 없습니다</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            text-align: center;
+            padding-top: 120px;
+        }
+
+        .box {
+            display: inline-block;
+            padding: 40px 60px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        a {
+            text-decoration: none;
+            padding: 10px 20px;
+            background-color: #343a40;
+            color: white;
+            border-radius: 4px;
+        }
+
+        a:hover {
+            background-color: #212529;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h1>🚫 접근 권한이 없습니다 (403)</h1>
+    <p>관리자 권한이 필요한 페이지입니다.</p>
+    <a th:href="@{/}">홈으로 이동</a>
+</div>
+
+</body>
+</html>

@@ -61,8 +61,20 @@ public class AuthViewController {
     @GetMapping("/login")
     public String loginForm(@ModelAttribute("form")LoginForm form,
                             @RequestParam(required = false) String next,
+                            @RequestParam(required = false) String reason,
                             Model model) {
+
         model.addAttribute("next", next);   // 로그인 후 직전 페이지로 이동할 next 저장
+
+        if(reason != null) {
+            String message = switch (reason) {
+                case "LOGIN_REQUIRED" -> "로그인이 필요한 서비스입니다. 로그인 후 계속 진행해주세요.";
+                case "ADMIN_REQUIRED" -> "관리자만 접근할 수 있는 페이지입니다.";
+                default -> null;
+            };
+            model.addAttribute("infoMessage", message);
+        }
+
         return "auth/login";
     }
 

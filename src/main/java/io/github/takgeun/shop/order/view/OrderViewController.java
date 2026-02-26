@@ -41,8 +41,12 @@ public class OrderViewController {
     @GetMapping("/new")
     public String newOrderForm(
             @RequestParam @NotNull @Positive Long productId,
-            Model model
+            HttpSession session,
+            Model model,
+            RedirectAttributes ra
     ) {
+        Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
+
         Product product = productService.getPublic(productId);
 
         // 폼 초깃값
@@ -81,14 +85,6 @@ public class OrderViewController {
 
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
-        // 로그인 여부 확인
-        if (memberId == null) {
-            ra.addFlashAttribute("error", "로그인이 필요합니다.");
-            ra.addAttribute("productId", form.getProductId());
-            return "redirect:/orders/new";      // 로그인 뷰가 없으니 임시로 주문페이지로 돌아오도록 하기
-//            return "redirect:/login";         // 추후 로그인 뷰 만들면 이거 쓰기
-        }
-
         // 서비스 호출
         try {
             Long orderId = orderService.create(
@@ -121,12 +117,6 @@ public class OrderViewController {
     public String myOrders(HttpSession session, Model model, RedirectAttributes ra) {
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
-        // 로그인 여부 체크
-        if(memberId == null) {
-            ra.addFlashAttribute("error", "로그인이 필요합니다.");
-            return "redirect:/";    // 로그인 뷰 만들면 로그인 뷰로 바꾸기
-            // return "redirect:/login";
-        }
         List<Order> orders = orderService.getMyOrders(memberId);
         model.addAttribute("orders", orders);
 
@@ -146,13 +136,6 @@ public class OrderViewController {
     ) {
 
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-
-        // 로그인 체크
-        if (memberId == null) {
-            ra.addFlashAttribute("error", "로그인이 필요합니다.");
-            return "redirect:/orders";
-//            return "redirect:/login";
-        }
 
         try {
             OrderResponse order = orderService.getDetail(memberId, orderId);
@@ -176,13 +159,6 @@ public class OrderViewController {
             RedirectAttributes ra
     ) {
         Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-
-        // 로그인 체크
-        if (memberId == null) {
-            ra.addFlashAttribute("error", "로그인이 필요합니다.");
-            return "redirect:/orders";
-//            return "redirect:/login";
-        }
 
         try {
             orderService.cancel(memberId, orderId);

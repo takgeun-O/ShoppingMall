@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('401 Unauthorized', ~{::body})}">
+
+<body>
+<div class="wrap error-page">
+    <h1>401</h1>
+    <h2>로그인이 필요합니다.</h2>
+    <p th:text="${message} ?: '인증되지 않은 요청입니다.'"></p>
+    <div class="actions">
+        <a th:href="@{/login}" class="btn">로그인</a>
+        <a href="/" class="btn secondary">홈으로</a>
+    </div>
+</div>
+</body>
+</html>

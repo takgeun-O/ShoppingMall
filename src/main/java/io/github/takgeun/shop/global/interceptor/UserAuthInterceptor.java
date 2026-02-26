@@ -1,7 +1,6 @@
 package io.github.takgeun.shop.global.interceptor;
 
 import io.github.takgeun.shop.global.session.SessionConst;
-import io.github.takgeun.shop.member.domain.MemberRole;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -12,17 +11,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * /orders/** 진입 시 로그인 강제 + next 처리
+ */
 @Component
-public class AdminAuthInterceptor implements HandlerInterceptor {
+public class UserAuthInterceptor implements HandlerInterceptor {
 
     private static final String LOGIN_PATH = "/login";
-    private static final String FORBIDDEN_PATH = "/forbidden";
-    @Override
-    public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response,
-                             Object handler) throws Exception {
 
-        HttpSession session = request.getSession(false);
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+
+        HttpSession session = request.getSession(false);        // 기존 세션 존재 시 반환하고, 존재하지 않으면 null 반환
 
         // 로그인 여부 체크
         if(session == null || session.getAttribute(SessionConst.LOGIN_MEMBER_ID) == null) {
@@ -30,24 +30,16 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 관리자 권한 체크 (role을 세션에 따로 저장)
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        if(!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
-            redirectToForbidden(request, response);
-            return false;
-        }
-
         return true;
     }
 
     private void redirectToLoginWithNext(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // next 경로 조립하기. (uri + query 활용)
         String uri = request.getRequestURI();
         String query = request.getQueryString();
         String next = (query == null) ? uri : (uri + "?" + query);
 
         // 리다이렉트 시 리다이렉트 사유도 넘기기
-        String reason = "ADMIN_REQUIRED";
+        String reason = "LOGIN_REQUIRED";
 
         String loginUrl = UriComponentsBuilder.fromPath(LOGIN_PATH)       // 기본 경로를 /login 으로 시작 (이 때 loginUrl은 '/login')
                 .queryParam("next", next)                        // 쿼리 파라미터 추가 ("orders/3" 이면 '/login?orders/3')
@@ -57,9 +49,5 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
                 .toUriString(); // 최종 -> /login?next=%2Forders%2F3%3Fsort%3Dprice%20desc
 
         response.sendRedirect(loginUrl);
-    }
-
-    private void redirectToForbidden(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.sendRedirect(FORBIDDEN_PATH);
     }
 }

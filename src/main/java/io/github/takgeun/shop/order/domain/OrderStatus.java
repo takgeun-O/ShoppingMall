@@ -1,6 +1,8 @@
 package io.github.takgeun.shop.order.domain;
 
 public enum OrderStatus {
-    ORDERED,
+    PAYMENT_COMPLETED,
+    SHIPPING,
+    DELIVERED,
     CANCELED
 }

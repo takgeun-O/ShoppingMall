@@ -59,21 +59,28 @@ public class MemoryCategoryRepository implements CategoryRepository {
         List<Category> result = new ArrayList<>();
         Set<Long> visited = new HashSet<>();
 
+        // null -> [전자, 의류]
+        // 1 -> [노트북, 휴대폰, 상의]
         List<Category> roots = childrenByParentId.getOrDefault(null, List.of());
         for (Category root : roots) {
+            // 각 root부터 시작해서 순회할 것.
+            // 모두 순회를 마치면 result는 dfsAppendPublicChain()에 의해 부모가 공개인 카테고리 리스트로 만들어져 있을 것.
             dfsAppendPublicChain(root, childrenByParentId, visited, result);
         }
 
         return result;
     }
 
-    private void dfsAppendPublicChain(Category node, Map<Long, List<Category>> childrenByParentId, Set<Long> visited, List<Category> out) {
+    private void dfsAppendPublicChain(Category node, Map<Long, List<Category>> childrenByParentId,
+                                      Set<Long> visited, List<Category> out) {
         if(node == null) return;
 
         Long id = node.getId();
         if(id == null) return;
 
-        // 순환 참조/중복 방지
+        // 순환 참조/중복 방지 (visited가 Set 구조니까 이미 방문한 노드면 add 처리 시 false 반환할 것. 즉 해당 조건문은 true가 됨.)
+        // A -> B -> C -> A 구조로 잘못 만들었을 때 A -> B -> C -> A 순으로 방문할 때 이미 visited에 있게 되므로 return하게 된다.
+        // 이 경우 무한 재귀 발생
         if(!visited.add(id)) return;
 
         // 부모가 공개가 아니면 이 노드도 숨기고 자식도 전부 숨기기
@@ -83,10 +90,12 @@ public class MemoryCategoryRepository implements CategoryRepository {
 
         // 부모가 공개면 결과에 포함하기
         out.add(node);
+
         // 부모가 공개일 때만 자식 탐색하기
         List<Category> children = childrenByParentId.get(id);
         if(children == null) return;
 
+        // 현재 노드(id)와 인접한 자식 노드들을 전부 DFS로 순회
         for (Category child : children) {
             dfsAppendPublicChain(child, childrenByParentId, visited, out);
         }

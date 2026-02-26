@@ -1,0 +1,107 @@
+package io.github.takgeun.shop.global.error;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.ModelAndView;
+
+@Slf4j
+@ControllerAdvice(
+        basePackages = "io.github.takgeun.shop",
+        annotations = org.springframework.stereotype.Controller.class
+)
+public class ViewGlobalExceptionHandler {
+
+    // 공통: 상태코드 + 뷰 + 메시지 세팅
+    private ModelAndView render(HttpStatus status, String viewName, String message, HttpServletRequest request, Exception e) {
+        log.error("Unhandled exception, status={}, path={}", status.value(), request.getRequestURI(), e);
+
+        ModelAndView mv = new ModelAndView(viewName);
+        mv.setStatus(status);
+
+        mv.addObject("status", status.value());
+        mv.addObject("error", status.getReasonPhrase());
+        mv.addObject("message", message);
+        mv.addObject("path", request.getRequestURI());
+
+        return mv;
+    }
+
+    // 1) DTO Validation 실패 (@Valid @ModelAttribute)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ModelAndView handleMethodArgumentNotValid(MethodArgumentNotValidException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        // 메시지 정책: 필드 에러를 "field: message" 형태로 한 줄
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .findFirst()
+                .orElse("요청 값이 올바르지 않습니다.");
+
+        return render(status, "error/400", message, request, e);
+    }
+
+    // 2) 파라미터 Validation 실패 (@RequestParam @PathVariable) 그러니까 숫자 타입에 문자가 들어온다던지 등등
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ModelAndView handleConstraintViolation(ConstraintViolationException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        // getByCategory.categoryId: categoryId는 필수입니다.
+        String message = e.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .findFirst()
+                .orElse("요청 값이 올바르지 않습니다.");
+
+        return render(status, "error/400", message, request, e);
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ModelAndView handleNotFound(NotFoundException e, HttpServletRequest request) {
+        return render(HttpStatus.NOT_FOUND, "error/404", e.getMessage(), request, e);
+    }
+
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ModelAndView handleBadRequest(RuntimeException e, HttpServletRequest request) {
+        return render(HttpStatus.BAD_REQUEST, "error/400", e.getMessage(), request, e);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ModelAndView handleConflict(ConflictException e, HttpServletRequest request) {
+        return render(HttpStatus.CONFLICT, "error/409", e.getMessage(), request, e);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ModelAndView handleUnauthorized(UnauthorizedException e, HttpServletRequest request) {
+        return render(HttpStatus.UNAUTHORIZED, "error/401", e.getMessage(), request, e);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ModelAndView handleForbidden(ForbiddenException e, HttpServletRequest request) {
+        return render(HttpStatus.FORBIDDEN, "error/403", e.getMessage(), request, e);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ModelAndView handleNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
+        return render(HttpStatus.BAD_REQUEST, "error/400", "요청 본문이 올바르지 않습니다.", request, e);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ModelAndView handleMediaType(HttpMediaTypeNotSupportedException e, HttpServletRequest request) {
+        return render(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "error/415", "지원하지 않는 Content-Type 입니다.", request, e);
+    }
+
+    /**
+     * 그 외 예상 못한 예외 (서버 오류)
+     * 운영에서는 message를 고정하는 게 보안상 더 안전함
+     */
+    @ExceptionHandler(Exception.class)
+    public ModelAndView handleException(Exception e, HttpServletRequest request) {
+        return render(HttpStatus.INTERNAL_SERVER_ERROR, "error/500", "서버 오류가 발생했습니다.", request, e);
+    }
+}

@@ -8,6 +8,6 @@ public class ErrorViewController {
 
     @GetMapping("/forbidden")
     public String forbidden() {
-        return "error/forbidden";
+        return "403";
     }
 }

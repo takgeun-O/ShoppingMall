@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/orders")
+@RequestMapping("/api/v1/admin/orders")
 public class AdminOrderController {
 
     private final AdminOrderService adminOrderService;
@@ -22,9 +22,9 @@ public class AdminOrderController {
     @GetMapping
     public ResponseEntity<List<AdminOrderListResponse>> getAll(HttpSession session) {
 
-        Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
+//        Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
 
-        List<AdminOrderListResponse> response = adminOrderService.getAll(memberId);
+        List<AdminOrderListResponse> response = adminOrderService.getAll();
 
         return ResponseEntity.ok(response);
     }
