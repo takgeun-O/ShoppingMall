@@ -37,11 +37,17 @@ public class ProductViewController {
 
     /**
      * 상품 목록 페이지
-     * GET /products?categoryId={categoryId}
+     * GET /products?categoryId={categoryId}&sort={sort}
+     *
+     * sort:
+     * - null(default) : 기본 목록
+     * - best : 베스트 상품
+     * - sale : 할인 상품
      */
     @GetMapping
     public String list(
             @RequestParam(required = false) @Positive Long categoryId,
+            @RequestParam(required = false) String sort,
             Model model,
             HttpSession session
     ) {
@@ -81,6 +87,7 @@ public class ProductViewController {
         );
 
         model.addAttribute("selectedCategoryId", categoryId);
+        model.addAttribute("sort", sort);       // 정렬/필터 UI에 표시용
 
         // sidebar model
         model.addAttribute("categories", categories);
@@ -94,8 +101,10 @@ public class ProductViewController {
     /**
      * 상품 상세 페이지
      * GET /products/{productId}
+     *
+     * {productId} 부분에 숫자만 매칭되도록 정규식 제한할 것. (best/sale 같은 문자열 충돌 방지)
      */
-    @GetMapping("/{productId}")
+    @GetMapping("/{productId:\\d+}")
     public String detail(@PathVariable @Positive Long productId, Model model, HttpSession session) {
 
         boolean admin = isAdmin(session);
@@ -110,7 +119,31 @@ public class ProductViewController {
         return "public/products/detail";
     }
 
+    private List<Product> findProducts(boolean admin,
+                                       Long categoryId,
+                                       Set<Long> categoryIdsForProducts,
+                                       String sort) {
+
+        // 기본 조회 (카테고리 필터만 반영)
+        List<Product> base = (categoryId == null)
+                ? (admin ? productService.getAllAdmin() : productService.getAllPublic())
+                : (admin ? productService.getAllAdminByCategoryIds(categoryIdsForProducts)
+                        : productService.getAllPublicByCategoryIds(categoryIdsForProducts));
+
+        // sort 적용 (구현 전 일단 base 반환)
+        if (sort == null || sort.isBlank()) return base;
+
+//        return switch (sort) {
+//            case "best" -> productService.sortAsBest(base);     // TODO : 구현
+//            case "sale" -> productService.filterAsSale(base);   // TODO : 구현
+//            default -> base;
+//        };
+        return base;        // 베스트상품, 할인상품 구현 전까지는 임시로 base 반환
+    }
+
+
     private boolean isAdmin(HttpSession session) {
+        if(session == null) return false;
         MemberRole role = (MemberRole) session.getAttribute(SessionConst.LOGIN_ROLE);
         return role == MemberRole.ADMIN;
     }
