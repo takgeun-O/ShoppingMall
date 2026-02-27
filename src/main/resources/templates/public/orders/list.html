@@ -1,25 +1,11 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>내 주문 목록</title>
-    <style>
-        .wrap { max-width: 860px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #fafafa; }
-        .muted { color: #666; font-size: 14px; }
-        .btn { padding: 8px 10px; border: 1px solid #333; background: #fff; cursor: pointer; text-decoration: none; }
-    </style>
-</head>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('상품 목록', ~{::body}, ~{}, 'public')}">>
+
 <body>
 
 <div class="wrap">
     <h1>내 주문 목록</h1>
-
-    <!-- flash message -->
-    <div th:if="${error}" th:text="${error}" style="color: red;"></div>
-    <div th:if="${success}" th:text="${success}" style="color: green;"></div>
 
     <div class="muted" th:if="${#lists.isEmpty(orders)}">
         아직 주문이 없습니다.

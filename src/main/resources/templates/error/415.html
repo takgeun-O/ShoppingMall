@@ -1,13 +1,24 @@
 <!doctype html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('409 Conflict', ~{::body})}">
+      th:replace="~{layout/default :: layout(
+            '415 Unsupported Media Type',
+            ~{::body},
+            ~{::headExtra},
+            'PUBLIC'
+      )}">
+
+<head>
+    <th:block th:fragment="headExtra">
+        <!-- 필요하면 여기서 에러 페이지 전용 CSS/메타 추가 -->
+    </th:block>
+</head>
 
 <body>
 <div class="wrap error-page">
-    <h1>409</h1>
-    <h2>충돌이 발생했습니다.</h2>
-    <p th:text="${message} ?: '이미 존재하는 데이터입니다.'"></p>
+    <h1>415</h1>
+    <h2>지원하지 않는 요청 형식입니다.</h2>
+    <p th:text="${message} ?: '지원하지 않는 Content-Type 입니다.'"></p>
     <div class="actions">
         <a href="/" class="btn">홈으로</a>
     </div>

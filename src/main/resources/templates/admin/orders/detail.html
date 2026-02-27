@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('주문 상세', ~{::body}, ~{}, 'admin')}">
+<body>
+
+<div class="box">
+    <div class="flex-between" style="margin-bottom: 12px;">
+        <h1 style="margin:0;">주문 상세</h1>
+        <div class="flex gap-3">
+            <a class="btn btn-outline" th:href="@{/admin/orders}">목록</a>
+            <a class="btn btn-outline" th:href="@{/admin}">관리자 홈</a>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- 주문 정보 -->
+    <!-- ===================== -->
+    <div class="card">
+        <h2 style="margin-bottom: 10px;">주문 정보</h2>
+
+        <div class="row">
+            <div class="muted">주문ID</div>
+            <!-- AdminOrderDetailResponse에서 id 필드명 사용 -->
+            <div th:text="${order.orderId}">1</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">현재 상태</div>
+            <div>
+                <span class="cat-badge" th:text="${order.status}">STATUS</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="muted">주문일</div>
+            <div th:text="${order.orderedAt}">2026-02-26T12:00</div>
+        </div>
+
+        <div class="row" th:if="${order.canceledAt != null}">
+            <div class="muted">취소일</div>
+            <div th:text="${order.canceledAt}">2026-02-26T12:30</div>
+        </div>
+
+        <hr style="border:0; border-top:1px solid #eee; margin:12px 0;"/>
+
+        <!-- ===================== -->
+        <!-- 상태 변경 -->
+        <!-- ===================== -->
+        <h3 style="margin-bottom:8px;">상태 변경</h3>
+
+        <form th:action="@{/admin/orders/{orderId}/status(orderId=${order.orderId})}"
+              th:object="${statusForm}"
+              method="post"
+              class="flex gap-3">
+
+            <select th:field="*{status}" style="max-width:260px;">
+                <option th:each="st : ${statuses}"
+                        th:value="${st}"
+                        th:text="${st}">
+                </option>
+            </select>
+
+            <button class="btn btn-primary" type="submit">변경</button>
+
+            <!-- 검증 에러 표시( statusForm.status ) -->
+            <div class="muted"
+                 th:if="${#fields.hasErrors('status')}"
+                 th:errors="*{status}"
+                 style="margin-top:6px;"></div>
+        </form>
+    </div>
+
+    <!-- ===================== -->
+    <!-- 주문자 정보 -->
+    <!-- ===================== -->
+    <div class="card">
+        <h2 style="margin-bottom: 10px;">주문자 정보</h2>
+
+        <div class="row">
+            <div class="muted">회원ID</div>
+            <div th:text="${order.buyerId}">10</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">이메일</div>
+            <div th:text="${order.buyerEmail}">buyer@email.com</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">이름</div>
+            <div th:text="${order.buyerName}">홍길동</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">전화번호</div>
+            <div th:text="${order.buyerPhone}">010-0000-0000</div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- 상품(스냅샷) 정보 -->
+    <!-- ===================== -->
+    <div class="card">
+        <h2 style="margin-bottom: 10px;">상품 정보 (스냅샷)</h2>
+
+        <div class="row">
+            <div class="muted">상품ID</div>
+            <div th:text="${order.productId}">100</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">상품명</div>
+            <div th:text="${order.productName}">상품명</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">단가</div>
+            <div><span th:text="${order.unitPrice}">10000</span> 원</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">수량</div>
+            <div th:text="${order.quantity}">1</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">총액</div>
+            <div><strong><span th:text="${order.totalPrice}">10000</span> 원</strong></div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- 배송 정보 -->
+    <!-- ===================== -->
+    <div class="card">
+        <h2 style="margin-bottom: 10px;">배송 정보</h2>
+
+        <div class="row">
+            <div class="muted">수령인</div>
+            <div th:text="${order.recipientName}">수령인</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">연락처</div>
+            <div th:text="${order.recipientPhone}">010-0000-0000</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">우편번호</div>
+            <div th:text="${order.shippingZipCode}">00000</div>
+        </div>
+
+        <div class="row">
+            <div class="muted">주소</div>
+            <div th:text="${order.shippingAddress}">주소</div>
+        </div>
+
+        <div class="row"
+             th:if="${order.requestMessage != null and !#strings.isEmpty(order.requestMessage)}">
+            <div class="muted">요청사항</div>
+            <div th:text="${order.requestMessage}">문앞에 놔주세요</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('[관리자] 카테고리 수정', ~{::body}, ~{}, 'admin')}">
+
+<body>
+<h1>[관리자] 카테고리 수정</h1>
+
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
+<form th:action="@{/admin/categories/{id}(id=${categoryId})}" th:object="${form}" method="post">
+    <div>
+        <label>카테고리명</label><br/>
+        <input type="text" th:field="*{name}"/>
+        <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color:red;"></div>
+    </div>
+
+    <div style="margin-top:12px;">
+        <label>부모 카테고리(선택)</label><br/>
+        <select th:field="*{parentId}">
+            <option th:value="${null}">최상위</option>
+            <option th:each="c : ${categories}"
+                    th:value="${c.id}"
+                    th:text="${c.name}">
+            </option>
+        </select>
+    </div>
+
+    <div style="margin-top:16px;">
+        <button type="submit">수정 저장</button>
+        <a th:href="@{/admin/categories}">목록</a>
+    </div>
+</form>
+
+<form th:action="@{/admin/categories/{id}/delete(id=${categoryId})}" method="post" style="margin-top:16px;">
+    <button type="submit" onclick="return confirm('정말 삭제할까요?');">삭제</button>
+</form>
+
+</body>
+</html>

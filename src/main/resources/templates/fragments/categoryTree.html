@@ -1,0 +1,96 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+사용법:
+<th:block th:replace="~{fragments/categoryTree :: categoryTree(
+    mode=${treeMode},
+    childrenByParent=${childrenByParent},
+    openIds=${openIds},
+    selectedCategoryId=${selectedCategoryId},
+    baseUrl=${treeMode == 'admin' ? '/admin/products' : '/products'}
+)}" />
+-->
+
+<!--
+    th:block
+        - 실제 HTML 태그 생성하지 않음. (로직용 wrapper)
+        - DOM에 영향 없음
+    childrenByParent : parentId -> 자식 목록 Map
+    openIds : 선택노드 + 조상들
+-->
+<th:block th:fragment="categoryTree(mode, childrenByParent, openIds, selectedCategoryId, baseUrl)">
+    <ul class="cat-tree">
+        <!-- parentId = null 인 루트 노드부터 렌더링 시작
+             childrenByParent.get(null) : 루트 카테고리 리스트
+        -->
+
+        <th:block th:replace="~{fragments/categoryTree :: nodeList(
+                mode=${mode},
+                parentId=${null},
+                childrenByParent=${childrenByParent},
+                openIds=${openIds},
+                selectedCategoryId=${selectedCategoryId},
+                baseUrl=${baseUrl}
+        )}"/>
+    </ul>
+</th:block>
+
+<!-- 재귀: parentId의 자식들을 렌더링 -->
+<th:block th:fragment="nodeList(mode, parentId, childrenByParent, openIds, selectedCategoryId, baseUrl)">
+    <!-- c : parentId의 자식 카테고리들 -->
+    <th:block th:each="c : ${childrenByParent.getOrDefault(parentId, T(java.util.List).of())}">
+
+        <li class="cat-node"
+            th:classappend="${selectedCategoryId != null and selectedCategoryId == c.id} ? 'is-active' : ''">
+
+            <div class="cat-row">
+
+                <!-- 펼침/접힘 아이콘(자식이 있을 때만) -->
+                <!-- openIds에 포함된 노드는 펼쳐진 상태, 아니면 접힌 상태 -->
+                <!-- th:attr="속성1=값1, 속성2=값2, ..." 이걸 쓰면 여러 개의 속성을 동시 설정 가능
+                     렌더링되면 <button aria-expanded="true" aria-controls="cat-children-3"> 이런 식으로 바뀜
+                -->
+                <button class="cat-toggle"
+                        type="button"
+                        th:if="${!childrenByParent.getOrDefault(c.id, T(java.util.List).of()).isEmpty()}"
+                        th:attr="aria-expanded=${openIds.contains(c.id)}, aria-controls=${'cat-children-' + c.id}"
+                        th:text="${openIds.contains(c.id) ? '▾' : '▸'}">
+                </button>
+
+                <!-- 링크 -->
+                <a class="cat-link"
+                   th:href="@{${baseUrl}(categoryId=${c.id})}"
+                   th:text="${c.name}">
+                </a>
+
+                <!-- admin 모드에서만 상태 표시 -->
+                <span class="cat-badge"
+                      th:if="${mode == 'admin'}"
+                      th:text="${c.status}">
+                </span>
+            </div>
+
+            <!-- 자식 노드: openIds에 현재 id가 있으면 펼친다 -->
+            <!-- 현재 카테고리 노드 c가 openIds에 포함되어 있으면 현재 카테고리 노드의 자식 목록을 렌더링 (재귀로) -->
+            <ul class="cat-children"
+                th:attr="id=${'cat-children-' + c.id}"
+                th:classappend="${openIds.contains(c.id)} ? 'is-open' : 'is-closed'">
+
+                <th:block th:replace="~{fragments/categoryTree :: nodeList(
+                        mode=${mode},
+                        parentId=${c.id},
+                        childrenByParent=${childrenByParent},
+                        openIds=${openIds},
+                        selectedCategoryId=${selectedCategoryId},
+                        baseUrl=${baseUrl}
+                )}"/>
+            </ul>
+
+        </li>
+    </th:block>
+</th:block>
+
+</body>
+</html>

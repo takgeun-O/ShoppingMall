@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('내 정보 수정', ~{::body}, ~{}, 'public')}">
+
+<body>
+
+<div class="box">
+    <h1>내 정보 수정</h1>
+
+    <form th:action="@{/members/me/edit}" th:object="${form}" method="post">
+
+        <div class="field">
+            <label>이름</label><br/>
+            <input type="text" th:field="*{name}"/>
+            <div class="err" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="field">
+            <label>전화번호</label><br/>
+            <input type="text" th:field="*{phone}" placeholder="010-1234-5678"/>
+            <div class="err" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+        </div>
+
+        <div class="actions">
+            <button type="submit">저장</button>
+            <a class="btn" th:href="@{/members/me}">취소</a>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

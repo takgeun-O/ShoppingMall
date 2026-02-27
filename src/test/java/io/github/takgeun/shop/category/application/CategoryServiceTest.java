@@ -2,6 +2,7 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.category.domain.CategoryStatus;
 import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
@@ -54,7 +55,7 @@ class CategoryServiceTest {
     void 카테고리_생성_실패_공백만() {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> categoryService.create(" ", null));
-        assertEquals("카테고리명은 비어 있을 수 없습니다.", e.getMessage());
+        assertEquals("카테고리명은 필수입니다.", e.getMessage());
     }
 
     @Test
@@ -64,26 +65,26 @@ class CategoryServiceTest {
     }
 
     @Test
-    void 카테고리_조회_성공() {
+    void 유저_카테고리_조회_성공() {
         // given
         Long id = categoryService.create("전자", null);
 
         // when
-        Category category = categoryService.get(id);
+        Category category = categoryService.getPublic(id);
 
         // then
         Assertions.assertThat(category.getName()).isEqualTo("전자");
     }
 
     @Test
-    void 카테고리_조회_실패_카테고리_없음() {
+    void 유저_카테고리_조회_실패_카테고리_없음() {
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.get(999L));
+                () -> categoryService.getPublic(999L));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
 
     @Test
-    void 카테고리_목록_조회_성공() {
+    void 유저_카테고리_목록_조회_성공() {
 
         // given
         Long categoryId1 = categoryService.create("전자", null);
@@ -91,7 +92,7 @@ class CategoryServiceTest {
         Long categoryId3 = categoryService.create("컴퓨터", categoryId2);
 
         // when
-        List<Category> categoryList = categoryService.getAll();
+        List<Category> categoryList = categoryService.getAllPublic();
 
         // then
         assertEquals(3, categoryList.size());
@@ -126,7 +127,7 @@ class CategoryServiceTest {
         categoryService.update(id, "전자2", null, null);
 
         // then
-        Category updated = categoryService.get(id);
+        Category updated = categoryService.getAdmin(id);
         assertEquals("전자2", updated.getName());
     }
 
@@ -141,7 +142,7 @@ class CategoryServiceTest {
         categoryService.update(computerId, null, electronicsId, null);
 
         // then
-        Category updated = categoryService.get(computerId);
+        Category updated = categoryService.getAdmin(computerId);
         assertEquals(electronicsId, updated.getParentId());
     }
 
@@ -152,11 +153,11 @@ class CategoryServiceTest {
         Long id = categoryService.create("전자", null);
 
         // when
-        categoryService.update(id, null, null, false);
-        Category updated = categoryService.get(id);
+        categoryService.update(id, null, null, CategoryStatus.ACTIVE);
+        Category updated = categoryService.getAdmin(id);
 
         // then
-        assertFalse(updated.isActive());
+        assertTrue(updated.isActive());
     }
 
     @Test
@@ -166,11 +167,11 @@ class CategoryServiceTest {
         Long id = categoryService.create("전자", null);
 
         // when
-        categoryService.update(id, null, null, true);
-        Category updated = categoryService.get(id);
+        categoryService.update(id, null, null, CategoryStatus.INACTIVE);
+        Category updated = categoryService.getAdmin(id);
 
         // then
-        assertTrue(updated.isActive());
+        assertFalse(updated.isActive());
     }
 
     @Test
@@ -178,7 +179,7 @@ class CategoryServiceTest {
 
         // given
         Long id = categoryService.create("전자", null);
-        Category before = categoryService.get(id);
+        Category before = categoryService.getAdmin(id);
 
         String beforeName = before.getName();
         Long beforeParentId = before.getParentId();
@@ -186,7 +187,7 @@ class CategoryServiceTest {
 
         // when
         categoryService.update(id, null, null, null);
-        Category updated = categoryService.get(id);
+        Category updated = categoryService.getAdmin(id);
 
         // then
         assertEquals(beforeName, updated.getName());
@@ -264,7 +265,7 @@ class CategoryServiceTest {
 
         // then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.get(electronicsId));
+                () -> categoryService.getAdmin(electronicsId));
         assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
     }
 

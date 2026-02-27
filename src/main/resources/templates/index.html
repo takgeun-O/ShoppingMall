@@ -1,10 +1,25 @@
+<!--
+    th:replace="~{파일경로 :: fragment이름(파라미터)}
+    현재 html 전체를 layout/default.html 파일의 layout fragment로 교체하면서
+    "Home"과 현재 body 내용을 파라미터로 넘긴다.
+
+    ~~ :: layout('Home', ~{::body})}"
+    default.html의 fragment의 첫 번째 파라미터에 Home을 넣는다.
+
+    ~{::body}
+    현재 파일의 body 부분을 fragment로 전달하라.
+-->
+
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Home</title></head>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('Omniora', ~{::body}, ~{}, 'public')}">
 <body>
+
 <h1>ShoppingMall</h1>
-<a th:href="@{/products}">상품 목록</a>
+
+<a class="btn btn-primary"
+   th:href="${isAdmin} ? '/admin/products' : '/products'">상품 목록
+</a>
+
 </body>
 </html>

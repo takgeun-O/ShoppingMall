@@ -1,0 +1,12 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="globalErrors">
+
+    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-error">
+        <div th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
+    </div>
+
+</div>
+</body>
+</html>

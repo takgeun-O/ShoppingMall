@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('관리자 내 정보', ~{::body}, ~{::headExtra}, 'ADMIN')}">
+
+<head>
+    <th:block th:fragment="headExtra">
+        <!-- 필요하면 이 페이지 전용 head 요소 추가 (없으면 비워둬도 OK) -->
+    </th:block>
+</head>
+
+<body>
+<div class="box">
+    <h1>관리자 내 정보</h1>
+
+    <div th:if="${success}" th:text="${success}" class="alert alert-success"></div>
+    <div th:if="${error}" th:text="${error}" class="alert alert-error"></div>
+
+    <div class="row">
+        <div class="muted">이메일</div>
+        <div th:text="${member.email}">email</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">이름</div>
+        <div th:text="${member.name}">name</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">전화번호</div>
+        <div th:text="${member.phone}">phone</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">권한</div>
+        <div th:text="${member.role}">role</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">상태</div>
+        <div th:text="${member.status}">status</div>
+    </div>
+
+    <div style="margin-top: 16px;" class="flex gap-3">
+        <a class="btn btn-outline" th:href="@{/admin}">관리자 홈</a>
+        <a class="btn btn-outline" th:href="@{/admin/products}">상품 관리</a>
+        <a class="btn btn-outline" th:href="@{/admin/categories}">카테고리 관리</a>
+        <a class="btn btn-primary" th:href="@{/admin/members/me/edit}">정보 수정</a>
+    </div>
+</div>
+</body>
+</html>

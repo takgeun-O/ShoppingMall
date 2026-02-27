@@ -1,0 +1,37 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('[관리자] 카테고리 관리', ~{::body}, ~{}, 'admin')}">
+
+<body>
+<h1>[관리자] 카테고리 관리</h1>
+
+<div th:if="${success}" th:text="${success}" style="padding:8px; border:1px solid #ddd;"></div>
+
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
+<p>
+    <a th:href="@{/admin/categories/new}">+ 새 카테고리 만들기</a>
+</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>부모ID</th>
+        <th>관리</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="c : ${categories}">
+        <td th:text="${c.id}">1</td>
+        <td th:text="${c.name}">전자</td>
+        <td th:text="${c.parentId}">null</td>
+        <td>
+            <a th:href="@{/admin/categories/{id}/edit(id=${c.id})}">수정</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

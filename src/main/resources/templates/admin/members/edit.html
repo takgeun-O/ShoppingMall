@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('관리자 정보 수정', ~{::body}, ~{::headExtra}, 'ADMIN')}">
+
+<head>
+    <th:block th:fragment="headExtra">
+        <!-- 필요하면 이 페이지 전용 head 요소 추가 (없으면 비워둬도 OK) -->
+    </th:block>
+</head>
+
+<body>
+
+<div class="box">
+    <h1>관리자 정보 수정</h1>
+
+    <div th:if="${error}" th:text="${error}" class="alert alert-error"></div>
+
+    <form th:action="@{/admin/members/me/edit}" th:object="${form}" method="post" class="section">
+        <div class="form-group">
+            <label>이름</label>
+            <input type="text" th:field="*{name}"/>
+            <div class="muted" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="form-group">
+            <label>전화번호</label>
+            <input type="text" th:field="*{phone}"/>
+            <div class="muted" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+        </div>
+
+        <div class="flex gap-3">
+            <button class="btn btn-primary" type="submit">저장</button>
+            <a class="btn btn-outline" th:href="@{/admin/members/me}">취소</a>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

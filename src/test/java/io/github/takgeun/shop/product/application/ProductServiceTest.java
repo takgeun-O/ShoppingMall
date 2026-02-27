@@ -38,7 +38,7 @@ class ProductServiceTest {
 
         // then
         assertNotNull(productId);
-        Product product = productService.get(productId);
+        Product product = productService.getPublic(productId);
         assertEquals("맥북 파우치", product.getName());
         assertEquals(categoryId, product.getCategoryId());
     }
@@ -59,7 +59,7 @@ class ProductServiceTest {
         Long productId = productService.create(categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치");
 
         // when
-        Product product1 = productService.get(productId);
+        Product product1 = productService.getPublic(productId);
 
         // then
         Assertions.assertThat(product1.getName()).isEqualTo("맥북 파우치");
@@ -69,7 +69,7 @@ class ProductServiceTest {
     void 상품_단건_조회_실패_상품_없음() {
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.get(999L));
+                () -> productService.getPublic(999L));
         assertEquals("상품이 존재하지 않습니다.", e.getMessage());
     }
 
@@ -82,9 +82,9 @@ class ProductServiceTest {
         Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치");
         Long productId3 = productService.create(categoryId, "비활성화템", 20000, 20, "비활성화된거");
 
-        Product product1 = productService.get(productId1);
-        Product product2 = productService.get(productId2);
-        Product product3 = productService.get(productId3);
+        Product product1 = productService.getPublic(productId1);
+        Product product2 = productService.getPublic(productId2);
+        Product product3 = productService.getPublic(productId3);
         product1.onSale();          // ON_SALE
         product2.changeStock(0);    // SOLD_OUT
         product3.discontinue();     // DISCONTINUE
@@ -107,15 +107,15 @@ class ProductServiceTest {
         Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치");
         Long productId3 = productService.create(categoryId, "비활성화템", 20000, 20, "비활성화된거");
 
-        Product product1 = productService.get(productId1);
-        Product product2 = productService.get(productId2);
-        Product product3 = productService.get(productId3);
+        Product product1 = productService.getPublic(productId1);
+        Product product2 = productService.getPublic(productId2);
+        Product product3 = productService.getPublic(productId3);
         product1.onSale();          // ON_SALE
         product2.changeStock(0);    // SOLD_OUT
         product3.discontinue();     // DISCONTINUE
 
         // when
-        List<Product> productList = productService.getByCategoryAdmin(categoryId);
+        List<Product> productList = productService.getAllAdminByCategoryId(categoryId);
 
         // then
         assertEquals(3, productList.size());
@@ -149,7 +149,7 @@ class ProductServiceTest {
                 request.getPrice(), request.getStock(), request.getDescription());
 
         // then
-        Product updated = productService.get(productId);
+        Product updated = productService.getPublic(productId);
         assertEquals("맥북 파우치2", updated.getName());
         assertEquals(40000, updated.getPrice());
         assertEquals(20, updated.getStock());
@@ -177,7 +177,7 @@ class ProductServiceTest {
                 request.getPrice(), request.getStock(), request.getDescription());
 
         // then
-        Product updated = productService.get(productId);
+        Product updated = productService.getPublic(productId);
         assertEquals(fashionId, updated.getCategoryId());
     }
 

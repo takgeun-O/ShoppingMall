@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('마이페이지', ~{::body}, ~{}, 'public')}">
+
+<body>
+
+<div class="box">
+    <h1>내 정보</h1>
+
+    <div th:if="${success}" th:text="${success}" style="color: green;"></div>
+    <div th:if="${error}" th:text="${error}" style="color: red;"></div>
+
+    <div class="row">
+        <div class="muted">이메일</div>
+        <div th:text="${member.email}">email</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">이름</div>
+        <div th:text="${member.name}">name</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">전화번호</div>
+        <div th:text="${member.phone}">phone</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">권한</div>
+        <div th:text="${member.role}">role</div>
+    </div>
+
+    <div class="row">
+        <div class="muted">상태</div>
+        <div th:text="${member.status}">status</div>
+    </div>
+
+    <div style="margin-top: 16px;">
+        <a class="btn" th:href="@{/members/me/edit}">정보 수정</a>
+        <a class="btn" th:href="@{/}">홈</a>
+
+        <form class="inline" th:action="@{/members/me/deactivate}" method="post"
+              onsubmit="return confirm('정말 탈퇴하시겠습니까?');">
+            <button class="btn" type="submit">탈퇴</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -102,7 +102,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
         Long productId = givenOnSaleProduct(1000, 2);
         MockHttpSession session = sessionAsMember(memberId);
 
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         String json = """
                 {
@@ -125,7 +125,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.message").exists());
 
         // then
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 }

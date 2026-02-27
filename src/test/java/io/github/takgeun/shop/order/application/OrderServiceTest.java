@@ -55,7 +55,7 @@ class OrderServiceTest {
         productService.changeStatus(productId, ProductStatus.ON_SALE);
 
         int quantity = 2;
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
         String recipientName = "테스트";
         String recipientPhone = "010-1111-2222";
         String shippingZipCode = "12345";
@@ -67,7 +67,7 @@ class OrderServiceTest {
                 shippingZipCode, shippingAddress, requestMessage);
 
         // then
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         assertNotNull(orderId);
 
         Order saved = orderRepository.findById(orderId).orElseThrow();
@@ -87,7 +87,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = productService.create(categoryId, "노트북", 1000, 10, "좋은 노트북");
         productService.changeStatus(productId, ProductStatus.ON_SALE);
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         // when
 
@@ -98,7 +98,7 @@ class OrderServiceTest {
                         memberId, productId, 1, "테스트", "010-1234-5678",
                         "12345", "서울 영등포구", null)
                 );
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         // 주문 실패 시 상품재고 수량 변화 없음 확인
         assertEquals(beforeStock, afterStock);
     }
@@ -114,7 +114,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = productService.create(categoryId, "노트북", 1000, 10, "좋은 노트북");
         productService.changeStatus(productId, ProductStatus.ON_SALE);
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         // when
 
@@ -125,7 +125,7 @@ class OrderServiceTest {
                         memberId, productId, 1, "테스트", "010-1234-5678",
                         "12345", "서울 영등포구", null)
         );
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         // 주문 실패 시 상품재고 수량 변화 없음 확인
         assertEquals(beforeStock, afterStock);
     }
@@ -140,7 +140,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = productService.create(categoryId, "노트북", 1000, 10, "좋은 노트북");
         productService.changeStatus(productId, ProductStatus.DISCONTINUED);
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         // when
 
@@ -151,7 +151,7 @@ class OrderServiceTest {
                         memberId, productId, 1, "테스트", "010-1234-5678",
                         "12345", "서울 영등포구", null)
         );
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         // 주문 실패 시 상품재고 수량 변화 없음 확인
         assertEquals(beforeStock, afterStock);
     }
@@ -166,7 +166,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = productService.create(categoryId, "노트북", 1000, 10, "좋은 노트북");
         productService.changeStatus(productId, ProductStatus.ON_SALE);
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         // when
 
@@ -177,7 +177,7 @@ class OrderServiceTest {
                         memberId, productId, 0, "테스트", "010-1234-5678",
                         "12345", "서울 영등포구", null)
         );
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         // 주문 실패 시 상품재고 수량 변화 없음 확인
         assertEquals(beforeStock, afterStock);
     }
@@ -192,7 +192,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = productService.create(categoryId, "노트북", 1000, 10, "좋은 노트북");
         productService.changeStatus(productId, ProductStatus.ON_SALE);
-        int beforeStock = productService.get(productId).getStock();
+        int beforeStock = productService.getPublic(productId).getStock();
 
         // when
 
@@ -203,7 +203,7 @@ class OrderServiceTest {
                         memberId, productId, 11, "테스트", "010-1234-5678",
                         "12345", "서울 영등포구", null)
         );
-        int afterStock = productService.get(productId).getStock();
+        int afterStock = productService.getPublic(productId).getStock();
         // 주문 실패 시 상품재고 수량 변화 없음 확인
         assertEquals(beforeStock, afterStock);
     }

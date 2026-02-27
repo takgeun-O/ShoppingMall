@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+        th:replace="~{layout/default :: layout(pageTitle, ~{::body}, ~{}, 'public')}">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+</head>
+<body>
+
+<h1>로그인</h1>
+
+<div th:if="${infoMessage}" th:text="${infoMessage}" style="color:#d97706;"></div>
+
+<form th:action="@{/login(next=${next})}" th:object="${form}" method="post">
+
+    <!-- 글로벌 에러(로그인 실패 메시지) -->
+    <div th:replace="~{fragments/form-errors :: globalErrors}"></div>
+
+    <div>
+        <label>이메일</label><br/>
+        <input type="text" th:field="*{email}"/>
+        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" style="color:red;"></div>
+    </div>
+
+    <div style="margin-top: 10px;">
+        <label>비밀번호</label><br/>
+        <input type="password" th:field="*{password}"/>
+        <div th:if="${#fields.hasErrors('password')}" th:text="${#fields.errors('password')[0]}" style="color:red;"></div>
+    </div>
+
+    <div style="margin-top: 14px;">
+        <button type="submit">로그인</button>
+        <a th:href="@{/signup}" style="margin-left: 8px;">회원가입</a>
+    </div>
+</form>
+
+</body>
+</html>

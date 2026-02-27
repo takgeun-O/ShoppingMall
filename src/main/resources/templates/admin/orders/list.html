@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout('주문 관리', ~{::body}, ~{}, 'admin')}">
+<body>
+
+<div class="box">
+    <div class="flex-between" style="margin-bottom: 12px;">
+        <h1 style="margin:0;">주문 관리</h1>
+        <a class="btn btn-outline" th:href="@{/admin}">관리자 홈</a>
+    </div>
+
+    <div class="muted" style="margin-bottom:12px;">
+        전체 주문 목록입니다. (필터/검색은 추후 추가)
+    </div>
+
+    <div th:if="${#lists.isEmpty(orders)}" class="card">
+        표시할 주문이 없습니다.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(orders)}" class="card" style="padding:0;">
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+            <tr style="text-align:left;">
+                <th style="padding:12px; border-bottom:1px solid #eee;">주문ID</th>
+                <th style="padding:12px; border-bottom:1px solid #eee;">상태</th>
+                <th style="padding:12px; border-bottom:1px solid #eee;">주문자</th>
+                <th style="padding:12px; border-bottom:1px solid #eee;">총액</th>
+                <th style="padding:12px; border-bottom:1px solid #eee;">주문일</th>
+                <th style="padding:12px; border-bottom:1px solid #eee;"></th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="o : ${orders}">
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
+                    th:text="${o.orderId}">1</td>
+
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2;">
+                    <span class="cat-badge"
+                          th:text="${o.status}"
+                          th:classappend="
+                            ${o.status.name() == 'PAYMENT_COMPLETED'} ? ' badge-payment' :
+                            (${o.status.name() == 'SHIPPING'} ? ' badge-shipping' :
+                            (${o.status.name() == 'DELIVERED'} ? ' badge-delivered' :
+                            (${o.status.name() == 'CANCELED'} ? ' badge-canceled' : '')))
+                        ">
+                    </span>
+                </td>
+
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2;">
+                    <div th:text="${o.buyerName}">홍길동</div>
+                    <div class="muted" th:text="${o.buyerEmail}">email@example.com</div>
+                </td>
+
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
+                    th:text="${o.totalPrice}">10000</td>
+
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
+                    th:text="${o.orderedAt}">2026-02-26T12:00</td>
+
+                <td style="padding:12px; border-bottom:1px solid #f2f2f2; text-align:right;">
+                    <a class="btn btn-outline"
+                       th:href="@{/admin/orders/{id}(id=${o.orderId})}">
+                        상세
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

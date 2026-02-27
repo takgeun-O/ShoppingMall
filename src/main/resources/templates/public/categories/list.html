@@ -7,6 +7,8 @@
 <body>
 <h1>카테고리</h1>
 
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
 <div th:if="${success}" th:text="${success}" style="padding:8px; border:1px solid #ddd;"></div>
 
 <ul>

@@ -1,0 +1,125 @@
+<header th:fragment="siteHeader(activeTop, treeMode)"
+        class="oh-header"
+        th:with="
+          activeTop=${activeTop} ?: 'SHOP',
+          treeMode=${treeMode} ?: 'public',
+          productBaseUrl=${treeMode == 'admin' ? '/admin/products' : '/products'},
+          myPageUrl=${treeMode == 'admin' ? '/admin/members/me' : '/members/me'}
+        ">
+
+    <!-- ============================= -->
+    <!-- 1️⃣ 최상단 탭 -->
+    <!-- ============================= -->
+    <div class="oh-header__top">
+        <div class="oh-container oh-top__inner">
+
+            <a class="brand" th:href="@{/}">Omniora</a>
+
+            <nav class="top-tabs">
+                <a class="top-tab"
+                   th:classappend="${activeTop}=='SHOP' ? ' is-active' : ''"
+                   th:href="@{/}">
+                    쇼핑하기
+                </a>
+
+                <a class="top-tab"
+                   th:classappend="${activeTop}=='COMMUNITY' ? ' is-active' : ''"
+                   th:href="@{/community}">
+                    커뮤니티
+                </a>
+
+                <a class="top-tab"
+                   th:classappend="${activeTop}=='CS' ? ' is-active' : ''"
+                   th:href="@{/cs}">
+                    고객센터
+                </a>
+            </nav>
+
+            <nav class="top-util">
+                <a class="util" th:href="@{/search}">검색</a>
+                <a class="util" th:href="@{/cart}">장바구니</a>
+
+                <a class="util"
+                   th:if="${loginMemberId == null}"
+                   th:href="@{/login}">
+                    로그인
+                </a>
+
+                <th:block th:if="${loginMemberId != null}">
+                    <span class="util util--name" th:text="${loginMemberName}">회원명</span>
+                    <a class="util" th:href="@{${myPageUrl}}">마이페이지</a>
+                    <a class="util" th:if="${treeMode == 'admin'}" th:href="@{/admin}">관리자</a>
+                    <form th:action="@{/logout}" method="post" style="display:inline;">
+                        <button type="submit" class="util util--button">로그아웃</button>
+                    </form>
+                </th:block>
+            </nav>
+
+        </div>
+    </div>
+
+    <!-- ============================= -->
+    <!-- 2️⃣ 서브 메뉴 -->
+    <!-- ============================= -->
+    <div class="oh-header__sub">
+        <div class="oh-container oh-sub__inner">
+
+            <!-- SHOP -->
+            <nav th:if="${activeTop}=='SHOP'" class="sub-menu">
+
+                <a class="sub-item" th:href="@{/}">
+                    쇼핑홈
+                </a>
+
+                <!-- 카테고리 Hover 드롭다운 -->
+                <div class="sub-item sub-item--dropdown"
+                     onmouseenter="toggleRootCats(true)"
+                     onmouseleave="toggleRootCats(false)">
+
+                    <a class="sub-link"
+                       href="javascript:void(0);"
+                       id="catTrigger"
+                       aria-haspopup="true"
+                       aria-expanded="false">
+                        카테고리
+                    </a>
+
+                    <!-- 루트 카테고리 -->
+                    <div class="rootcats" id="rootCats">
+                        <div class="rootcats__panel">
+                            <a class="rootcat"
+                               th:each="c : ${rootCategories}"
+                               th:href="@{${productBaseUrl}(categoryId=${c.id})}"
+                               th:text="${c.name}">
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="sub-item" th:href="@{/products/(sort='best')}">
+                    베스트상품
+                </a>
+
+                <a class="sub-item" th:href="@{/products/(sort='sale')}">
+                    할인상품
+                </a>
+
+            </nav>
+
+            <!-- COMMUNITY -->
+            <nav th:if="${activeTop}=='COMMUNITY'" class="sub-menu">
+                <a class="sub-item" th:href="@{/community}">커뮤니티홈</a>
+                <a class="sub-item" th:href="@{/community/hot}">인기글</a>
+                <a class="sub-item" th:href="@{/community/recommend}">제품추천글</a>
+            </nav>
+
+            <!-- CS -->
+            <nav th:if="${activeTop}=='CS'" class="sub-menu">
+                <a class="sub-item" th:href="@{/cs}">고객센터홈</a>
+                <a class="sub-item" th:href="@{/cs/faq}">FAQ</a>
+                <a class="sub-item" th:href="@{/cs/inquiry}">문의하기</a>
+            </nav>
+
+        </div>
+    </div>
+</header>
