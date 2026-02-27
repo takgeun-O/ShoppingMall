@@ -5,10 +5,15 @@ import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.view.CategorySidebarService;
 import io.github.takgeun.shop.category.view.dto.CategoryNode;
+import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
@@ -21,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 @Validated
 @Controller
 @RequiredArgsConstructor
@@ -32,61 +38,74 @@ public class AdminProductViewController {
     private final CategorySidebarService categorySidebarService;
 
     /**
-     * 상품 목록 페이지
-     * GET /admin/products?categoryId={categoryId}
+     * 상품 목록 페이지 (관리자 전용)
+     * GET /admin/products?categoryId={categoryId}&sort={sort}
      */
     @GetMapping
     public String list(
             @RequestParam(required = false) @Positive Long categoryId,
-            Model model
+            @RequestParam(required = false, defaultValue = "latest") String sort,
+            Model model,
+            HttpSession session
     ) {
 
-        // admin -> 전체 카테고리(숨김/비공개 포함)
-        List<CategoryResponse> categories = categoryService.getAllAdminCategories();
+        requireAdmin(session);
 
-        // 트리 렌더링 데이터
-        Map<Long, List<CategoryResponse>> childrenByParent = categorySidebarService.groupByParent(categories);
-        Set<Long> openIds = categorySidebarService.buildOpenIds(categoryId, categories);
+        // sort 검증 (아무 값 들어오는 것 방지)
+        sort = normalizeSort(sort);
 
-        // 상품 조회 (관리자용 전체/필터)
-        Set<Long> categoryIdsForProducts = (categoryId == null)
-                ? null
-                : categorySidebarService.buildSubtreeIds(categoryId, childrenByParent);
-        List<Product> products = (categoryId == null)
-                ? productService.getAllAdmin()
-                : productService.getAllAdminByCategoryIds(categoryIdsForProducts);
+        // admin 컨트롤러니까 true 고정
+        List<Product> products = productService.findForList(true, categoryId, sort);
 
         model.addAttribute("products", products);
-        model.addAttribute("selectedCategoryName",
-                categories.stream()
-                        .filter(c -> categoryId != null && categoryId.equals(c.getId()))
-                        .map(CategoryResponse::getName)
-                        .findFirst()
-                        .orElse(null)
-        );
-
         model.addAttribute("selectedCategoryId", categoryId);
+        model.addAttribute("sort", sort);
 
-        // sidebar model
-        model.addAttribute("categories", categories);
-        model.addAttribute("childrenByParent", childrenByParent);
-        model.addAttribute("openIds", openIds);
-        model.addAttribute("treeMode", "admin");    // 템플릿 분기용
+        // 제목용 카테고리명 (관리자 기준만 사용)
+        String selectedCategoryName = null;
+        if (categoryId != null) {
+            selectedCategoryName = categoryService.findAdminNameOrNull(categoryId);
+        }
+        model.addAttribute("selectedCategoryName", selectedCategoryName);
+        model.addAttribute("treeMode", "admin");        // 관리자 뷰 고정
 
         return "admin/products/list";
     }
 
     /**
-     * 상품 상세 페이지
+     * 상품 상세 페이지 (관리자 전용)
      * GET /admin/products/{productId}
      */
     @GetMapping("/{productId}")
-    public String detail(@PathVariable @Positive Long productId, Model model) {
+    public String detail(
+            @PathVariable @Positive Long productId,
+            Model model,
+            HttpSession session) {
 
-        Product product = productService.getAdmin(productId);
+        requireAdmin(session);
+
+        Product product = productService.getForDetail(true, productId);
         model.addAttribute("product", product);
         model.addAttribute("treeMode", "admin");
 
         return "admin/products/detail";
+    }
+
+    private void requireAdmin(HttpSession session) {
+        if (session == null) {
+            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
+        }
+        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
+        if (!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
+            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
+        }
+    }
+
+    private String normalizeSort(String sort) {
+        if (sort == null || sort.isBlank()) return "latest";
+        return switch (sort) {
+            case "latest", "best", "sale", "price-low", "price-high", "rating" -> sort;
+            default -> "latest";
+        };
     }
 }

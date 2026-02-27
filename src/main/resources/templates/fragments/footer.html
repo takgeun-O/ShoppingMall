@@ -1,10 +1,126 @@
-<!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-<footer th:fragment="siteFooter" style="padding:24px 0;">
-    <div class="container muted">
-        © ShoppingMall
+<!-- templates/fragments/footer.html -->
+<footer th:fragment="footer"
+        class="bg-gray-900 text-gray-300 mt-auto">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+
+            <!-- Company Info -->
+            <div>
+                <h3 class="text-white text-lg font-bold mb-4">Omniora</h3>
+                <p class="text-sm text-gray-400 leading-relaxed">
+                    프리미엄 라이프스타일을 위한<br/>
+                    온라인 쇼핑몰
+                </p>
+            </div>
+
+            <!-- Shopping -->
+            <div>
+                <h4 class="text-white font-semibold mb-4">쇼핑</h4>
+                <ul class="space-y-2 text-sm">
+                    <li>
+                        <a th:href="@{/products}"
+                           class="hover:text-white transition-colors">
+                            전체상품
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/products(sort='best')}"
+                           class="hover:text-white transition-colors">
+                            베스트상품
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/products(sort='sale')}"
+                           class="hover:text-white transition-colors">
+                            할인상품
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/products(sort='new')}"
+                           class="hover:text-white transition-colors">
+                            신상품
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Customer Service -->
+            <div>
+                <h4 class="text-white font-semibold mb-4">고객센터</h4>
+                <ul class="space-y-2 text-sm">
+                    <li>
+                        <a th:href="@{/cs}"
+                           class="hover:text-white transition-colors">
+                            고객센터 홈
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/cs/faq}"
+                           class="hover:text-white transition-colors">
+                            자주 묻는 질문
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/cs/inquiry}"
+                           class="hover:text-white transition-colors">
+                            1:1 문의
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#"
+                           class="hover:text-white transition-colors">
+                            배송/반품 안내
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- My Account -->
+            <div>
+                <h4 class="text-white font-semibold mb-4">내 계정</h4>
+                <ul class="space-y-2 text-sm">
+
+                    <!-- 로그인 안 한 경우 -->
+                    <li th:if="${loginMemberId == null}">
+                        <a th:href="@{/login}"
+                           class="hover:text-white transition-colors">
+                            로그인
+                        </a>
+                    </li>
+
+                    <!-- 로그인 한 경우 -->
+                    <li th:if="${loginMemberId != null}">
+                        <a th:href="@{/members/me}"
+                           class="hover:text-white transition-colors">
+                            마이페이지
+                        </a>
+                    </li>
+
+                    <li>
+                        <a th:href="@{/cart}"
+                           class="hover:text-white transition-colors">
+                            장바구니
+                        </a>
+                    </li>
+
+                    <li>
+                        <a th:href="@{/orders}"
+                           class="hover:text-white transition-colors">
+                            주문내역
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="border-t border-gray-800 mt-8 pt-8 text-sm text-gray-500">
+            <p>© 2026 Omniora. All rights reserved.</p>
+        </div>
+
     </div>
+
 </footer>
-</body>
-</html>

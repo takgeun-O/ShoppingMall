@@ -221,4 +221,22 @@ public class CategoryService {
                 .map(Category::getName)
                 .orElseThrow();
     }
+
+    public String findAdminNameOrNull(Long categoryId) {
+
+        if(categoryId == null) return null;
+
+        return categoryRepository.findById(categoryId)
+                .map(Category::getName)
+                .orElse(null);
+    }
+
+    public String findPublicNameOrNull(Long categoryId) {
+        if(categoryId == null) return null;
+
+        return categoryRepository.findById(categoryId)
+                .filter(Category::isPublicVisible)
+                .map(Category::getName)
+                .orElse(null);
+    }
 }

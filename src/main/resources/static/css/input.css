@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* ✅ Thymeleaf 템플릿 전체(프래그먼트 포함) */
+@source "../../templates/**/*.html";

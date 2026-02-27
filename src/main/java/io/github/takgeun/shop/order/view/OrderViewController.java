@@ -4,6 +4,7 @@ import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.dto.request.OrderCreateRequest;
@@ -45,9 +46,9 @@ public class OrderViewController {
             Model model,
             RedirectAttributes ra
     ) {
-        Long memberId = (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
+        boolean admin = isAdmin(session);
 
-        Product product = productService.getPublic(productId);
+        Product product = productService.getForDetail(admin, productId);
 
         // 폼 초깃값
         OrderCreateRequest form = new OrderCreateRequest(productId);
@@ -77,9 +78,11 @@ public class OrderViewController {
                 form.getProductId(), form.getQuantity(), form.getRecipientName(), form.getRecipientPhone(),
                 form.getShippingZipCode(), form.getShippingAddress(), form.getRequestMessage());
 
+        boolean admin = isAdmin(session);
+
         // 폼 검증 실패 시 -> 주문서로 forward (입력값 유지 + 에러 표시)
         if (bindingResult.hasErrors()) {
-            model.addAttribute("product", productService.getPublic(form.getProductId()));
+            model.addAttribute("product", productService.getForDetail(admin, form.getProductId()));
             return "public/orders/new";
         }
 
@@ -104,7 +107,7 @@ public class OrderViewController {
             bindingResult.rejectValue(
                     "quantity", "order.quantity.insufficientStock", e.getMessage()
             );
-            model.addAttribute("product", productService.getPublic(form.getProductId()));
+            model.addAttribute("product", productService.getForDetail(admin, form.getProductId()));
             return "public/orders/new";
         }
     }
@@ -173,5 +176,11 @@ public class OrderViewController {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/orders/" + orderId;
         }
+    }
+
+    private boolean isAdmin(HttpSession session) {
+        if(session == null) return false;
+        MemberRole role = (MemberRole) session.getAttribute(SessionConst.LOGIN_ROLE);
+        return role == MemberRole.ADMIN;
     }
 }

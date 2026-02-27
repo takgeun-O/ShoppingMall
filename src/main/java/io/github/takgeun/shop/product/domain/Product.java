@@ -16,6 +16,9 @@ public class Product {
     private String description;
     private ProductStatus status;
 
+    private double rating;          // double 이니 기본값 0.0 (추후 리뷰 구현 시 값 넣기)
+    private Integer originalPrice;  // Integer 니까 기본값 null (추후 할인 구현 시 값 넣기)
+
     protected Product() {
     }
 
@@ -169,5 +172,18 @@ public class Product {
         if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
             this.status = ProductStatus.ON_SALE;
         }
+    }
+
+    // 할인율 계산
+    public int discountPercent() {
+        if (originalPrice == null || originalPrice <= 0 || originalPrice <= price) {
+            return 0;
+        }
+        return (int) Math.round((1 - (double) price / originalPrice) * 100);
+    }
+
+    // 레이팅
+    public double ratingKey() {
+        return rating;
     }
 }

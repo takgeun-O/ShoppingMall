@@ -6,9 +6,12 @@ import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 
+import io.github.takgeun.shop.product.view.dto.ProductCardView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -17,150 +20,130 @@ import java.util.Set;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final CategoryService categoryService;
 
-    // 카테고리별 상품 생성 (관리자)
-    // 각 메서드 파라미터에 requestDTO로 받기보다는 컨트롤러에서 풀어넘기는 것이 좋다.
-    // DTO는 원래 컨트롤러 경계에 가깝다보니 서비스가 DTO를 받으면 API 형태에 서비스가 끌려다닐 가능성이 생김.
-    // 말 그대로 서비스는 유스케이스 구현만 신경써야함.
+    // 목록 : categoryId(단일) + sort + role
+    public List<Product> findForList(boolean admin, Long categoryId, String sort) {
+
+        // base 조회 (카테고리 1개만 필터)
+        List<Product> base = (categoryId == null)
+                ? productRepository.findAll()
+                : productRepository.findAllByCategoryId(categoryId);
+
+        // role 기반 노출 필터
+        List<Product> visible = admin
+                ? base
+                : base.stream()
+                .filter(Product::isPublicVisible)
+                .toList();
+
+        // sort 적용
+        return applySort(visible, normalizeSort(sort));
+    }
+
+    // 상세 : role 기반 접근
+    public Product getForDetail(boolean admin, Long productId) {
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+
+        if(!admin && !p.isPublicVisible()) {
+            throw new NotFoundException("존재하지 않는 상품입니다.");
+        }
+
+        return p;
+    }
+
+    // public 사용자 주문
+    public Product getForOrderPublic(Long productId) {
+        return getForDetail(false, productId);
+    }
+
+    // 생성 (관리자)
     public Long create(Long categoryId, String name, int price, int stock, String description) {
-
-        // 카테고리 존재 검증 (카테고리 서비스 책임)
-        categoryService.getAdmin(categoryId);
-
         Product product = Product.create(categoryId, name, price, stock, description);
-        Product saved = productRepository.save(product);
-
-        return saved.getId();
-    }
-
-    // 단건 조회
-    public Product getAdmin(Long productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
-    }
-
-    // 사용자(공개) 조회
-    public Product getPublic(Long productId) {
-        Product product = getAdmin(productId);
-        if(!product.isPublicVisible()) {
-            throw new NotFoundException("상품이 존재하지 않습니다.");
-        }
-
-        return product;
-    }
-
-    // 사용자(공개) 전체 목록 조회
-    public List<Product> getAllPublic() {
-        return productRepository.findAllPublic();
-    }
-
-    // 관리자 전체 목록 조회
-    public List<Product> getAllAdmin() {
-        return productRepository.findAllAdmin();
-    }
-
-    // 카테고리별 목록 조회 (유저)
-    public List<Product> getAllPublicByCategoryId(Long categoryId) {
-        categoryService.getPublic(categoryId);        // 존재 검증
-        return productRepository.findAllPublicByCategoryId(categoryId);
-    }
-
-    // 여러 카테고리로 조회
-    public List<Product> getAllPublicByCategoryIds(Set<Long> categoryIds) {
-        return productRepository.findAllPublicByCategoryIds(categoryIds);
-    }
-
-    // 여러 카테고리로 조회
-    public List<Product> getAllAdminByCategoryIds(Set<Long> categoryIds) {
-        return productRepository.findAllAdminByCategoryIds(categoryIds);
-    }
-
-    // 카테고리별 목록 조회 (관리자는 전체 보여주기)
-    public List<Product> getAllAdminByCategoryId(Long categoryId) {
-        categoryService.getAdmin(categoryId);
-        return productRepository.findAllAdminByCategoryId(categoryId);
-    }
-
-    // 상품 수정 (부분 수정)
-    // 들어온 값만 바꾸고, 안 들어온 값은 그대로 둘거니까 여기에 들어가는 모든 파라미터 타입들은 객체 타입이어야 한다.
-    public void update(Long productId, Long categoryId, String name, Integer price,
-                       Integer stock, String description)
-    {
-        // 상품이 없을 경우 예외 처리
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
-
-        // 카테고리 변경 시
-        if(categoryId != null) {
-//            categoryRepository.findById(categoryId)
-//                    .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
-            // 카테고리 존재 검증은 위에처럼 하기 보다는 카테고리 서비스 책임으로 두는 게 좋다. (단일 출처)
-            // 예를 들어 비활성화되거나 삭제된 카테고리 같은 것들을 여러 서비스에서 각자 repo로 검사하기 시작하면
-            // 코드 중복이 발생하고 누락이 발생할 가능성이 있기 때문임.
-            categoryService.getAdmin(categoryId);
-            product.changeCategory(categoryId);
-        }
-        // 상품명 변경 시
-        if(name != null) {
-            product.changeName(name);
-        }
-        // 가격 변경 시
-        if(price != null) {
-            product.changePrice(price);
-        }
-        // 재고 변경 시
-        if(stock != null) {
-            product.changeStock(stock);
-        }
-        // 상품설명 변경 시(빈 문자열은 상품설명 삭제)
-        if(description != null) {
-            product.changeDescription(description);
-        }
-
-        // 메모리 저장소에서는 save 호출해줘야 덮어쓰기가 확실함
         productRepository.save(product);
+        return product.getId();
     }
 
-    // 상태 변경
-    public void changeStatus(Long productId, ProductStatus status) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
+    // 수정 (부분 수정)
+    // null 인 항목은 수정하지 않음
+    public void update(Long productId,
+                       Long categoryId,
+                       String name,
+                       Integer price,
+                       Integer stock,
+                       String description) {
 
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+
+        if(categoryId != null) p.changeCategory(categoryId);
+        if(name != null) p.changeName(name);
+        if(price != null) p.changePrice(price);
+        if(stock != null) p.changeStock(stock);
+        if(description != null) p.changeDescription(description);
+
+        productRepository.save(p);
+    }
+
+    // 상태 변경(관리자)
+    public void changeStatus(Long productId, ProductStatus status) {
         if(status == null) {
             throw new IllegalArgumentException("status는 필수입니다.");
         }
 
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+
         switch (status) {
-            case READY -> product.ready();
-            case ON_SALE -> product.onSale();
-            case HIDDEN -> product.hide();
-            case DISCONTINUED -> product.discontinue();
-            default -> throw new IllegalArgumentException("지원하지 않는 status 입니다.");
+            case ON_SALE -> p.onSale();
+            case READY -> p.ready();
+            case HIDDEN -> p.hide();
+            case DISCONTINUED -> p.discontinue();
+            case SOLD_OUT -> p.changeStock(0);  // 재고 0으로 만들기
         }
 
-        productRepository.save(product);        // 메모리 저장소 반영
+        productRepository.save(p);
     }
 
-    public Product save(Product product) {
-        if(product == null) {
-            throw new IllegalArgumentException("productId는 필수입니다.");
-        }
-        return productRepository.save(product);
+    public void save(Product product) {
+        productRepository.save(product);
     }
 
     public void increaseStock(Long productId, int quantity) {
-        if(productId == null) {
-            throw new IllegalArgumentException("productId는 필수입니다.");
-        }
-        if(quantity <= 0) {
-            throw new IllegalArgumentException("증가 수량은 1 이상이어야 합니다.");
-        }
+        Product p = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+        p.increaseStock(quantity);
+        productRepository.save(p);
+    }
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("상품이 존재하지 않습니다."));
 
-        product.increaseStock(quantity);    // 도메인 책임
-        productRepository.save(product);
+
+    private String normalizeSort(String sort) {
+        if(sort == null || sort.isBlank()) return "latest";
+        return sort.trim();
+    }
+
+    private List<Product> applySort(List<Product> products, String sort) {
+        List<Product> result = new ArrayList<>(products);
+
+        Comparator<Product> cmp = switch (sort) {
+            case "latest" -> Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();       // 상품id가 높으면 최근에 만들어진 것.
+            case "price-low" -> Comparator.comparingInt(Product::getPrice)
+                    .thenComparingLong((Product p) -> safeLong(p.getId()));
+            case "price-high" -> Comparator.comparingInt(Product::getPrice).reversed()
+                    .thenComparingLong((Product p) -> safeLong(p.getId()));
+            case "best", "rating" -> Comparator.comparingDouble(Product::ratingKey).reversed()
+                    .thenComparingLong((Product p) -> safeLong(p.getId()));
+            case "sale" -> Comparator.comparingInt(Product::discountPercent).reversed()
+                    .thenComparingLong((Product p) -> safeLong(p.getId()));
+            default -> Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();
+        };
+
+        result.sort(cmp);
+        return result;
+    }
+
+    private long safeLong(Long v) {
+        return v == null ? 0L : v;
     }
 }

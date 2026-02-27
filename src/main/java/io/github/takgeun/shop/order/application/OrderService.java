@@ -43,88 +43,57 @@ public class OrderService {
                        String recipientName, String recipientPhone,
                        String shippingZipCode, String shippingAddress, String requestMessage) {
 
-        log.info("memberId={}, productId={}, productStatus={}",
-                memberId, productId, productService.getPublic(productId).getStatus());
+        requireAuthenticated(memberId);
+        requirePositive(quantity, "quantity");
 
-        // 로그인 상태 검증
-        validateAuthenticated(memberId);
-
-        // 회원 상태 검증
         Member member = memberService.get(memberId);
-        if(member.getStatus() != MemberStatus.ACTIVE) {
-            throw new ForbiddenException("비활성 회원은 주문할 수 없습니다.");
-        }
+        requireActiveMember(member);
 
-        // 상품 상태 검증
-        Product product = productService.getPublic(productId);
-        if(product.getStatus() != ProductStatus.ON_SALE) {
-            throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
-        }
+        // 주문 가능한 상품
+        Product product = productService.getForOrderPublic(productId);
+        requireOnSale(product);
 
-        // 재고 검증/차감
-        if(quantity < 1) {
-            throw new IllegalArgumentException("quantity는 1 이상입니다.");
-        }
-
-//        int productStock = product.getStock();
-//        if(productStock < quantity) {
-//            throw new ConflictException("판매 중인 상품의 재고가 주문 수량보다 적습니다.");
-//        }
-//        int decreasedStock = productStock - quantity;
-//        productService.update(productId, null, null, null, decreasedStock, null);
-
-        // 주문서비스에서 상품 수정을 하면 재고 변경 규칙/상품 변경 규칙이 섞일 수 있고
-        // null을 여러 개 넘기는 방식은 유지보수에 좋지 않음.
-        // 또한 stock 읽고, 비교하고, update 호출 방식은 동시 요청이 들어왔을 때 동시성 문제가 발생할 가능성이 있음.
-        // 검증 + 차감은 Product 도메인 하나에서 처리하도록 하자.
-        product.decreaseStock(quantity);    // 내부에서 재고 부족이면 ConflictException
-        productService.save(product);       // 저장 반영은 ProductService 에서
+        // 재고 검증+차감은 Product 도메인상에서 진행
+        product.decreaseStock(quantity);
+        productService.save(product);  // 저장 반영은 product 서비스 책임 (상품 저장이니깐)
 
         // 스냅샷
         String productNameSnapshot = product.getName();
         int unitPriceSnapshot = product.getPrice();
 
-        // 주문 생성 + 저장
         Order order = Order.create(
-                memberId, productId, productNameSnapshot, unitPriceSnapshot, quantity, recipientName, recipientPhone,
+                memberId, productId,
+                productNameSnapshot, unitPriceSnapshot,
+                quantity,
+                recipientName, recipientPhone,
                 shippingZipCode, shippingAddress, requestMessage
         );
+
         return orderRepository.save(order).getId();
     }
 
     // 내 주문 목록 조회
     public List<Order> getMyOrders(Long memberId) {
-        validateAuthenticated(memberId);
-
+        requireAuthenticated(memberId);
         return orderRepository.findAllByMemberId(memberId);
     }
 
     // 주문 상세 조회
     public OrderResponse getDetail(Long memberId, Long orderId) {
-        validateAuthenticated(memberId);
+        requireAuthenticated(memberId);
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
-
-        // 본인 주문 여부
-        if(!memberId.equals(order.getMemberId())) {
-            throw new ForbiddenException("본인 주문만 조회할 수 있습니다.");
-        }
+        Order order = getOrderOrThrow(orderId);
+        requireOwner(memberId, order);      // 자기 자신의 주문인지 검증
 
         return OrderResponse.from(order);
     }
 
     // 단일 주문 취소
     public void cancel(Long memberId, Long orderId) {
-        validateAuthenticated(memberId);
+        requireAuthenticated(memberId);
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
-
-        // 본인 주문 여부
-        if(!memberId.equals(order.getMemberId())) {
-            throw new ForbiddenException("본인 주문만 취소할 수 있습니다.");
-        }
+        Order order = getOrderOrThrow(orderId);
+        requireOwner(memberId, order);
 
         // 이미 취소된 주문
         if(order.getStatus() == OrderStatus.CANCELED) {
@@ -143,9 +112,36 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    private void validateAuthenticated(Long memberId) {
-        if(memberId == null) {
-            throw new UnauthorizedException("로그인이 필요합니다.");
+
+
+    // Helper 메소드들
+    private void requireAuthenticated(Long memberId) {
+        if(memberId == null) throw new UnauthorizedException("로그인이 필요합니다.");
+    }
+
+    private void requirePositive(int value, String fieldName) {
+        if (value < 1) throw new IllegalArgumentException(fieldName + "는 1 이상입니다.");
+    }
+
+    private void requireActiveMember(Member member) {
+        if(member.getStatus() != MemberStatus.ACTIVE) {
+            throw new ForbiddenException("비활성 회원은 주문할 수 없습니다.");
+        }
+    }
+    private void requireOnSale(Product product) {
+        if (product.getStatus() != ProductStatus.ON_SALE) {
+            throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
+        }
+    }
+
+    private Order getOrderOrThrow(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
+    }
+
+    private void requireOwner(Long memberId, Order order) {
+        if (!memberId.equals(order.getMemberId())) {
+            throw new ForbiddenException("본인 주문만 처리할 수 있습니다.");
         }
     }
 }

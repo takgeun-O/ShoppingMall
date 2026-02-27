@@ -1,74 +1,141 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-        th:replace="~{layout/default :: layout('상품 목록', ~{::body}, ~{}, 'public')}">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '상품 목록',
+          ~{::body},
+          null,
+          'SHOP'
+      )}">
+
 <body>
 
-<h1>상품 목록</h1>
+<div class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<div class="container" style="display: flex; gap:24px;">
-
-    <!-- 카테고리 필터 -->
-    <aside>
-        <th:block th:replace="~{fragments/categoryTree :: categoryTree(
-      mode=${treeMode},
-      childrenByParent=${childrenByParent},
-      openIds=${openIds},
-      selectedCategoryId=${selectedCategoryId},
-      baseUrl=${'/products'}
-  )}"/>
-    </aside>
-
-    <!-- 상품 리스트 -->
-    <section class="content" style="flex:1;">
-        <div class="muted" th:if="${selectedCategoryId != null}">
-            선택된 카테고리: <span th:text="${selectedCategoryName}"></span>
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2"
+                th:text="${selectedCategoryName != null} ? ${selectedCategoryName} : '전체 상품'">
+                전체 상품
+            </h1>
+            <p class="text-gray-600">
+                총 <span th:text="${#lists.size(products)}">0</span>개의 상품
+            </p>
         </div>
 
-        <!-- 필터/정렬 -->
-        <div class="flex gap-3" style="border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:20px;">
+        <!-- Filters and Sorting -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
 
-            <a class="sub-item"
-               th:classappend="${sort == null} ? ' is-active' : ''"
-               th:href="@{/products(categoryId=${selectedCategoryId})}">
-                전체
-            </a>
+            <div class="flex items-center gap-2">
+                <!-- 피그마: 필터 버튼(동작 없음) -->
+                <button type="button"
+                        class="inline-flex items-center px-3 py-2 text-sm border rounded-md hover:bg-gray-50">
+                    <!-- 아이콘 대신 텍스트(원하면 svg로 교체 가능) -->
+                    <span class="mr-2">☰</span>
+                    필터
+                </button>
 
-            <a class="sub-item"
-               th:classappend="${sort == 'best'} ? ' is-active' : ''"
-               th:href="@{/products(categoryId=${selectedCategoryId}, sort='best')}">
-                베스트
-            </a>
-
-            <a class="sub-item"
-               th:classappend="${sort == 'sale'} ? ' is-active' : ''"
-               th:href="@{/products(categoryId=${selectedCategoryId}, sort='sale')}">
-                할인
-            </a>
-
-        </div>
-
-        <div th:if="${#lists.isEmpty(products)}" class="card">
-            표시할 상품이 없습니다.
-        </div>
-
-        <div th:each="p : ${products}" class="card">
-            <div class="flex-between">
-                <a th:href="@{/products/{id}(id=${p.id})}"
-                   th:text="${p.name}" class="card-title">상품명</a>
-                <a th:href="@{/products/{id}(id=${p.id})}" class="btn btn-outline">보기</a>
+                <!-- categoryId가 있을 때 전체보기 -->
+                <a th:if="${selectedCategoryId != null}"
+                   th:href="@{/products(sort=${sort})}"
+                   class="inline-flex items-center px-3 py-2 text-sm rounded-md hover:bg-gray-50">
+                    전체보기
+                </a>
             </div>
 
-            <div class="card-meta" style="margin-top:8px;">
-                가격: <span th:text="${p.price}"></span> 원 /
-                재고: <span th:text="${p.stock}"></span>
-            </div>
+            <!-- sort select -->
+            <form method="get" th:action="@{/products}">
+                <input type="hidden" name="categoryId" th:value="${selectedCategoryId}"/>
 
-            <div class="muted" th:if="${p.description != null}" style="margin-top:8px;">
-                <span th:text="${p.description}"></span>
-            </div>
+                <select name="sort"
+                        class="w-[180px] border rounded-md px-3 py-2 text-sm bg-white"
+                        onchange="this.form.submit()">
+                    <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
+                    <option value="best" th:selected="${sort == 'best'}">인기순</option>
+                    <option value="price-low" th:selected="${sort == 'price-low'}">낮은 가격순</option>
+                    <option value="price-high" th:selected="${sort == 'price-high'}">높은 가격순</option>
+                    <option value="rating" th:selected="${sort == 'rating'}">평점순</option>
+                </select>
+            </form>
         </div>
-    </section>
 
+        <!-- Products Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+            <a th:each="p : ${products}"
+               th:href="@{/products/{id}(id=${p.id})}"
+               class="group">
+
+                <div class="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white rounded-lg">
+
+                    <div class="aspect-square relative overflow-hidden bg-gray-100">
+
+                        <img th:src="${p.imageUrl}"
+                             th:alt="${p.name}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
+
+                        <!-- badge: 있으면 표시 -->
+                        <span th:if="${p.badge != null}"
+                              th:text="${p.badge}"
+                              class="absolute top-3 left-3 text-xs font-semibold text-white px-2 py-1 rounded"
+                              th:classappend="
+                      ${p.badge == 'BEST'} ? ' bg-blue-600' :
+                      ${p.badge == 'NEW'} ? ' bg-green-600' :
+                      ${p.badge == 'SALE'} ? ' bg-red-600' :
+                      ' bg-orange-600'">
+              BEST
+            </span>
+
+                    </div>
+
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
+                            th:text="${p.name}">
+                            상품명
+                        </h3>
+
+                        <div class="flex items-center mb-2">
+                            <span class="text-yellow-500">★</span>
+                            <span class="text-sm text-gray-600 ml-1"
+                                  th:text="${p.rating} + ' (' + ${p.reviews} + ')'">
+                4.8 (123)
+              </span>
+                        </div>
+
+                        <div class="flex items-baseline gap-2">
+              <span class="text-xl font-bold text-gray-900"
+                    th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
+                289,000원
+              </span>
+
+                            <span th:if="${p.originalPrice != null}"
+                                  class="text-sm text-gray-400 line-through"
+                                  th:text="${#numbers.formatInteger(p.originalPrice, 0, 'COMMA')} + '원'">
+                350,000원
+              </span>
+                        </div>
+
+                        <div th:if="${p.originalPrice != null}" class="mt-1">
+              <span class="text-sm font-semibold text-red-600"
+                    th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
+                10% 할인
+              </span>
+                        </div>
+
+                    </div>
+                </div>
+            </a>
+
+        </div>
+
+        <!-- Empty -->
+        <div th:if="${#lists.isEmpty(products)}"
+             class="text-center text-gray-500 mt-12">
+            등록된 상품이 없습니다.
+        </div>
+
+    </div>
 </div>
 
 </body>
