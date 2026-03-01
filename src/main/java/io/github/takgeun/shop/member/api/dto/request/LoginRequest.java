@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.member.dto.request;
+package io.github.takgeun.shop.member.api.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

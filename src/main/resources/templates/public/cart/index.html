@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '장바구니',
+          ~{::body},
+          null,
+          'CART'
+      )}">
+
+<body>
+<div class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">장바구니</h1>
+
+        <!-- Empty cart -->
+        <div th:if="${#lists.isEmpty(items)}"
+             class="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 text-center">
+            <p class="text-gray-700 font-medium mb-3">장바구니가 비어있습니다.</p>
+            <p class="text-sm text-gray-500 mb-6">원하시는 상품을 담아보세요.</p>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(items)}"
+             class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Cart Items -->
+            <div class="lg:col-span-2 space-y-4">
+
+                <div th:each="item : ${items}"
+                     class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+
+                    <div class="flex gap-6">
+                        <!-- Image -->
+                        <div class="w-24 h-24 flex-shrink-0">
+                            <img th:src="${item.imageUrl}"
+                                 th:alt="${item.name}"
+                                 class="w-full h-full object-cover rounded-lg"
+                                 />
+                        </div>
+
+                        <div class="flex-1">
+                            <!-- Title + Remove -->
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-gray-900"
+                                    th:text="${item.name}">상품명</h3>
+
+                                <!-- Remove (POST) -->
+                                <form th:action="@{/cart/items/{id}/remove(id=${item.id})}"
+                                      method="post">
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center h-9 w-9 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-50"
+                                            aria-label="삭제">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Price -->
+                            <p class="text-lg font-bold text-gray-900 mb-4"
+                               th:text="${#numbers.formatInteger(item.unitPrice, 3, 'COMMA')} + '원'">
+                                289,000원
+                            </p>
+
+                            <!-- Quantity controls -->
+                            <div class="flex items-center gap-2">
+
+                                <!-- Minus -->
+                                <form th:action="@{/cart/items/{id}/quantity(id=${item.id})}"
+                                      method="post">
+                                    <input type="hidden" name="delta" value="-1"/>
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center h-8 w-8 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                                            aria-label="수량 감소"
+                                            th:disabled="${item.quantity <= 1}">
+                                        −
+                                    </button>
+                                </form>
+
+                                <span class="w-12 text-center font-semibold"
+                                      th:text="${item.quantity}">1</span>
+
+                                <!-- Plus -->
+                                <form th:action="@{/cart/items/{id}/quantity(id=${item.id})}"
+                                      method="post">
+                                    <input type="hidden" name="delta" value="1"/>
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center h-8 w-8 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                                            aria-label="수량 증가">
+                                        +
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Order Summary -->
+            <div>
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200 sticky top-24">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">주문 요약</h2>
+
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-gray-600">
+                            <span>상품 금액</span>
+                            <span th:text="${#numbers.formatInteger(summary.subtotal, 3, 'COMMA')} + '원'">
+                                0원
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between text-gray-600">
+                            <span>배송비</span>
+                            <span th:text="${summary.shippingFee == 0 ? '무료' : (#numbers.formatInteger(summary.shippingFee, 3, 'COMMA') + '원')}">
+                                무료
+                            </span>
+                        </div>
+
+                        <div class="border-t border-gray-200 pt-3"></div>
+
+                        <div class="flex justify-between text-xl font-bold text-gray-900">
+                            <span>총 금액</span>
+                            <span th:text="${#numbers.formatInteger(summary.total, 3, 'COMMA')} + '원'">
+                                0원
+                            </span>
+                        </div>
+                    </div>
+
+                    <form th:action="@{/orders/checkout}" method="get">
+                        <button type="submit"
+                                class="w-full inline-flex items-center justify-center h-11 rounded-md bg-gray-900 px-6 text-sm font-medium text-white hover:bg-gray-800">
+                            주문하기
+                        </button>
+                    </form>
+
+                    <p class="text-xs text-gray-500 text-center mt-4"
+                       th:if="${summary.shippingFee > 0}">
+                        30,000원 이상 구매 시 무료배송
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Continue Shopping -->
+        <div class="mt-8 text-center">
+            <a th:href="@{/products}"
+               class="inline-flex items-center justify-center h-11 rounded-md border border-gray-200 bg-white px-6 text-sm font-medium hover:bg-gray-50">
+                쇼핑 계속하기
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

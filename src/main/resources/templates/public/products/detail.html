@@ -1,51 +1,332 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('상품 상세', ~{::body}, ~{::headExtra}, 'public')}">
-
-<th:block th:fragment="headExtra">
-    <style>
-        .wrap {
-            max-width: 720px;
-            margin: 0 auto;
-        }
-        .box {
-            border: 1px solid #ddd;
-            padding: 16px;
-        }
-    </style>
-</th:block>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '상품 상세',
+          ~{::body},
+          null,
+          'SHOP'
+      )}">
 
 <body>
+<div class="bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<div class="wrap">
-    <h1>상품 상세</h1>
-
-    <div class="box">
-        <h2 th:text="${product.name}">상품명</h2>
-
-        <div class="muted">
-            상품ID: <span th:text="${product.id}"></span>
+        <!-- Breadcrumb -->
+        <div class="mb-6 text-sm text-gray-600">
+            <a th:href="@{/}" class="hover:text-gray-900">홈</a>
+            <span class="mx-2">/</span>
+            <a th:href="@{/products}" class="hover:text-gray-900">상품</a>
+            <span class="mx-2">/</span>
+            <span class="text-gray-900" th:text="${product.name}">상품명</span>
         </div>
 
-        <p>
-            가격: <strong><span th:text="${product.price}"></span></strong>
-        </p>
+        <!-- Product Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
 
-        <p class="muted">
-            재고: <span th:text="${product.stock}"></span>
-        </p>
+            <!-- Image -->
+            <div class="space-y-4">
+                <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    <img th:src="${product.imageUrl}"
+                         th:alt="${product.name}"
+                         class="w-full h-full object-cover"
+                         />
+                </div>
+            </div>
 
-        <p th:if="${product.description != null}">
-            <span th:text="${product.description}"></span>
-        </p>
+            <!-- Info -->
+            <div>
 
-        <div class="actions">
-            <a class="btn" th:href="@{/products}">목록으로</a>
+                <!-- Badge -->
+                <span th:if="${product.badge != null}"
+                      th:text="${product.badge}"
+                      class="inline-flex items-center mb-4 px-2.5 py-1 rounded-md text-sm font-semibold text-white bg-blue-600">
+                    BEST
+                </span>
 
-            <a class="btn" th:href="@{/orders/new(productId=${product.id})}">주문하기</a>
+                <h1 class="text-3xl font-bold text-gray-900 mb-4"
+                    th:text="${product.name}">
+                    상품명
+                </h1>
+
+                <!-- Rating -->
+                <div class="flex items-center mb-6">
+                    <div class="flex items-center">
+                        <th:block th:with="filled=${T(java.lang.Math).floor(product.rating)}">
+                            <th:block th:each="i : ${#numbers.sequence(1,5)}">
+                                <svg class="h-5 w-5"
+                                     th:classappend="${i <= filled} ? ' text-yellow-500 fill-yellow-500' : ' text-gray-300'"
+                                     viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                    <path d="M12 2l3.09 6.26 6.91 1-5 4.87L18.18 22 12 18.56 5.82 22 7 14.13 2 9.26l6.91-1z"/>
+                                </svg>
+                            </th:block>
+                        </th:block>
+                    </div>
+
+                    <span class="ml-2 text-sm text-gray-600"
+                          th:text="${product.rating} + ' (' + ${product.reviews} + ' 리뷰)'">
+                        4.8 (1234 리뷰)
+                    </span>
+                </div>
+
+                <!-- Price / Discount -->
+                <div class="mb-6">
+                    <div class="flex items-baseline gap-3 mb-2">
+                        <span class="text-4xl font-bold text-gray-900"
+                              th:text="${#numbers.formatInteger(product.price, 3, 'COMMA')} + '원'">
+                            289,000원
+                        </span>
+
+                        <span th:if="${product.originalPrice != null}"
+                              class="text-xl text-gray-400 line-through"
+                              th:text="${#numbers.formatInteger(product.originalPrice, 3, 'COMMA')} + '원'">
+                            350,000원
+                        </span>
+                    </div>
+
+                    <span th:if="${product.originalPrice != null}"
+                          class="inline-flex items-center rounded-md bg-red-600 text-white text-lg px-3 py-1 font-semibold"
+                          th:text="${T(java.lang.Math).round((1 - (product.price * 1.0) / product.originalPrice) * 100)} + '% 할인'">
+                        10% 할인
+                    </span>
+                </div>
+
+                <!-- Added to cart feedback -->
+                <div th:if="${added} and ${addedProductId} == ${product.id}"
+                     class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                    <span th:text="${success}">장바구니에 담았습니다.</span>
+                    <span class="ml-1">(수량: <span th:text="${addedQty}">1</span>)</span>
+                    <a th:href="@{/cart}" class="ml-2 underline font-semibold">장바구니 보기</a>
+                </div>
+
+                <div class="my-6 border-t border-gray-200"></div>
+
+                <!-- Description -->
+                <div class="mb-8">
+                    <h3 class="font-semibold text-gray-900 mb-3">상품 설명</h3>
+                    <p class="text-gray-600 leading-relaxed"
+                       th:text="${product.description}">
+                        상품 설명
+                    </p>
+                </div>
+
+                <!-- Details -->
+                <div class="mb-8">
+                    <h3 class="font-semibold text-gray-900 mb-3">상품 정보</h3>
+                    <ul class="space-y-2">
+                        <li th:each="d : ${product.details}"
+                            class="text-gray-600 flex items-start">
+                            <span class="mr-2">•</span>
+                            <span th:text="${d}">상세 정보</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Action Section - Premium Layout (Option A) -->
+                <div class="space-y-4 mb-8">
+
+                    <!-- Cart Add Form -->
+                    <form th:action="@{/cart/items}" method="post" id="addToCartForm" class="space-y-4">
+                        <input type="hidden" name="productId" th:value="${product.id}"/>
+                        <input type="hidden" name="returnUrl"
+                               th:value="${returnUrl != null ? returnUrl : #request.requestURI}"/>
+
+                        <!-- Row 1: Quantity Selector -->
+                        <div class="flex items-center justify-center sm:justify-start">
+                            <label for="qty" class="text-sm font-medium text-gray-700 mr-4">수량</label>
+
+                            <div class="inline-flex items-center border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
+                                <button type="button"
+                                        id="qtyMinus"
+                                        class="px-4 py-3 hover:bg-gray-50 transition-colors border-r border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        aria-label="수량 감소">
+                                    <!-- Minus icon -->
+                                    <svg class="h-4 w-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/>
+                                    </svg>
+                                </button>
+
+                                <input id="qty"
+                                       name="quantity"
+                                       type="number"
+                                       min="1"
+                                       value="1"
+                                       class="no-spinner w-16 text-center font-medium text-gray-900 border-none focus:outline-none focus:ring-0 py-3"
+                                       aria-label="수량"/>
+
+                                <button type="button"
+                                        id="qtyPlus"
+                                        class="px-4 py-3 hover:bg-gray-50 transition-colors border-l border-gray-300"
+                                        aria-label="수량 증가">
+                                    <!-- Plus icon -->
+                                    <svg class="h-4 w-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Primary CTA - Add to Cart (Full Width) -->
+                        <button type="submit"
+                                class="w-full h-14 text-base font-semibold inline-flex items-center justify-center rounded-md transition-all duration-300"
+                                th:classappend="${added} and ${addedProductId} == ${product.id} ? ' bg-green-600 hover:bg-green-600 text-white' : ' bg-gray-900 text-white hover:bg-gray-800'">
+                            <th:block th:if="${added} and ${addedProductId} == ${product.id}">
+                                <!-- Check icon -->
+                                <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                추가 완료
+                            </th:block>
+
+                            <th:block th:unless="${added} and ${addedProductId} == ${product.id}">
+                                <!-- Cart icon -->
+                                <svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h15l-1.5 9h-12z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l-2-3H1"/>
+                                    <circle cx="9" cy="20" r="1"/>
+                                    <circle cx="18" cy="20" r="1"/>
+                                </svg>
+                                장바구니에 추가
+                            </th:block>
+                        </button>
+                    </form>
+
+                    <!-- Row 3: Secondary Actions - Wishlist & Share -->
+                    <div class="grid grid-cols-2 gap-3">
+
+                        <!-- Wishlist (stub) -->
+                        <button type="button"
+                                class="h-12 text-sm font-medium border-2 border-gray-200 hover:bg-gray-50 inline-flex items-center justify-center rounded-md">
+                            <!-- Heart icon -->
+                            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/>
+                            </svg>
+                            찜하기
+                        </button>
+
+                        <!-- Share (stub) -->
+                        <button type="button"
+                                class="h-12 text-sm font-medium border-2 border-gray-200 hover:bg-gray-50 inline-flex items-center justify-center rounded-md">
+                            <!-- Share2 icon -->
+                            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49"/>
+                            </svg>
+                            공유하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quantity stepper script (no framework) -->
+                <script>
+                    (function () {
+                        const input = document.getElementById('qty');
+                        const minus = document.getElementById('qtyMinus');
+                        const plus = document.getElementById('qtyPlus');
+
+                        if (!input || !minus || !plus) return;
+
+                        function sanitize() {
+                            const v = parseInt(input.value || '1', 10);
+                            const next = (isNaN(v) || v < 1) ? 1 : v;
+                            input.value = String(next);
+                            minus.disabled = next <= 1;
+                        }
+
+                        minus.addEventListener('click', function () {
+                            sanitize();
+                            const v = parseInt(input.value, 10);
+                            input.value = String(Math.max(1, v - 1));
+                            sanitize();
+                        });
+
+                        plus.addEventListener('click', function () {
+                            sanitize();
+                            const v = parseInt(input.value, 10);
+                            input.value = String(v + 1);
+                            sanitize();
+                        });
+
+                        input.addEventListener('input', sanitize);
+                        sanitize();
+                    })();
+                </script>
+
+                <!-- Benefits cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 text-center border-2 rounded-lg bg-white">
+                        <!-- Truck -->
+                        <svg class="h-6 w-6 mx-auto mb-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 17h4V5H2v12h3"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 7h5l3 3v7h-3"/>
+                            <circle cx="7" cy="17" r="2"/>
+                            <circle cx="17" cy="17" r="2"/>
+                        </svg>
+                        <p class="text-sm font-semibold text-gray-900">무료배송</p>
+                        <p class="text-xs text-gray-600">3만원 이상</p>
+                    </div>
+
+                    <div class="p-4 text-center border-2 rounded-lg bg-white">
+                        <!-- RotateCcw -->
+                        <svg class="h-6 w-6 mx-auto mb-2 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1015-6.7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4v6h6"/>
+                        </svg>
+                        <p class="text-sm font-semibold text-gray-900">간편반품</p>
+                        <p class="text-xs text-gray-600">30일 이내</p>
+                    </div>
+
+                    <div class="p-4 text-center border-2 rounded-lg bg-white">
+                        <!-- Shield -->
+                        <svg class="h-6 w-6 mx-auto mb-2 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z"/>
+                        </svg>
+                        <p class="text-sm font-semibold text-gray-900">정품보증</p>
+                        <p class="text-xs text-gray-600">100% 보장</p>
+                    </div>
+                </div>
+
+            </div>
         </div>
+
+        <!-- Reviews Section (샘플 1개 고정) -->
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">고객 리뷰</h2>
+
+            <div class="p-6 mb-4 border rounded-lg bg-white">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span class="text-sm font-semibold text-gray-700">김**</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <div class="flex">
+                                <th:block th:each="i : ${#numbers.sequence(1,5)}">
+                                    <svg class="h-4 w-4 text-yellow-500 fill-yellow-500" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                        <path d="M12 2l3.09 6.26 6.91 1-5 4.87L18.18 22 12 18.56 5.82 22 7 14.13 2 9.26l6.91-1z"/>
+                                    </svg>
+                                </th:block>
+                            </div>
+                            <span class="ml-2 text-sm text-gray-600">2026.02.20</span>
+                        </div>
+
+                        <p class="text-gray-800">
+                            정말 마음에 드는 제품입니다. 품질도 좋고 디자인도 예쁘네요. 강력 추천합니다!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
-
 </body>
 </html>

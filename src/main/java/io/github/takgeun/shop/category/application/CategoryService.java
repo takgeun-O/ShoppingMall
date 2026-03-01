@@ -181,10 +181,45 @@ public class CategoryService {
         }
     }
 
-    public List<Long> getDescendantIdsInclusive(Long rootId) {
+    public List<Long> findPublicDescendantIdsIncludingSelf(Long rootId) {
         // 공개 카테고리 전체 가져오기
         List<CategoryResponse> all = getAllPublicCategories();
         log.info("allPublic.size={}", all.size());
+
+        // parentId -> children 리스트 맵 만들기
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (CategoryResponse c : all) {
+            childrenByParent
+                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
+                    .add(c.getId());
+        }
+
+        // BFS로 root 포함 자손 id 수집
+        List<Long> result = new ArrayList<>();
+        Deque<Long> q = new ArrayDeque<>();
+        Set<Long> visited = new HashSet<>();
+
+        q.add(rootId);
+        visited.add(rootId);
+
+        while(!q.isEmpty()) {
+            Long cur = q.poll();
+            result.add(cur);
+
+            for (Long childId : childrenByParent.getOrDefault(cur, List.of())) {
+                if(visited.add(childId)) {
+                    q.add(childId);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public List<Long> findAdminDescendantIdsIncludingSelf(Long rootId) {
+        // 모든 카테고리 정보 가져오기
+        List<CategoryResponse> all = getAllAdminCategories();
+        log.info("allAdmin.size={}", all.size());
 
         // parentId -> children 리스트 맵 만들기
         Map<Long, List<Long>> childrenByParent = new HashMap<>();

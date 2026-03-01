@@ -3,6 +3,7 @@ package io.github.takgeun.shop.product.domain;
 // Domain(Entity/Model)
 
 import io.github.takgeun.shop.global.error.ConflictException;
+import lombok.Data;
 import lombok.Getter;
 
 @Getter
@@ -83,6 +84,12 @@ public class Product {
             throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
         }
         this.price = price;
+
+        // 정가가 판매가보다 작아지는 경우 자동 정리
+        // 관리자가 price를 바꾸면 originalPrice보다 price가 더 높은 상황이 생길 수 있음. -> 규칙 위반
+        if(this.originalPrice != null && this.originalPrice <= this.price) {
+            this.originalPrice = null;
+        }
     }
 
     public void changeStock(int stock) {
@@ -114,6 +121,25 @@ public class Product {
             throw new IllegalArgumentException("상품 설명은 2000자 이하여야 합니다.");
         }
         this.description = normalized;
+    }
+
+    public void changeOriginalPrice(Integer originalPrice) {
+        if(originalPrice == null) {
+            this.originalPrice = null;
+            return;
+        }
+        if(originalPrice <= 0) {
+            this.originalPrice = null;
+            return;
+        }
+        if(originalPrice < this.price) {
+            throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
+        }
+        if(originalPrice == this.price) {
+            this.originalPrice = null;  // 할인 없음
+            return;
+        }
+        this.originalPrice = originalPrice;
     }
 
     public boolean isPublicVisible() {
@@ -160,6 +186,10 @@ public class Product {
             throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다. 현재 재고 : " + this.stock);
         }
         this.stock = this.stock - quantity;
+
+        if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
+            this.status = ProductStatus.SOLD_OUT;
+        }
     }
 
     public void increaseStock(int quantity) {

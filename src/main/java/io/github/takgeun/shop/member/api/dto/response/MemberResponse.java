@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.member.dto.response;
+package io.github.takgeun.shop.member.api.dto.response;
 
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;

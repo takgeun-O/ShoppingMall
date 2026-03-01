@@ -2,26 +2,13 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/default :: layout(
-          '500 Internal Server Error',
-          ~{::body},
-          ~{::headExtra},
-            'PUBLIC'
+          '500 - 서버 오류',
+          ~{error/error :: content(
+              500,
+              '서버 오류가 발생했습니다',
+              '일시적인 문제일 수 있습니다.<br/>잠시 후 다시 시도해주세요.'
+          )},
+          null,
+          null
       )}">
-
-<head>
-    <th:block th:fragment="headExtra">
-        <!-- 필요하면 여기서 에러 페이지 전용 CSS/메타 추가 -->
-    </th:block>
-</head>
-
-<body>
-<div class="wrap error-page">
-    <h1>500</h1>
-    <h2>서버 오류가 발생했습니다.</h2>
-    <p th:text="${message} ?: '잠시 후 다시 시도해주세요.'"></p>
-    <div class="actions">
-        <a href="/" class="btn">홈으로</a>
-    </div>
-</div>
-</body>
 </html>

@@ -1,45 +1,231 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('상품 목록', ~{::body}, ~{}, 'public')}">
+      th:replace="~{layout/default :: layout(
+          '회원가입',
+          ~{::body},
+          null,
+          'SIGNUP'
+      )}">>
 
 <body>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
 
-<h1>회원가입</h1>
+        <!-- Logo/Brand Area -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-gray-900 rounded-2xl mb-4">
+                <span class="text-white text-2xl font-bold">O</span>
+            </div>
+            <h1 class="text-3xl font-semibold text-gray-900 mb-2">Create your account</h1>
+            <p class="text-gray-600">Start your journey with Omniora</p>
+        </div>
 
-<div th:if="${success}" th:text="${success}" style="color: green;"></div>
-<div th:if="${error}" th:text="${error}" style="color: red;"></div>
+        <!-- Main Card -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 mb-6">
 
-<form th:action="@{/signup}" th:object="${form}" method="post">
+            <form th:action="@{/signup}" th:object="${form}" method="post" class="space-y-5">
 
-    <div>
-        <label>이메일</label><br/>
-        <input type="text" th:field="*{email}"/>
-        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" style="color:red;"></div>
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-900 mb-2">Email address</label>
+                    <input
+                            id="email"
+                            type="email"
+                            th:field="*{email}"
+                            placeholder="john@example.com"
+                            class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none
+                   border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
+                            th:classappend="${#fields.hasErrors('email')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
+                    />
+                    <div th:if="${#fields.hasErrors('email')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{email}">Email error</span>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-900 mb-2">Password</label>
+
+                    <div class="relative">
+                        <input
+                                id="password"
+                                type="password"
+                                th:field="*{password}"
+                                placeholder="••••••••"
+                                class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none pr-12
+                     border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
+                                th:classappend="${#fields.hasErrors('password')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
+                        />
+
+                        <button
+                                type="button"
+                                id="togglePassword"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                aria-label="Toggle password visibility"
+                        >
+                            <span id="eyeIcon" class="text-lg">👁</span>
+                        </button>
+                    </div>
+
+                    <div th:if="${#fields.hasErrors('password')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{password}">Password error</span>
+                    </div>
+
+                    <p class="mt-2 text-xs text-gray-500">8~20 characters</p>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-900 mb-2">Confirm password</label>
+                    <input
+                            id="confirmPassword"
+                            type="password"
+                            th:field="*{confirmPassword}"
+                            placeholder="••••••••"
+                            class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none
+                   border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
+                            th:classappend="${#fields.hasErrors('confirmPassword')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
+                    />
+                    <div th:if="${#fields.hasErrors('confirmPassword')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{confirmPassword}">Confirm error</span>
+                    </div>
+                </div>
+
+                <!-- Full Name -->
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-900 mb-2">Full name</label>
+                    <input
+                            id="name"
+                            type="text"
+                            th:field="*{name}"
+                            placeholder="John Doe"
+                            class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none
+                   border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
+                            th:classappend="${#fields.hasErrors('name')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
+                    />
+                    <div th:if="${#fields.hasErrors('name')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{name}">Name error</span>
+                    </div>
+                </div>
+
+                <!-- Phone -->
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-900 mb-2">Phone number</label>
+                    <input
+                            id="phone"
+                            type="text"
+                            th:field="*{phone}"
+                            placeholder="+82 10-1234-5678"
+                            class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none
+                   border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
+                            th:classappend="${#fields.hasErrors('phone')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
+                    />
+                    <div th:if="${#fields.hasErrors('phone')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{phone}">Phone error</span>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Digits, spaces, + and - only</p>
+                </div>
+
+                <!-- Terms -->
+                <div class="pt-2">
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <div class="relative flex items-center justify-center mt-0.5">
+                            <input
+                                    type="checkbox"
+                                    th:field="*{agreeToTerms}"
+                                    class="w-5 h-5 border-2 border-gray-300 rounded-md cursor-pointer transition-all duration-200
+                       checked:bg-gray-900 checked:border-gray-900 hover:border-gray-400"
+                            />
+                        </div>
+                        <span class="text-sm text-gray-600 leading-relaxed">
+              I agree to the
+              <a th:href="@{/terms}" class="text-gray-900 hover:underline">Terms of Service</a>
+              and
+              <a th:href="@{/privacy}" class="text-gray-900 hover:underline">Privacy Policy</a>
+            </span>
+                    </label>
+
+                    <div th:if="${#fields.hasErrors('agreeToTerms')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
+                        <span class="font-bold">×</span>
+                        <span th:errors="*{agreeToTerms}">Terms error</span>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button
+                        type="submit"
+                        class="w-full py-3.5 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
+                 bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-sm"
+                >
+                    Create account
+                    <span class="text-base">→</span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-white text-gray-500">Or continue with</span>
+                </div>
+            </div>
+
+            <!-- Social -->
+            <div class="grid grid-cols-3 gap-3">
+                <a th:href="@{/oauth2/authorization/google}"
+                   class="flex items-center justify-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium
+                  hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 active:scale-95"
+                   aria-label="Continue with Google">
+                    <span class="text-sm">G</span>
+                </a>
+
+                <a th:href="@{/oauth2/authorization/github}"
+                   class="flex items-center justify-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium
+                  hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 active:scale-95"
+                   aria-label="Continue with GitHub">
+                    <span class="text-sm">GH</span>
+                </a>
+
+                <a th:href="@{/oauth2/authorization/other}"
+                   class="flex items-center justify-center px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium
+                  hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 active:scale-95"
+                   aria-label="Continue with Other">
+                    <span class="text-sm">⋯</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Sign In -->
+        <div class="text-center">
+            <p class="text-sm text-gray-600">
+                Already have an account?
+                <a th:href="@{/login}" class="text-gray-900 font-medium hover:underline">Sign in</a>
+            </p>
+        </div>
+
     </div>
+</div>
 
-    <div style="margin-top: 10px;">
-        <label>비밀번호</label><br/>
-        <input type="password" th:field="*{password}"/>
-        <div th:if="${#fields.hasErrors('password')}" th:text="${#fields.errors('password')[0]}" style="color:red;"></div>
-    </div>
+<script>
+    (function () {
+        const btn = document.getElementById("togglePassword");
+        const input = document.getElementById("password");
+        const eye = document.getElementById("eyeIcon");
+        if (!btn || !input) return;
 
-    <div style="margin-top: 10px;">
-        <label>이름</label><br/>
-        <input type="text" th:field="*{name}"/>
-        <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color:red;"></div>
-    </div>
-
-    <div style="margin-top: 10px;">
-        <label>전화번호</label><br/>
-        <input type="text" th:field="*{phone}" placeholder="010-1234-5678"/>
-        <div th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" style="color:red;"></div>
-    </div>
-
-    <div style="margin-top: 14px;">
-        <button type="submit">가입하기</button>
-        <a th:href="@{/login}" style="margin-left: 8px;">로그인</a>
-    </div>
-</form>
-
+        btn.addEventListener("click", function () {
+            const isPassword = input.getAttribute("type") === "password";
+            input.setAttribute("type", isPassword ? "text" : "password");
+            if (eye) eye.textContent = isPassword ? "🙈" : "👁";
+        });
+    })();
+</script>
 </body>
 </html>

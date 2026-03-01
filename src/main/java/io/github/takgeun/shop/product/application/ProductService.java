@@ -8,6 +8,7 @@ import io.github.takgeun.shop.product.domain.ProductStatus;
 
 import io.github.takgeun.shop.product.view.dto.ProductCardView;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,19 +16,32 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor        // 필수 인자를 가진 생성자 자동 생성
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryService categoryService;
 
     // 목록 : categoryId(단일) + sort + role
     public List<Product> findForList(boolean admin, Long categoryId, String sort) {
 
-        // base 조회 (카테고리 1개만 필터)
-        List<Product> base = (categoryId == null)
-                ? productRepository.findAll()
-                : productRepository.findAllByCategoryId(categoryId);
+        // base 조회
+        List<Product> base;
+        if(categoryId == null) {
+            base = productRepository.findAll();
+        } else {
+            // 자손 포함 카테고리 id 구하기
+            List<Long> categoryIds = admin
+                    ? categoryService.findPublicDescendantIdsIncludingSelf(categoryId)
+                    : categoryService.findAdminDescendantIdsIncludingSelf(categoryId);
+
+            // IN 조회
+            base = productRepository.findAllByCategoryIdIn(categoryIds);
+        }
+
+        log.info("base={}", base);
 
         // role 기반 노출 필터
         List<Product> visible = admin
@@ -35,6 +49,8 @@ public class ProductService {
                 : base.stream()
                 .filter(Product::isPublicVisible)
                 .toList();
+
+        log.info("visible={}", visible);
 
         // sort 적용
         return applySort(visible, normalizeSort(sort));
@@ -116,6 +132,19 @@ public class ProductService {
         productRepository.save(p);
     }
 
+    /**
+     * originalPrice 변경
+     * originalPrice == null : 정가 제거(할인 없음)
+     * originalPrice != null : price 이상이어야 함
+     */
+    public void changeOriginalPrice(Long productId, Integer originalPrice) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+
+        product.changeOriginalPrice(originalPrice);
+
+        productRepository.save(product);
+    }
 
 
     private String normalizeSort(String sort) {

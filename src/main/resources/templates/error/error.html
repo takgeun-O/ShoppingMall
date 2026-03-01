@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ✅ layout 호출 금지! 콘텐츠만 -->
+<div th:fragment="content(status, title, message)">
+    <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div class="text-center">
+
+            <h1 class="text-9xl font-bold text-gray-900 mb-4"
+                th:text="${status}">404</h1>
+
+            <h2 class="text-3xl font-bold text-gray-900 mb-4"
+                th:text="${title}">페이지를 찾을 수 없습니다</h2>
+
+            <p class="text-gray-600 mb-8 max-w-md mx-auto"
+               th:utext="${message}">
+                메시지<br/>메시지
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a th:href="@{/}"
+                   class="inline-flex items-center justify-center h-11 rounded-md bg-gray-900 px-6 text-sm font-medium text-white hover:bg-gray-800 transition-colors">
+                    <span class="mr-2">🏠</span>
+                    홈으로 가기
+                </a>
+
+                <button type="button"
+                        onclick="history.back()"
+                        class="inline-flex items-center justify-center h-11 rounded-md border border-gray-200 bg-white px-6 text-sm font-medium hover:bg-gray-50 transition-colors">
+                    <span class="mr-2">←</span>
+                    이전 페이지
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

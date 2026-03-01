@@ -46,6 +46,7 @@ public class ProductCardView {
     /**
      * 확장용 팩토리
      * - 나중에 이미지/리뷰/뱃지/프로모션 로직이 생기면 여기에서 주입
+     * 외부에서 반드시 from()을 거쳐야만 객체 생성 가능
      */
     public static ProductCardView from(Product p, String imageUrl, int reviews, String badge) {
         String resolvedImageUrl = (imageUrl == null || imageUrl.isBlank())

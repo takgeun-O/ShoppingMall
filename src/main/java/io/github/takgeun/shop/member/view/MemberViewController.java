@@ -1,9 +1,13 @@
 package io.github.takgeun.shop.member.view;
 
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.validation.SignupValidationSequence;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
+import io.github.takgeun.shop.member.view.dto.MyPageMemberView;
+import io.github.takgeun.shop.member.view.dto.MyPageOrderSummaryView;
+import io.github.takgeun.shop.member.view.dto.MyPageRecentOrderView;
 import io.github.takgeun.shop.member.view.form.MemberEditForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -12,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,7 +46,18 @@ public class MemberViewController {
         }
 
         Member member = memberService.get(memberId);
-        model.addAttribute("member", member);
+
+        String grade = "GOLD";
+        int point = 15000;
+        int couponCount = 5;
+
+        MyPageMemberView memberView = MyPageMemberView.from(member, grade, point, couponCount);
+
+        model.addAttribute("member", memberView);
+        model.addAttribute("orderSummary", MyPageOrderSummaryView.stub());  // 주문 현황
+        model.addAttribute("recentOrders", MyPageRecentOrderView.stub());   // 최근 주문
+        model.addAttribute("wishlistCount", 8); // 찜한 상품
+
         return "public/members/me";
     }
 
@@ -63,24 +79,41 @@ public class MemberViewController {
         form.setName(member.getName());
         form.setPhone(member.getPhone());
 
+        String grade = "GOLD";
+        int point = 15000;
+        int couponCount = 5;
+        MyPageMemberView memberView = MyPageMemberView.from(member, grade, point, couponCount);
+
         model.addAttribute("form", form);
+        model.addAttribute("member", memberView);
         return "public/members/edit";
     }
 
     /**
      * 마이페이지 수정 처리
+     * 수정 성공 후 redirect:/members/me/edit (수정페이지로 이동)
+     * 수정 실패 시 public/members/edit 제자리로 포워드
      */
     @PostMapping("/me/edit")
-    public String edit(@Valid @ModelAttribute("form") MemberEditForm form,
+    public String edit(@Validated(SignupValidationSequence.class) @ModelAttribute("form") MemberEditForm form,
                        BindingResult bindingResult,
                        HttpServletRequest request,
+                       Model model,
                        RedirectAttributes ra) {
+
         Long memberId = getLoginMemberId(request);
         if(memberId == null) {
             return redirectToLoginWithNext(request);
         }
 
         if(bindingResult.hasErrors()) {
+            // edit 페이지에서 member 카드를 쓰면 에러 시에도 다시 주입해줘야 화면 깨짐 방지
+            Member member = memberService.get(memberId);
+            String grade = "GOLD";
+            int point = 15000;
+            int couponCount = 5;
+            model.addAttribute("member", MyPageMemberView.from(member, grade, point, couponCount));
+
             return "public/members/edit";
         }
 
@@ -88,14 +121,16 @@ public class MemberViewController {
         memberService.updateProfile(memberId, form.getName(), null, form.getPhone());
 
         ra.addFlashAttribute("success", "회원 정보가 수정되었습니다.");
-        return "redirect:/members/me";
+        return "redirect:/members/me/edit";
     }
 
     /**
-     * 탈퇴(비활성화) - 폼에서 POST로 호출
+     * 탈퇴(비활성화) - edit페이지에서 POST로 호출
+     * 탈퇴 성공 후 redirect:/ (홈으로 이동)
      */
     @PostMapping("/me/deactivate")
     public String deactivate(HttpServletRequest request, RedirectAttributes ra) {
+
         Long memberId = getLoginMemberId(request);
         if(memberId == null) {
             return redirectToLoginWithNext(request);
@@ -115,7 +150,6 @@ public class MemberViewController {
 
 
     // 헬퍼 메소드
-
     private Long getLoginMemberId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if(session == null) return null;

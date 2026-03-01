@@ -1,32 +1,217 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('내 정보 수정', ~{::body}, ~{}, 'public')}">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '회원정보 수정',
+          ~{::body},
+          null,
+          'MYPAGE'
+      )}">
 
 <body>
+<div class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-<div class="box">
-    <h1>내 정보 수정</h1>
+            <!-- Sidebar -->
+            <div class="space-y-4">
 
-    <form th:action="@{/members/me/edit}" th:object="${form}" method="post">
+                <!-- Profile Card -->
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center">
+              <span class="text-gray-600 font-bold text-xl"
+                    th:text="${#strings.substring(member.name,0,1)}">H</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900"
+                                th:text="${member.name}">홍길동</h3>
+                            <p class="text-sm text-gray-600"
+                               th:text="${member.email}">hong@example.com</p>
+                        </div>
+                    </div>
 
-        <div class="field">
-            <label>이름</label><br/>
-            <input type="text" th:field="*{name}"/>
-            <div class="err" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    <div class="space-y-2">
+                        <!-- 현재 페이지(active 느낌) -->
+                        <a th:href="@{/members/me/edit}"
+                           class="w-full flex items-center px-4 py-2 rounded-lg text-sm bg-gray-900 text-white hover:bg-gray-800">
+                            회원정보 수정
+                        </a>
+
+                        <a th:href="@{/members/settings}"
+                           class="w-full flex items-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm">
+                            설정
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Membership Card -->
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="font-semibold text-gray-900 mb-4">멤버십 혜택</h3>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">등급</span>
+                            <span class="px-2 py-1 text-xs rounded bg-yellow-600 text-white"
+                                  th:text="${member.grade}">GOLD</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">적립금</span>
+                            <span class="font-semibold text-gray-900"
+                                  th:text="${#numbers.formatInteger(member.point, 3, 'COMMA')} + '원'">
+                15,000원
+              </span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">쿠폰</span>
+                            <span class="font-semibold text-gray-900"
+                                  th:text="${member.couponCount} + '장'">5장</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Back Link -->
+                <a th:href="@{/members/me}"
+                   class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                    <span class="mr-1">←</span>
+                    마이페이지로 돌아가기
+                </a>
+
+                <!-- Page Header -->
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">회원정보 수정</h1>
+                    <p class="text-gray-600">기본 정보를 업데이트할 수 있습니다</p>
+                </div>
+
+                <!-- Success Alert (flash attribute: success) -->
+                <div th:if="${success}"
+                     class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 flex items-start gap-2">
+                    <span class="mt-0.5">✅</span>
+                    <div th:text="${success}">회원정보가 성공적으로 업데이트되었습니다.</div>
+                </div>
+
+
+                <!-- Basic Information Card -->
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">기본 정보</h2>
+
+                    <form th:action="@{/members/me/edit}"
+                          th:object="${form}"
+                          method="post"
+                          class="space-y-5">
+
+                        <!-- Error Alert (validation errors exist) -->
+                        <div th:if="${#fields.hasErrors()}"
+                             class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-start gap-2">
+                            <span class="mt-0.5">❌</span>
+                            <div>입력한 정보를 다시 확인해주세요.</div>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="space-y-2">
+                            <label for="name" class="text-sm font-medium text-gray-700">
+                                이름 <span class="text-red-500">*</span>
+                            </label>
+                            <input id="name"
+                                   type="text"
+                                   th:field="*{name}"
+                                   placeholder="이름을 입력하세요"
+                                   class="w-full h-10 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900
+                            [[${#fields.hasErrors('name')} ? ' border-red-500' : ' border-gray-200' ]]"/>
+
+                            <p th:if="${#fields.hasErrors('name')}"
+                               th:errors="*{name}"
+                               class="text-sm text-red-600">이름 에러</p>
+                        </div>
+
+                        <!-- Email (read-only) -->
+                        <div class="space-y-2">
+                            <label for="email" class="text-sm font-medium text-gray-700">이메일</label>
+
+                            <div class="relative">
+                                <!-- disabled는 submit에 안 담기니까, 서버로 보낼 필요 없으면 이대로 OK -->
+                                <input id="email"
+                                       type="email"
+                                       th:value="${member.email}"
+                                       disabled
+                                       class="w-full h-10 rounded-md border border-gray-200 bg-gray-100 px-3 pr-10 text-sm text-gray-500 cursor-not-allowed"/>
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">🔒</span>
+                            </div>
+                            <p class="text-xs text-gray-500">이메일은 변경할 수 없습니다</p>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="space-y-2">
+                            <label for="phone" class="text-sm font-medium text-gray-700">
+                                전화번호 <span class="text-red-500">*</span>
+                            </label>
+
+                            <input id="phone"
+                                   type="tel"
+                                   th:field="*{phone}"
+                                   placeholder="010-0000-0000"
+                                   class="w-full h-10 rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900
+                            [[${#fields.hasErrors('phone')} ? ' border-red-500' : ' border-gray-200' ]]"/>
+
+                            <p th:if="${#fields.hasErrors('phone')}"
+                               th:errors="*{phone}"
+                               class="text-sm text-red-600">전화번호 에러</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center h-10 rounded-md border bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-800">
+                                변경사항 저장
+                            </button>
+
+                            <a th:href="@{/members/me}"
+                               class="inline-flex items-center justify-center h-10 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium hover:bg-gray-50">
+                                취소
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security Section -->
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">보안</h2>
+                    <p class="text-gray-600 mb-4">
+                        비밀번호 변경은 별도 페이지에서 진행됩니다.
+                    </p>
+
+                    <a th:href="@{/members/me/password}"
+                       class="inline-flex items-center justify-center h-10 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium hover:bg-gray-50">
+                        🔒 비밀번호 변경
+                    </a>
+                </div>
+
+                <!-- Deactivate (if you want it on this page like figma often does) -->
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">회원 탈퇴</h2>
+                    <p class="text-gray-600 mb-4">
+                        탈퇴 시 계정이 비활성화되며 복구가 어려울 수 있습니다.
+                    </p>
+
+                    <form th:action="@{/members/me/deactivate}" method="post"
+                          onsubmit="return confirm('정말 탈퇴하시겠습니까?');">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center h-10 rounded-md bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700">
+                            탈퇴하기
+                        </button>
+                    </form>
+                </div>
+
+            </div>
         </div>
-
-        <div class="field">
-            <label>전화번호</label><br/>
-            <input type="text" th:field="*{phone}" placeholder="010-1234-5678"/>
-            <div class="err" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
-        </div>
-
-        <div class="actions">
-            <button type="submit">저장</button>
-            <a class="btn" th:href="@{/members/me}">취소</a>
-        </div>
-    </form>
+    </div>
 </div>
-
 </body>
 </html>

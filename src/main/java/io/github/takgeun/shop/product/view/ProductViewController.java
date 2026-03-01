@@ -7,6 +7,8 @@ import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.view.dto.ProductCardView;
+import io.github.takgeun.shop.product.view.dto.ProductDetailView;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,8 @@ public class ProductViewController {
             HttpSession session
     ) {
 
+        log.info("ENTER list: categoryId={}, sort={}", categoryId, sort);
+
         boolean admin = isAdmin(session);
 
         // sort 검증 (아무 값 들어오는 것 방지)
@@ -56,6 +60,7 @@ public class ProductViewController {
 
         List<Product> products = productService.findForList(admin, categoryId, sort);
 
+        log.info("products={}", products);
         List<ProductCardView> cards = products.stream()
                         .map(ProductCardView::from)
                                 .toList();
@@ -86,14 +91,23 @@ public class ProductViewController {
     @GetMapping("/{productId:\\d+}")
     public String detail(
             @PathVariable @Positive Long productId,
-            Model model, HttpSession session) {
+            Model model, HttpSession session, HttpServletRequest request) {
 
         boolean admin = isAdmin(session);
 
         Product product = productService.getForDetail(admin, productId);
 
-        model.addAttribute("product", product);
+        ProductDetailView view = ProductDetailView.from(product);
+
+        String returnUrl = request.getRequestURI();
+        String query = request.getQueryString();
+        if(query != null) {
+            returnUrl += "?" + query;
+        }
+
+        model.addAttribute("product", view);
         model.addAttribute("treeMode", admin ? "admin" : "public");
+        model.addAttribute("returnUrl", returnUrl);
 
         return "public/products/detail";
     }

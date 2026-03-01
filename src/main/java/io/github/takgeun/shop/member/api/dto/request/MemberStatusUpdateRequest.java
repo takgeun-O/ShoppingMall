@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.member.dto.request;
+package io.github.takgeun.shop.member.api.dto.request;
 
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import jakarta.validation.constraints.NotNull;

@@ -25,7 +25,7 @@ public class OrderCreateRequest {
     private String recipientName;
 
     @NotBlank(message = "recipientPhone은 필수입니다.")
-    @Pattern(regexp = "^$|^[0-9\\-]{9,20}$", message = "recipientPhone 형식이 올바르지 않습니다.")
+    @Pattern(regexp = "^010-\\\\d{4}-\\\\d{4}$", message = "recipientPhone 형식이 올바르지 않습니다.")
     private String recipientPhone;
 
     @NotBlank(message = "shippingZipCode은 필수입니다.")

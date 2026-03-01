@@ -80,15 +80,16 @@
                               th:text="${p.badge}"
                               class="absolute top-3 left-3 text-xs font-semibold text-white px-2 py-1 rounded"
                               th:classappend="
-                      ${p.badge == 'BEST'} ? ' bg-blue-600' :
-                      ${p.badge == 'NEW'} ? ' bg-green-600' :
-                      ${p.badge == 'SALE'} ? ' bg-red-600' :
-                      ' bg-orange-600'">
-              BEST
-            </span>
+                                      ${p.badge == 'BEST'} ? ' bg-blue-600' :
+                                      ${p.badge == 'NEW'} ? ' bg-green-600' :
+                                      ${p.badge == 'SALE'} ? ' bg-red-600' :
+                                      ' bg-orange-600'">
+                                BEST
+                        </span>
 
                     </div>
 
+                    <!-- 카드 하단 상품명, 별점, 리뷰수, 가격 -->
                     <div class="p-4">
                         <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
                             th:text="${p.name}">
@@ -98,29 +99,27 @@
                         <div class="flex items-center mb-2">
                             <span class="text-yellow-500">★</span>
                             <span class="text-sm text-gray-600 ml-1"
-                                  th:text="${p.rating} + ' (' + ${p.reviews} + ')'">
-                4.8 (123)
-              </span>
+                                  th:text="${p.rating} + ' (' + ${p.reviews} + ')'">4.8 (123)</span>
                         </div>
 
                         <div class="flex items-baseline gap-2">
-              <span class="text-xl font-bold text-gray-900"
-                    th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
-                289,000원
-              </span>
+                            <span class="text-xl font-bold text-gray-900" th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
+                                289,000원
+                            </span>
 
                             <span th:if="${p.originalPrice != null}"
                                   class="text-sm text-gray-400 line-through"
                                   th:text="${#numbers.formatInteger(p.originalPrice, 0, 'COMMA')} + '원'">
-                350,000원
-              </span>
+                                    350,000원
+                            </span>
                         </div>
 
+                        <!-- T(패키지명.클래스명) -> T(java.lang.Math) : java.lang.Math 클래스를 참조. 자바의 static 메소드 참조할 때는 T()로 감싸야 한다. -->
                         <div th:if="${p.originalPrice != null}" class="mt-1">
-              <span class="text-sm font-semibold text-red-600"
-                    th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
-                10% 할인
-              </span>
+                            <span class="text-sm font-semibold text-red-600"
+                                    th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
+                                    10% 할인
+                            </span>
                         </div>
 
                     </div>

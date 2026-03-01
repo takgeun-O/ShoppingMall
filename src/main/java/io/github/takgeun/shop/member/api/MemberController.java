@@ -7,9 +7,12 @@ package io.github.takgeun.shop.member.api;
 
 import io.github.takgeun.shop.global.error.UnauthorizedException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.validation.SignupValidationSequence;
+import io.github.takgeun.shop.member.api.dto.request.MemberPasswordUpdateRequest;
+import io.github.takgeun.shop.member.api.dto.request.MemberProfileUpdateRequest;
 import io.github.takgeun.shop.member.application.MemberService;
-import io.github.takgeun.shop.member.dto.request.MemberUpdateRequest;
-import io.github.takgeun.shop.member.dto.response.MemberResponse;
+import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
+import io.github.takgeun.shop.member.api.dto.response.MemberResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,19 +40,31 @@ public class MemberController {
     }
 
     // 내 정보 수정 (PATCH, 세션 기반)
-    @PatchMapping("/me")
-    public ResponseEntity<Void> updateMe(
+    @PatchMapping("/me/profile")
+    public ResponseEntity<Void> updateMyProfile(
             @SessionAttribute(name = SessionConst.LOGIN_MEMBER_ID, required = false) Long memberId,
-            @Valid @RequestBody MemberUpdateRequest request
+            @Validated(SignupValidationSequence.class) @RequestBody MemberProfileUpdateRequest request
     ) {
         if(memberId == null) {
             throw new UnauthorizedException("로그인이 필요합니다.");
         }
-        String name = request.getName();
-        String password = request.getPassword();
-        String phone = request.getPhone();
 
-        memberService.updateProfile(memberId, name, password, phone);
+        memberService.updateProfile(memberId, request.getName(), null, request.getPhone());
+        return ResponseEntity.noContent().build();
+    }
+
+    // 비밀번호 변경 (별도 화면, 별도 API)
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> updateMyPassword(
+            @SessionAttribute(name = SessionConst.LOGIN_MEMBER_ID, required = false) Long memberId,
+            @Validated @RequestBody MemberPasswordUpdateRequest request
+            ) {
+        if(memberId == null) {
+            throw new UnauthorizedException("로그인이 필요합니다.");
+        }
+
+        // name, phone은 건드리지 않고 password만 변경
+        memberService.updateProfile(memberId, null, request.getPassword(), null);
         return ResponseEntity.noContent().build();
     }
 

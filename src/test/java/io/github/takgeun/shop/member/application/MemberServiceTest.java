@@ -5,7 +5,7 @@ import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
-import io.github.takgeun.shop.member.dto.request.MemberUpdateRequest;
+import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.infra.MemoryMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -4,6 +4,8 @@ import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.error.UnauthorizedException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.validation.LoginValidationSequence;
+import io.github.takgeun.shop.global.validation.SignupValidationSequence;
 import io.github.takgeun.shop.member.application.AuthService;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,9 +40,22 @@ public class AuthViewController {
 
     // 회원가입 처리
     @PostMapping("/signup")
-    public String signup(@Valid @ModelAttribute("form") SignupForm form,
+    public String signup(@Validated(SignupValidationSequence.class) @ModelAttribute("form") SignupForm form,
                          BindingResult bindingResult,
+                         Model model,
                          RedirectAttributes ra) {
+
+        // 비밀번호 확인 일치 검증 (confirmPassword 필드에 에러로 붙이기)
+        // confirmPassword 가 비어 있을 때는 mismatch 검사 패스.
+        boolean canCompare =
+                !bindingResult.hasFieldErrors("password")
+                && !bindingResult.hasFieldErrors("confirmPassword")
+                && form.getPassword() != null && !form.getPassword().isBlank()
+                && form.getConfirmPassword() != null && !form.getConfirmPassword().isBlank();
+
+        if(canCompare && !form.getPassword().equals(form.getConfirmPassword())) {
+            bindingResult.rejectValue("confirmPassword", "mismatch", "비밀번호가 일치하지 않습니다.");
+        }
 
         // 회원가입 실패 시 포워드
         if(bindingResult.hasErrors()) {
@@ -80,7 +96,7 @@ public class AuthViewController {
 
     // 로그인 처리 (세션 생성)
     @PostMapping("/login")
-    public String login(@Valid @ModelAttribute("form") LoginForm form,
+    public String login(@Validated(LoginValidationSequence.class) @ModelAttribute("form") LoginForm form,
                         BindingResult bindingResult,
                         @RequestParam(required = false) String next,
                         HttpServletRequest request,

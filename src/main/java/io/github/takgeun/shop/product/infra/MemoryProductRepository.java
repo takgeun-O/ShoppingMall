@@ -49,6 +49,15 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
+    public List<Product> findAllByCategoryIdIn(List<Long> categoryIds) {
+        Set<Long> set = new HashSet<>(categoryIds);
+
+        return store.values().stream()
+                .filter(p -> set.contains(p.getCategoryId()))
+                .toList();
+    }
+
+    @Override
     public boolean existsByCategoryId(Long categoryId) {
         return store.values().stream()
                 .anyMatch(p -> Objects.equals(p.getCategoryId(), categoryId));

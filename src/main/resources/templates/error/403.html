@@ -2,26 +2,13 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/default :: layout(
-            '403 Forbidden',
-            ~{::body},
-            ~{::headExtra},
-            'PUBLIC'
+          '403 - 접근 권한 오류',
+          ~{error/error :: content(
+              500,
+              '접근 권한이 없습니다',
+              '해당 페이지에 접근할 권한이 없습니다.<br/>로그인 상태 및 권한을 확인해주세요.'
+          )},
+          null,
+          null
       )}">
-
-<head>
-    <th:block th:fragment="headExtra">
-        <!-- 필요하면 여기서 에러 페이지 전용 CSS/메타 추가 -->
-    </th:block>
-</head>
-
-<body>
-<div class="wrap error-page">
-    <h1>403</h1>
-    <h2>접근 권한이 없습니다.</h2>
-    <p th:text="${message} ?: '해당 페이지에 접근할 수 없습니다.'"></p>
-    <div class="actions">
-        <a href="/" class="btn">홈으로</a>
-    </div>
-</div>
-</body>
 </html>

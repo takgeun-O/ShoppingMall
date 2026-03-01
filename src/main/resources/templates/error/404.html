@@ -2,26 +2,13 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/default :: layout(
-            '404 Not Found',
-            ~{::body},
-            ~{::headExtra},
-            'PUBLIC'
+          '404 - 페이지를 찾을 수 없습니다',
+          ~{error/error :: content(
+              404,
+              '페이지를 찾을 수 없습니다',
+              '요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.<br/>주소를 다시 확인해주세요.'
+          )},
+          null,
+          null
       )}">
-
-<head>
-    <th:block th:fragment="headExtra">
-        <!-- 필요하면 여기서 에러 페이지 전용 CSS/메타 추가 -->
-    </th:block>
-</head>
-
-<body>
-<div class="wrap error-page">
-    <h1>404</h1>
-    <h2>페이지를 찾을 수 없습니다.</h2>
-    <p th:text="${message} ?: '요청하신 페이지가 존재하지 않습니다.'"></p>
-    <div class="actions">
-        <a href="/" class="btn">홈으로</a>
-    </div>
-</div>
-</body>
 </html>
