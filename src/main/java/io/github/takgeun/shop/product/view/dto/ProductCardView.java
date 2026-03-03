@@ -40,7 +40,7 @@ public class ProductCardView {
      * - imageUrl이 없으면 기본 이미지 경로로 채우는 전략
      */
     public static ProductCardView from(Product p) {
-        return from(p, null, 0, null);
+        return from(p, p.getImageUrl(), 0, null);
     }
 
     /**
@@ -49,6 +49,7 @@ public class ProductCardView {
      * 외부에서 반드시 from()을 거쳐야만 객체 생성 가능
      */
     public static ProductCardView from(Product p, String imageUrl, int reviews, String badge) {
+
         String resolvedImageUrl = (imageUrl == null || imageUrl.isBlank())
                 ? "/images/no-image.png"   // static 경로에 넣어두기
                 : imageUrl;

@@ -1,17 +1,22 @@
 package io.github.takgeun.shop.global.init;
 
+import io.github.takgeun.shop.cart.infra.SessionCartRepository;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.member.application.MemberService;
-import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.dto.request.CheckoutItem;
+import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Profile("local")
@@ -22,6 +27,7 @@ public class TestDataInitializer implements ApplicationRunner {
     private final ProductService productService;
     private final MemberService memberService;
     private final OrderService orderService;
+    private final SessionCartRepository cartRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -135,43 +141,70 @@ public class TestDataInitializer implements ApplicationRunner {
         productService.changeStatus(readyOuterId, ProductStatus.READY);
 
         // =========================
-        // 주문 더미 (중복 create 금지: 위에서 만든 상품 ID 재사용)
+        // 주문 더미
         // =========================
 
-        // 1) user1이 맥북 1개 주문
-        orderService.create(
+        // 1) user1: 맥북 1개 주문
+        orderService.checkout(
                 userId1,
-                macbookId,
-                1,
-                "테스트",
-                "010-1111-2222",
-                "06236",
-                "서울특별시 강남구 테헤란로 123",
-                "문 앞에 놔주세요"
+                List.of(CheckoutItem.of(macbookId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "문 앞에 놔주세요"
+                )
         );
 
-        // 2) user2가 무선 마우스 2개 주문 (기존 mouseId 재사용)
-        orderService.create(
+        // 2) user2: 무선 마우스 2개 주문
+        orderService.checkout(
                 userId2,
-                mouseId,
-                2,
-                "테스트2",
-                "010-1111-4444",
-                "04157",
-                "서울특별시 마포구 월드컵북로 1",
-                null
+                List.of(CheckoutItem.of(mouseId, 2)),
+                checkoutForm(
+                        "테스트2",
+                        "010-1111-4444",
+                        "04157",
+                        "서울특별시 마포구 월드컵북로 1",
+                        "3층",
+                        null
+                )
         );
 
-        // 3) user1이 QHD 모니터 1개 주문 (기존 qhdMonitorId 재사용)
-        orderService.create(
+        // 3) user1: QHD 모니터 1개 + 키보드 1개 (멀티 아이템 테스트)
+        orderService.checkout(
                 userId1,
-                qhdMonitorId,
-                1,
-                "테스트",
-                "010-1111-2222",
-                "06236",
-                "서울특별시 강남구 테헤란로 123",
-                "경비실 맡겨주세요"
+                List.of(
+                        CheckoutItem.of(qhdMonitorId, 1),
+                        CheckoutItem.of(keyboardId, 1)
+                ),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "경비실에 맡겨주세요"
+                )
         );
+    }
+
+    private CheckoutForm checkoutForm(
+            String recipientName,
+            String phoneNumber,
+            String zipCode,
+            String address,
+            String addressDetail,
+            String requestMessage
+    ) {
+        CheckoutForm form = new CheckoutForm();
+        form.setRecipientName(recipientName);
+        form.setPhoneNumber(phoneNumber);
+        form.setZipCode(zipCode);
+        form.setAddress(address);
+        form.setAddressDetail(addressDetail);
+        form.setRequestMessage(requestMessage);
+        return form;
     }
 }

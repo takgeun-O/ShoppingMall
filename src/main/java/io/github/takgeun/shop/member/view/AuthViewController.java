@@ -103,6 +103,8 @@ public class AuthViewController {
                         RedirectAttributes ra,
                         Model model) {
 
+        String safeNext = sanitizeNext(next);
+
         if(bindingResult.hasErrors()) {
             model.addAttribute("next", next);
             return "auth/login";
@@ -120,11 +122,7 @@ public class AuthViewController {
 
             ra.addFlashAttribute("success", "로그인되었습니다.");
 
-            // next 따라가기
-            if(next != null && !next.isBlank() && next.startsWith("/")) {
-                return "redirect:" + next;
-            }
-            return "redirect:/";
+            return (safeNext != null) ? "redirect:" + safeNext : "redirect:/";
         } catch (UnauthorizedException e) {
             // 이메일/비밀번호 불일치
             bindingResult.reject("login.unauthorized", "이메일 또는 비밀번호가 올바르지 않습니다.");    // 폼 상단에 전체 에러로 띄우기
@@ -148,5 +146,23 @@ public class AuthViewController {
         }
         ra.addFlashAttribute("success", "로그아웃되었습니다.");
         return "redirect:/";
+    }
+
+    // 로그인 후 next가 POST전용 URL일 경우 안전한 페이지로 바꾸기 위해
+    private String sanitizeNext(String next) {
+        if(next == null) return null;
+        String n = next.trim();
+        if(n.isEmpty()) return null;
+
+        // 반드시 앱 내부 상대경로만 허용
+        if(!n.startsWith("/")) return null;
+
+        // 민감/POST 전용/상태변경 URL 차단
+        if( n.equals("/logout") ||
+            n.equals("/orders") || n.startsWith("/orders?") ||
+            n.equals("/cart/clear") || n.startsWith("/admin")) {
+            return null;
+        }
+        return n;
     }
 }

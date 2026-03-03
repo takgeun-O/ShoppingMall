@@ -17,19 +17,21 @@ public class Product {
     private String description;
     private ProductStatus status;
 
+    private String imageUrl;
     private double rating;          // double 이니 기본값 0.0 (추후 리뷰 구현 시 값 넣기)
     private Integer originalPrice;  // Integer 니까 기본값 null (추후 할인 구현 시 값 넣기)
 
     protected Product() {
     }
 
-    private Product(Long categoryId, String name, int price, int stock, String description) {
+    private Product(Long categoryId, String name, int price, int stock, String description, String imageUrl) {
         // 생성자 생성 시점에서 검증 로직을 넣기
         changeCategory(categoryId);
         changeName(name);
         changePrice(price);
         changeStock(stock);
         changeDescription(description);
+        changeImageUrl(imageUrl);
         this.status = ProductStatus.ON_SALE;
     }
 
@@ -51,7 +53,11 @@ public class Product {
         // 1. 이름 검증은 생성자/도메인 메서드에서 반드시 수행되도록 하기 위함
         // 2. 생성 시점의 도메인 규칙을 한 곳에 고정시키게 하기 위함.
         // 비즈니스 의미가 있는 객체는 거의 다 static factory가 더 좋다.
-        return new Product(categoryId, name, price, stock, description);
+        return new Product(categoryId, name, price, stock, description, null);
+    }
+
+    public static Product create(Long categoryId, String name, int price, int stock, String description, String imageUrl) {
+        return new Product(categoryId, name, price, stock, description, imageUrl);
     }
 
     public void changeCategory(Long categoryId) {
@@ -140,6 +146,25 @@ public class Product {
             return;
         }
         this.originalPrice = originalPrice;
+    }
+
+    private void changeImageUrl(String imageUrl) {
+        if(imageUrl == null) {
+            this.imageUrl = null;
+            return;
+        }
+
+        String normalized = imageUrl.trim();
+        if(normalized.isEmpty()) {
+            this.imageUrl = null;
+            return;
+        }
+
+        if(normalized.length() > 500) {
+            throw new IllegalArgumentException("imageUrl은 500자 이하여야 합니다.");
+        }
+
+        this.imageUrl = normalized;
     }
 
     public boolean isPublicVisible() {

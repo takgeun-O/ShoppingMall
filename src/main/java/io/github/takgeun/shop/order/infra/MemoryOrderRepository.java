@@ -17,47 +17,56 @@ public class MemoryOrderRepository implements OrderRepository {
     private final ConcurrentHashMap<Long, Order> store = new ConcurrentHashMap<>();
     private final AtomicLong sequence = new AtomicLong(0);
 
+    // 정렬 정책 한 곳에 모아두기 (유지보수에 좋음)
+    private static final Comparator<Order> ORDERED_AT_DESC =
+            Comparator.comparing(Order::getOrderedAt).reversed();
+
     @Override
     public Order save(Order order) {
-        if(order.getId() == null) {
+        if (order == null) throw new IllegalArgumentException("order는 필수입니다.");
+
+        if (order.getId() == null) {
             long id = sequence.incrementAndGet();
             order.assignId(id);
         }
+
         store.put(order.getId(), order);
         return order;
     }
 
     @Override
     public Optional<Order> findById(Long id) {
-        return Optional.ofNullable(store.get(id));  // 값이 있으면 Optional<Category> 없으면 Optional.empty()
+        if (id == null) return Optional.empty();
+        return Optional.ofNullable(store.get(id));
     }
 
     @Override
     public boolean existsById(Long id) {
-        if(id == null) return false;
-        return store.containsKey(id);
+        return id != null && store.containsKey(id);
     }
 
     @Override
     public List<Order> findAllByMemberId(Long memberId) {
-        if(memberId == null) return List.of();
+        if (memberId == null) return List.of();
 
         List<Order> result = new ArrayList<>();
         for (Order order : store.values()) {
-            if(memberId.equals(order.getMemberId())) {
+            if (memberId.equals(order.getMemberId())) {
                 result.add(order);
             }
         }
 
         // 최근 주문 먼저 보이게 하기. (내림차순)
-        result.sort(Comparator.comparing(Order::getOrderedAt).reversed());
+        result.sort(ORDERED_AT_DESC);
 
         return result;
     }
 
     @Override
     public List<Order> findAll() {
-        return new ArrayList<>(store.values());
+        List<Order> result = new ArrayList<>(store.values());
+        result.sort(ORDERED_AT_DESC);
+        return result;
     }
 
     // 테스트용

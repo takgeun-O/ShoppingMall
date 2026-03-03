@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '주문/결제',
+          ~{::body},
+          null,
+          'CART'
+      )}">
+
+<body>
+<div class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- 빈 장바구니 -->
+        <div th:if="${#lists.isEmpty(items)}" class="py-16">
+            <div class="text-center">
+                <div class="mx-auto mb-4 h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                    🛒
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">장바구니가 비어있습니다</h2>
+                <p class="text-gray-600 mb-6">상품을 담아주세요.</p>
+                <a th:href="@{/products}" class="inline-flex items-center justify-center h-11 rounded-md bg-gray-900 px-6 text-sm font-medium text-white hover:bg-gray-800">
+                    쇼핑 계속하기
+                </a>
+            </div>
+        </div>
+
+        <!-- 장바구니가 있을 때 -->
+        <div th:if="${!#lists.isEmpty(items)}">
+
+            <!-- Progress Indicator -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center">
+                    <div class="flex items-center">
+
+                        <!-- Step 1 -->
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
+                                ✓
+                            </div>
+                            <span class="ml-2 text-sm font-semibold text-gray-900">장바구니</span>
+                        </div>
+
+                        <div class="w-16 h-0.5 bg-blue-600 mx-4"></div>
+
+                        <!-- Step 2 (current) -->
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                                <span class="text-white font-semibold">2</span>
+                            </div>
+                            <span class="ml-2 text-sm font-semibold text-gray-900">주문/결제</span>
+                        </div>
+
+                        <div class="w-16 h-0.5 bg-gray-300 mx-4"></div>
+
+                        <!-- Step 3 -->
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                <span class="text-gray-600 font-semibold">3</span>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-gray-500">주문완료</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <h1 class="text-3xl font-bold text-gray-900 mb-8">주문/결제</h1>
+
+            <!-- 폼: 배송지 + 결제 -->
+            <form th:action="@{/orders}" method="post" th:object="${checkoutForm}">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    <!-- Left Column -->
+                    <div class="lg:col-span-2 space-y-6">
+
+                        <!-- 주문 상품 -->
+                        <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                            <h2 class="text-xl font-bold text-gray-900 mb-6">주문 상품</h2>
+
+                            <div class="space-y-4">
+                                <div th:each="item : ${items}" class="flex gap-4">
+                                    <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                                        <img th:src="${item.imageUrl}"
+                                             th:alt="${item.name}"
+                                             class="w-full h-full object-cover"/>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold text-gray-900 mb-1" th:text="${item.name}">상품명</h3>
+                                        <p class="text-sm text-gray-600 mb-2">
+                                            수량: <span th:text="${item.quantity}">1</span>개
+                                        </p>
+                                        <div class="flex items-baseline gap-2">
+                                            <!-- 판매가(라인 금액 또는 단가) -->
+                                            <span class="font-bold text-gray-900"
+                                                  th:text="${#numbers.formatInteger(item.lineTotal(), 3, 'COMMA')} + '원'">
+                                                0원
+                                            </span>
+
+                                            <!-- 정가(라인 정가) -->
+                                            <span th:if="${item.originalPrice != null and item.hasDiscount()}"
+                                                  class="text-sm text-gray-400 line-through"
+                                                  th:text="${#numbers.formatInteger(item.originalLineTotal(), 3, 'COMMA')} + '원'">
+                                                0원
+                                            </span>
+
+                                            <!-- 판매가(라인 금액 또는 단가) -->
+                                            <span th:if="${item.discountRatePercent() != null}"
+                                                  class="text-sm font-semibold text-red-500"
+                                                  th:text="${item.discountRatePercent()} + '%'">
+                                                10%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 배송 정보 -->
+                        <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+                            <h2 class="text-xl font-bold text-gray-900 mb-6">배송 정보</h2>
+
+                            <div class="space-y-5">
+
+                                <!-- 받는 분 성함 -->
+                                <div>
+                                    <label for="recipientName" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        받는 분 성함 *
+                                    </label>
+                                    <input id="recipientName" type="text" th:field="*{recipientName}"
+                                           placeholder="이름을 입력하세요"
+                                           class="w-full h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                           th:classappend="${#fields.hasErrors('recipientName')} ? ' border-red-500' : ''"/>
+                                    <p class="mt-1 text-sm text-red-600" th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}">에러</p>
+                                </div>
+
+                                <!-- 연락처 -->
+                                <div>
+                                    <label for="phoneNumber" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        연락처 *
+                                    </label>
+                                    <input id="phoneNumber" type="tel" th:field="*{phoneNumber}"
+                                           placeholder="010-1234-5678"
+                                           class="w-full h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                           th:classappend="${#fields.hasErrors('phoneNumber')} ? ' border-red-500' : ''"/>
+                                    <p class="mt-1 text-sm text-red-600" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">에러</p>
+                                </div>
+
+                                <!-- 우편번호 -->
+                                <div>
+                                    <label for="zipCode" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        우편번호 *
+                                    </label>
+
+                                    <div class="flex gap-2">
+                                        <input id="zipCode" type="text" th:field="*{zipCode}"
+                                               placeholder="12345"
+                                               class="flex-1 h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                               th:classappend="${#fields.hasErrors('zipCode')} ? ' border-red-500' : ''"/>
+                                        <button type="button"
+                                                class="h-11 rounded-md border border-gray-200 bg-white px-4 text-sm font-medium hover:bg-gray-50">
+                                            우편번호 찾기
+                                        </button>
+                                    </div>
+
+                                    <p class="mt-1 text-sm text-red-600" th:if="${#fields.hasErrors('zipCode')}" th:errors="*{zipCode}">에러</p>
+                                </div>
+
+                                <!-- 주소 -->
+                                <div>
+                                    <label for="address" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        주소 *
+                                    </label>
+                                    <input id="address" type="text" th:field="*{address}"
+                                           placeholder="주소를 입력하세요"
+                                           class="w-full h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                           th:classappend="${#fields.hasErrors('address')} ? ' border-red-500' : ''"/>
+                                    <p class="mt-1 text-sm text-red-600" th:if="${#fields.hasErrors('address')}" th:errors="*{address}">에러</p>
+                                </div>
+
+                                <!-- 상세주소 -->
+                                <div>
+                                    <label for="addressDetail" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        상세주소 *
+                                    </label>
+                                    <input id="addressDetail" type="text" th:field="*{addressDetail}"
+                                           placeholder="상세주소를 입력하세요"
+                                           class="w-full h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                           th:classappend="${#fields.hasErrors('addressDetail')} ? ' border-red-500' : ''"/>
+                                    <p class="mt-1 text-sm text-red-600" th:if="${#fields.hasErrors('addressDetail')}" th:errors="*{addressDetail}">에러</p>
+                                </div>
+
+                                <!-- 요청사항 -->
+                                <div>
+                                    <label for="requestMessage" class="block text-sm font-semibold text-gray-900 mb-2">
+                                        요청사항
+                                    </label>
+                                    <input id="requestMessage" type="text" th:field="*{requestMessage}"
+                                           placeholder="요청사항을 입력하세요"
+                                           class="w-full h-11 rounded-md border border-gray-200 px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                           th:classappend="${#fields.hasErrors('requestMessage')} ? ' border-red-500' : ''"/>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200 sticky top-24">
+                            <h2 class="text-xl font-bold text-gray-900 mb-6">결제 금액</h2>
+
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between text-gray-600">
+                                    <span>상품 금액</span>
+                                    <span th:text="${#numbers.formatInteger(summary.subtotal, 3, 'COMMA')} + '원'">0원</span>
+                                </div>
+
+                                <div class="flex justify-between text-gray-600">
+                                    <span>배송비</span>
+                                    <span th:text="${summary.shippingFee == 0 ? '무료' : (#numbers.formatInteger(summary.shippingFee, 3, 'COMMA') + '원')}">무료</span>
+                                </div>
+
+                                <div class="border-t border-gray-200"></div>
+
+                                <div class="flex justify-between text-xl font-bold text-gray-900">
+                                    <span>총 결제금액</span>
+                                    <span class="text-blue-600"
+                                          th:text="${#numbers.formatInteger(summary.total, 3, 'COMMA')} + '원'">0원</span>
+                                </div>
+                            </div>
+
+                            <!-- 결제하기(주문 생성) -->
+                            <button type="submit"
+                                    class="w-full h-14 text-base font-semibold inline-flex items-center justify-center rounded-md bg-gray-900 text-white hover:bg-gray-800">
+                                💳 결제하기
+                            </button>
+
+                            <p class="text-xs text-gray-500 text-center mt-4"
+                               th:if="${summary.shippingFee > 0}">
+                                30,000원 이상 구매 시 무료배송
+                            </p>
+
+                            <div class="my-6 border-t border-gray-200"></div>
+
+                            <div class="space-y-2 text-xs text-gray-500">
+                                <p>• 결제 후 주문 내역은 마이페이지에서 확인하실 수 있습니다.</p>
+                                <p>• 상품 발송 후 배송 기간은 평균 2-3일 소요됩니다.</p>
+                                <p>• 교환/반품은 상품 수령 후 7일 이내 가능합니다.</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

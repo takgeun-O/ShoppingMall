@@ -32,7 +32,7 @@ public class CategorySidebarService {
 //        // id 기준 Map 변환
 //        // id -> CategoryResponse 형태의 Map으로 변환하기
 //        Map<Long, CategoryResponse> byId = all.stream()
-//                .collect(Collectors.toMap(CategoryResponse::getId, c -> c));
+//                .collect(Collectors.toMap(CategoryResponse::getProductId, c -> c));
 
         // parentId -> children
         Map<Long, List<CategoryResponse>> childrenByParent = new HashMap<>();
@@ -105,7 +105,7 @@ public class CategorySidebarService {
          */
 //        Map<Long, CategoryResponse> byId = new HashMap<>();
 //        for (CategoryResponse c : all) {
-//            byId.put(c.getId(), c);
+//            byId.put(c.getProductId(), c);
 //        }
 
         Map<Long, CategoryResponse> byId = all.stream()

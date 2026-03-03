@@ -3,6 +3,7 @@ package io.github.takgeun.shop.member.view;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.SignupValidationSequence;
 import io.github.takgeun.shop.member.application.MemberService;
+import io.github.takgeun.shop.member.application.MyPageQueryService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.view.dto.MyPageMemberView;
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 public class MemberViewController {
 
     private final MemberService memberService;
+    private final MyPageQueryService myPageQueryService;
 
     /**
      * 마이 페이지 조회
@@ -54,8 +56,8 @@ public class MemberViewController {
         MyPageMemberView memberView = MyPageMemberView.from(member, grade, point, couponCount);
 
         model.addAttribute("member", memberView);
-        model.addAttribute("orderSummary", MyPageOrderSummaryView.stub());  // 주문 현황
-        model.addAttribute("recentOrders", MyPageRecentOrderView.stub());   // 최근 주문
+        model.addAttribute("orderSummary", myPageQueryService.getOrderSummary(memberId));  // 주문 현황
+        model.addAttribute("recentOrders", myPageQueryService.getRecentOrders(memberId, 5));   // 최근 주문
         model.addAttribute("wishlistCount", 8); // 찜한 상품
 
         return "public/members/me";
@@ -119,6 +121,16 @@ public class MemberViewController {
 
         // 비밀번호 변경은 UI상에서 분리할 예정 (여기서는 name, phone만 변경)
         memberService.updateProfile(memberId, form.getName(), null, form.getPhone());
+
+        // memberService.updateProfile() 에서 trim, 정규화, 길이제한 같은 것을 할 경우
+        // 폼값이 아닌 저장 후 조회한 값으로 세션 갱신하는 게 안전함
+        Member updated = memberService.get(memberId);
+
+        // 세션에 저장된 헤더용 이름도 갱신하기. (마이페이지에서 변경 시 상단 헤더도 변경되도록 세션 갱신)
+        HttpSession session = request.getSession(false);
+        if(session != null) {
+            session.setAttribute(SessionConst.LOGIN_MEMBER_NAME, updated.getName());
+        }
 
         ra.addFlashAttribute("success", "회원 정보가 수정되었습니다.");
         return "redirect:/members/me/edit";

@@ -40,11 +40,31 @@ public class Member {
         return new Member(email, password, name, phone);
     }
 
+    /**
+     * 탈퇴 회원을 관리자 화면에서 표시하기 위한 스텁
+     * 정상 가입 로직에서 사용 금지
+     * 유효성 검증 우회 --> 외부 노출/저장에 사용 금지
+     */
+    public static Member deletedStub(Long id) {
+        Member m = new Member();        // protected 기본 생성자 사용 (검증 우회)
+
+        m.id = id;
+
+        m.email = "deleted@unkown";
+        m.password = "**********";
+        m.name = "탈퇴회원";
+        m.phone = "알 수 없음";
+
+        m.role = MemberRole.USER;
+        m.status = MemberStatus.INACTIVE;   // 탈퇴(비활성) 표시
+
+        return m;
+    }
+
     public void changeEmail(String email) {
         // email 필수 검증 (null 체크 + trim() 기준 비어있는지 체크) --> IllegalArgumentException 400 Bad Request
-        if(email == null) {
-            throw new IllegalArgumentException("email은 필수입니다.");
-        }
+        if(email == null) throw new IllegalArgumentException("email은 필수입니다.");
+
         String normalized = email.trim().toLowerCase();
         if(normalized.isEmpty()) {
             throw new IllegalArgumentException("email은 필수입니다.");
@@ -108,11 +128,11 @@ public class Member {
     public void changePhone(String phone) {
         // phone 필수 검증 (null 체크 + trim() 기준 비어있는지 체크) --> IllegalArgumentException 400 Bad Request
         if(phone == null) {
-            throw new IllegalArgumentException("phone은 필수입니다.");
+            throw new IllegalArgumentException("전화번호는 필수입니다.");
         }
         String normalized = phone.trim();
         if(normalized.isEmpty()) {
-            throw new IllegalArgumentException("phone은 필수입니다.");
+            throw new IllegalArgumentException("전화번호는 필수입니다.");
         }
 
         // phone 길이 제한 --> IllegalArgumentException 400 Bad Request
@@ -121,7 +141,7 @@ public class Member {
         }
 
         // 숫자, +, -, 공백만 허용 --> IllegalArgumentException 400 Bad Request
-        if(!normalized.matches("[0-9+\\- ]+")) {
+        if(!normalized.matches("^010-\\d{4}-\\d{4}$")) {
             throw  new IllegalArgumentException("전화번호 형식이 올바르지 않습니다.");
         }
 
@@ -135,18 +155,19 @@ public class Member {
         this.role = role;
     }
 
+    // 상태 변경 (멱등)
+    public void changeStatus(MemberStatus status) {
+        if(status == null) throw new IllegalArgumentException("status는 필수입니다.");
+        if(this.status == status) return;   // 멱등
+        this.status = status;
+    }
+
     public void deactivate() {
-        if(this.status == MemberStatus.INACTIVE) {
-            return;     // 멱등
-        }
-        this.status = MemberStatus.INACTIVE;
+        changeStatus(MemberStatus.INACTIVE);
     }
 
     public void activate() {
-        if(this.status == MemberStatus.ACTIVE) {
-            return;     // 멱등
-        }
-        this.status = MemberStatus.ACTIVE;
+        changeStatus(MemberStatus.ACTIVE);
     }
 
     public boolean isActive() {
@@ -156,4 +177,6 @@ public class Member {
     public boolean isAdmin() {
         return this.role == MemberRole.ADMIN;
     }
+
+
 }

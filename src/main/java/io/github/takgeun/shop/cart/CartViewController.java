@@ -1,8 +1,6 @@
 package io.github.takgeun.shop.cart;
 
 import io.github.takgeun.shop.cart.application.CartService;
-import io.github.takgeun.shop.cart.view.dto.CartItemView;
-import io.github.takgeun.shop.cart.view.dto.CartSummaryView;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -12,8 +10,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -27,9 +23,7 @@ public class CartViewController {
      * GET /cart
      */
     @GetMapping
-    public String cart(HttpServletRequest request, Model model) {
-
-        HttpSession session = request.getSession(true);     // 기존에 세션이 존재하면 그걸 반환하고 존재하지 않으면 새로 생성
+    public String cart(HttpSession session, Model model) {
 
         CartViewResult view = cartService.getCartView(session);
 
@@ -47,10 +41,8 @@ public class CartViewController {
     public String addItem(@RequestParam Long productId,
                           @RequestParam(defaultValue = "1") int quantity,
                           @RequestParam(required = false) String returnUrl,
-                          HttpServletRequest request,
+                          HttpSession session,
                           RedirectAttributes ra) {
-
-        HttpSession session = request.getSession(true);
 
         // 1 이하 방지
         int resolvedQty = Math.max(quantity, 1);
@@ -61,10 +53,8 @@ public class CartViewController {
         ra.addFlashAttribute("addedProductId", productId);
         ra.addFlashAttribute("addedQty", resolvedQty);
 
-        if(returnUrl != null && !returnUrl.isBlank()) {
-            return "redirect:" + returnUrl;
-        }
-        return "redirect:/cart";
+
+        return "redirect:" + resolveReturnUrl(returnUrl, "/cart");
     }
 
     /**
@@ -75,9 +65,12 @@ public class CartViewController {
     public String changeQuantity(
             @PathVariable Long id,
             @RequestParam int delta,
-            HttpServletRequest request) {
+            HttpSession session) {
 
-        HttpSession session = request.getSession(true);
+        if(delta == 0) {
+            return "redirect:/cart";
+        }
+
         cartService.changeQuantity(session, id, delta);
         return "redirect:/cart";
     }
@@ -87,9 +80,8 @@ public class CartViewController {
      * POST /cart/items/{id}/remove
      */
     @PostMapping("/items/{id}/remove")
-    public String removeItem(@PathVariable Long id, HttpServletRequest request) {
+    public String removeItem(@PathVariable Long id, HttpSession session) {
 
-        HttpSession session = request.getSession(true);
         cartService.remove(session, id);
         return "redirect:/cart";
     }
@@ -99,10 +91,27 @@ public class CartViewController {
      * POST /cart/clear
      */
     @PostMapping("/clear")
-    public String clear(HttpServletRequest request) {
+    public String clear(HttpSession session) {
 
-        HttpSession session = request.getSession(true);
         cartService.clear(session);
         return "redirect:/cart";
+    }
+
+    /**
+     * redirect 대상 URL 보안 처리
+     * 내부 경로만 허용 ("/..." 로 시작)
+     * 비어있거나 외부 URL이면 fallback
+     */
+    private String resolveReturnUrl(String returnUrl, String fallback) {
+        if(returnUrl == null) return fallback;
+
+        String trimmed = returnUrl.trim();
+        if(trimmed.isEmpty()) return fallback;
+
+        // 내부 경로만 허용 ("/products/1", "/cart" 등등)
+        if(trimmed.startsWith("/")) {
+            return trimmed;
+        }
+        return fallback;
     }
 }

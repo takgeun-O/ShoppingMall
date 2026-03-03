@@ -5,6 +5,7 @@ import io.github.takgeun.shop.cart.view.dto.CartItemView;
 import io.github.takgeun.shop.cart.view.dto.CartSummaryView;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import jakarta.servlet.http.HttpSession;
@@ -27,75 +28,148 @@ public class CartService {
     private final ProductService productService;
 
     /**
-     * 장바구니 조회 (템플릿에 바로 들어갈 View 모델)
+     * 주문 생성용 최소 데이터
+     */
+    public List<CheckoutItem> getCheckoutItems(HttpSession session) {
+        Map<Long, Integer> cart = cartRepository.findAll(session);
+
+        if(cart == null || cart.isEmpty()) return List.of();
+
+        return cart.entrySet().stream()
+                .map(e -> CheckoutItem.of(e.getKey(), e.getValue()))
+                .filter(i -> i.getQuantity() > 0)
+                .toList();
+    }
+
+    /**
+     * 화면 렌더링용 카트 뷰
      */
     public CartViewResult getCartView(HttpSession session) {
-        Map<Long, Integer> cart = cartRepository.findAll(session);      // [productId, quantity]
+        Map<Long, Integer> cart = cartRepository.findAll(session);
 
-        List<CartItemView> items = new ArrayList<>();
-        for (Map.Entry<Long, Integer> e : cart.entrySet()) {
-            Long productId = e.getKey();
-            int qty = e.getValue();
-
-            Product p = getProductOrThrow(productId);
-
-            // 이미지 URL은 임시로 기본 이미지로 처리
-            String imageUrl = "/images/no-image.png";
-
-            items.add(CartItemView.of(
-                    productId,
-                    p.getName(),
-                    p.getPrice(),
-                    qty,
-                    imageUrl
-            ));
+        if(cart == null || cart.isEmpty()) {
+            return CartViewResult.empty();
         }
 
-        // 일단 id순 정렬 --> id순 자체가 카트에 가장 먼저 넣은 상품이 위로 올라가게 되어있음.
-        items.sort(Comparator.comparing(CartItemView::getId));
+        List<CartItemView> items = cart.entrySet().stream()
+                .map(entry -> {
+                    Long productId = entry.getKey();
+                    int quantity = entry.getValue();
+
+                    Product product = productService.getForOrderPublic(productId);
+                    if(product == null) {
+                        throw new NotFoundException("상품을 찾을 수 없습니다.");
+                    }
+
+                    return CartItemView.of(
+                            product.getId(),
+                            product.getName(),
+                            product.getPrice(),
+                            product.getOriginalPrice(),
+                            quantity,
+                            product.getImageUrl()
+                    );
+                })
+                .filter(i -> i.getQuantity() > 0)
+                .sorted(Comparator.comparing(CartItemView::getProductId))
+                .toList();
 
         int subtotal = items.stream()
-                .mapToInt(CartItemView::lineTotal)
+                .mapToInt(CartItemView::lineTotal)      // price * qty
                 .sum();
-        int shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD || subtotal == 0) ? 0 : SHIPPING_FEE;
 
-        CartSummaryView summary = CartSummaryView.of(subtotal, shippingFee);
-        return CartViewResult.from(items, summary);
+        int discountTotal = items.stream()
+                .mapToInt(this::discountAmount)         // (original - price) * qty
+                .sum();
+
+        int payableSubtotal = Math.max(subtotal - discountTotal, 0);        // 할인 적용 후 상품금액
+        int shippingFee = payableSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+
+
+        CartSummaryView summary = CartSummaryView.of(subtotal, discountTotal, shippingFee);
+
+        return CartViewResult.of(items, summary);
     }
 
-    /**
-     * 담기 (이미 담긴 상품일 경우 수량만 증가)
-     */
     public void add(HttpSession session, Long productId, int quantity) {
-        if(quantity <= 0) return;
+        if(session == null) {
+            throw new IllegalArgumentException("session은 필수입니다.");
+        }
 
-        // 상품 존재 검증
-        getProductOrThrow(productId);
+        if(productId == null || productId <= 0) {
+            throw new IllegalArgumentException("productId는 양수여야 합니다.");
+        }
 
-        int currentQuantity = cartRepository.getQuantity(session, productId);
-        cartRepository.put(session, productId, currentQuantity + quantity);
+        int resolvedQty = Math.max(quantity, 1);
+
+        // 존재/판매 가능 상품 검증
+        Product product = productService.getForOrderPublic(productId);
+        if(product == null) {
+            throw new NotFoundException("상품을 찾을 수 없습니다.");
+        }
+
+        // 현재 카트 가져오기
+        Map<Long, Integer> cart = cartRepository.findAll(session);
+
+        if(cart == null) {
+            cart = new java.util.HashMap<>();
+        }
+
+        int currentQty = cart.getOrDefault(productId, 0);
+        int nextQty = currentQty + resolvedQty;
+
+        if(nextQty < 1) {
+            nextQty = 1;
+        }
+
+        cartRepository.put(session, productId, nextQty);
     }
 
-    /**
-     * 수량 변경 (delta: +1 / -1)
-     * 1 미만이면 삭제 처리
-     */
     public void changeQuantity(HttpSession session, Long productId, int delta) {
-
-        // 상품 존재 검증
-        getProductOrThrow(productId);
-
-        int currentQuantity = cartRepository.getQuantity(session, productId);
-        int nextQuantity = currentQuantity + delta;
-
-        if(nextQuantity <= 0) {
-            cartRepository.remove(session, productId);
-        } else {
-            cartRepository.put(session, productId, nextQuantity);
+        if(session == null) {
+            throw new IllegalArgumentException("session은 필수입니다.");
         }
+        if(productId == null || productId <= 0) {
+            throw new IllegalArgumentException("productId는 양수여야 합니다.");
+        }
+        if(delta == 0) {
+            return;
+        }
+
+        Map<Long, Integer> cart = cartRepository.findAll(session);
+        if(cart == null || cart.isEmpty()) {
+            return; // 장바구니가 비어있으면 변화 없음.
+        }
+
+        int currentQty = cart.getOrDefault(productId, 0);
+        if(currentQty <= 0) {
+            return; // 없는 상품이면 변화 없음.
+        }
+
+        int nextQty = currentQty + delta;
+
+        // 1 미만이면 삭제 처리
+        if(nextQty < 1) {
+            cartRepository.remove(session, productId);
+            return;
+        }
+
+        cartRepository.put(session, productId, nextQty);
     }
 
     public void remove(HttpSession session, Long productId) {
+        if(session == null) {
+            throw new IllegalArgumentException("session은 필수입니다.");
+        }
+        if(productId == null || productId <=0) {
+            throw new IllegalArgumentException("productId는 양수여야 합니다.");
+        }
+
+        Map<Long, Integer> cart = cartRepository.findAll(session);
+        if(cart == null || cart.isEmpty()) {
+            return;
+        }
+
         cartRepository.remove(session, productId);
     }
 
@@ -103,11 +177,18 @@ public class CartService {
         cartRepository.clear(session);
     }
 
-    private Product getProductOrThrow(Long productId) {
-        try {
-            return productService.getForOrderPublic(productId);
-        } catch (Exception e) {
-            throw new NotFoundException("존재하지 않는 상품입니다.");
-        }
+
+    /**
+     * 한 줄(상품 1종류)의 할인 금액
+     * originalPrice가 없거나 price <= original 이 아니면 0
+     */
+    private int discountAmount(CartItemView item) {
+        Integer original = item.getOriginalPrice();
+        if (original == null) return 0;     // 정가가 없으면 판매가가 곧 정가
+
+        int unitDiscount = original - item.getUnitPrice();
+        if(unitDiscount <= 0) return 0;
+
+        return unitDiscount * item.getQuantity();
     }
 }

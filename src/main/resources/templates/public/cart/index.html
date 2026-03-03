@@ -45,7 +45,7 @@
                                     th:text="${item.name}">상품명</h3>
 
                                 <!-- Remove (POST) -->
-                                <form th:action="@{/cart/items/{id}/remove(id=${item.id})}"
+                                <form th:action="@{/cart/items/{id}/remove(id=${item.productId})}"
                                       method="post">
                                     <button type="submit"
                                             class="inline-flex items-center justify-center h-9 w-9 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-50"
@@ -56,16 +56,28 @@
                             </div>
 
                             <!-- Price -->
-                            <p class="text-lg font-bold text-gray-900 mb-4"
-                               th:text="${#numbers.formatInteger(item.unitPrice, 3, 'COMMA')} + '원'">
-                                289,000원
-                            </p>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-lg font-bold text-gray-900"
+                                   th:text="${#numbers.formatInteger(item.unitPrice, 3, 'COMMA')} + '원'">
+                                    289,000원
+                                </span>
+
+                                <span th:if="${item.originalPrice != null}"
+                                   class="text-lg font-bold text-gray-400 mb-4 line-through"
+                                   th:text="${#numbers.formatInteger(item.originalPrice, 3, 'COMMA')} + '원'">
+                                    289,000원
+                                </span>
+
+                                <span th:if="${item.originalPrice != null}"
+                                        class="text-sm font-semibold text-red-500"
+                                th:text="${T(java.lang.Math).round((1 - (item.unitPrice * 1.0) / item.originalPrice) * 100)} + '% 할인'">10%</span>
+                            </div>
 
                             <!-- Quantity controls -->
                             <div class="flex items-center gap-2">
 
                                 <!-- Minus -->
-                                <form th:action="@{/cart/items/{id}/quantity(id=${item.id})}"
+                                <form th:action="@{/cart/items/{id}/quantity(id=${item.productId})}"
                                       method="post">
                                     <input type="hidden" name="delta" value="-1"/>
                                     <button type="submit"
@@ -80,7 +92,7 @@
                                       th:text="${item.quantity}">1</span>
 
                                 <!-- Plus -->
-                                <form th:action="@{/cart/items/{id}/quantity(id=${item.id})}"
+                                <form th:action="@{/cart/items/{id}/quantity(id=${item.productId})}"
                                       method="post">
                                     <input type="hidden" name="delta" value="1"/>
                                     <button type="submit"

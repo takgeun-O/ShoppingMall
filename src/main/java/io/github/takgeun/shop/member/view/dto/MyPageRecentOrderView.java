@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.member.view.dto;
 
+import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,17 +9,35 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
-@AllArgsConstructor
 public class MyPageRecentOrderView {
     private final String productName;
     private final LocalDateTime orderedAt;
     private final int totalPrice;
     private final OrderStatus status;
 
-    public static List<MyPageRecentOrderView> stub() {
-        return List.of(
-                new MyPageRecentOrderView("상품명", LocalDateTime.now().minusDays(2), 289000, OrderStatus.SHIPPING),
-                new MyPageRecentOrderView("상품명2", LocalDateTime.now().minusDays(10), 99000, OrderStatus.DELIVERED)
+    public MyPageRecentOrderView(String productName, LocalDateTime orderedAt, int totalPrice, OrderStatus status) {
+        this.productName = productName;
+        this.orderedAt = orderedAt;
+        this.totalPrice = totalPrice;
+        this.status = status;
+    }
+
+    public static MyPageRecentOrderView from(Order order) {
+        // 스냅샷이 OrderItem에 들어가있음
+        // 여러 상품이면 "대표 상품명 외 n건"
+        String name = order.getItems().isEmpty()
+                ? "주문 상품"
+                : order.getItems().get(0).getProductNameSnapshot();
+
+        if(order.getItems().size() >= 2) {
+            name = name + " 외 " + (order.getItems().size() - 1) + "건";
+        }
+
+        return new MyPageRecentOrderView(
+                name,
+                order.getOrderedAt(),
+                order.getTotalPrice(),
+                order.getStatus()
         );
     }
 }

@@ -94,6 +94,12 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 
                         <div class="text-center">
+                            <p class="text-sm text-gray-600 mb-1">주문완료</p>
+                            <p class="text-2xl font-bold text-gray-900"
+                               th:text="${orderSummary.orderedCount}">2</p>
+                        </div>
+
+                        <div class="text-center">
                             <p class="text-sm text-gray-600 mb-1">결제완료</p>
                             <p class="text-2xl font-bold text-gray-900"
                                th:text="${orderSummary.paidCount}">2</p>
@@ -115,6 +121,12 @@
                             <p class="text-sm text-gray-600 mb-1">배송완료</p>
                             <p class="text-2xl font-bold text-gray-900"
                                th:text="${orderSummary.completedCount}">12</p>
+                        </div>
+
+                        <div class="text-center">
+                            <p class="text-sm text-gray-600 mb-1">주문취소</p>
+                            <p class="text-2xl font-bold text-gray-900"
+                               th:text="${orderSummary.canceledCount}">12</p>
                         </div>
 
                     </div>
