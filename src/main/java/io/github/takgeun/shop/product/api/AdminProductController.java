@@ -43,7 +43,10 @@ public class AdminProductController {
                 request.getName(),
                 request.getPrice(),
                 request.getStock(),
-                request.getDescription()
+                request.getDescription(),
+                request.getStatus(),
+                request.getOriginalPrice(),
+                request.getImageUrl()
         );
 
         return ResponseEntity
@@ -72,9 +75,9 @@ public class AdminProductController {
     ) {
         requireAdmin(session);
 
-        sort = normalizeSort(sort);
+        String normalizedSort = normalizeSort(sort);
 
-        List<ProductResponse> result = productService.findForList(true, categoryId, sort).stream()
+        List<ProductResponse> result = productService.findForList(true, categoryId, normalizedSort).stream()
                 .map(ProductResponse::from)
                 .toList();
         return ResponseEntity.ok(result);
@@ -100,7 +103,8 @@ public class AdminProductController {
                 request.getName(),
                 request.getPrice(),
                 request.getStock(),
-                request.getDescription()
+                request.getDescription(),
+                request.getImageUrl()
         );
 
         return ResponseEntity.noContent().build();

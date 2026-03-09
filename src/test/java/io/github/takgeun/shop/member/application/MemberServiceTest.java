@@ -38,10 +38,10 @@ class MemberServiceTest {
 
         // then
         assertNotNull(memberId);
-        assertEquals("aaa@abc.com", member.getEmail());
-        assertEquals("123123123", member.getPassword());
-        assertEquals("테스트", member.getName());
-        assertEquals("010-1111-2222", member.getPhone());
+        assertEquals(email, member.getEmail());
+        assertEquals(password, member.getPassword());
+        assertEquals(name, member.getName());
+        assertEquals(phone, member.getPhone());
         assertEquals(MemberRole.USER, member.getRole());
         assertEquals(MemberStatus.ACTIVE, member.getStatus());
     }
@@ -78,7 +78,7 @@ class MemberServiceTest {
         Member member = memberService.get(memberId);
 
         // then
-        assertEquals(1, member.getId());
+        assertEquals(memberId, member.getId());
         assertEquals("테스트", member.getName());
     }
 
@@ -137,7 +137,6 @@ class MemberServiceTest {
         Long memberId = memberService.signup(email, password, name, phone);
 
         MemberUpdateRequest request = MemberUpdateRequest.of(
-                "9999999999",
                 "테스트2",
                 "010-2222-3333"
         );
@@ -146,29 +145,22 @@ class MemberServiceTest {
         memberService.updateProfile(
                 memberId,
                 request.getName(),
-                request.getPassword(),
+                null,
                 request.getPhone()
         );
 
         // then
         Member updated = memberService.get(memberId);
-        assertEquals("9999999999", updated.getPassword());
-//        assertEquals("테스트2", updated.getName());
+        assertEquals("테스트2", updated.getName());
         assertEquals("010-2222-3333", updated.getPhone());
+        assertEquals("123123123", updated.getPassword());   // 비번 변경 X
     }
 
     @Test
     void 회원_수정_실패_회원_없음() {
 
         // given
-        String email = "aaa@abc.com";
-        String password = "123123123";
-        String name = "테스트";
-        String phone = "010-1111-2222";
-        Long memberId = memberService.signup(email, password, name, phone);
-
         MemberUpdateRequest request = MemberUpdateRequest.of(
-                "22222222",
                 "업데이트테스트",
                 "010-1111-2222"
         );
@@ -178,7 +170,7 @@ class MemberServiceTest {
                 () -> memberService.updateProfile(
                         999L,
                         request.getName(),
-                        request.getPassword(),
+                        null,
                         request.getPhone())
         );
 

@@ -42,6 +42,12 @@ public class ProductViewController {
      * - null(default) : 기본 목록
      * - best : 베스트 상품
      * - sale : 할인 상품
+     *
+     * 일반 사용자 컨트롤러의 관심사
+     * - 공개 상품 목록
+     * - 공개 상품 상세
+     * - 비관리자도 접근 가능
+     * - ON_SALE, 공개 가능 상품만 노출
      */
     @GetMapping
     public String list(
@@ -56,9 +62,9 @@ public class ProductViewController {
         boolean admin = isAdmin(session);
 
         // sort 검증 (아무 값 들어오는 것 방지)
-        sort = normalizeSort(sort);
+        String normalizedSort = normalizeSort(sort);
 
-        List<Product> products = productService.findForList(admin, categoryId, sort);
+        List<Product> products = productService.findForList(admin, categoryId, normalizedSort);
 
         log.info("products={}", products);
         List<ProductCardView> cards = products.stream()
@@ -67,7 +73,7 @@ public class ProductViewController {
 
         model.addAttribute("products", cards);
         model.addAttribute("selectedCategoryId", categoryId);
-        model.addAttribute("sort", sort);
+        model.addAttribute("sort", normalizedSort);
 
         // 제목용 카테고리명
         String selectedCategoryName = null;

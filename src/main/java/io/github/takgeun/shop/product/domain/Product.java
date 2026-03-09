@@ -24,15 +24,16 @@ public class Product {
     protected Product() {
     }
 
-    private Product(Long categoryId, String name, int price, int stock, String description, String imageUrl) {
+    public Product(Long categoryId, String name, int price, int stock, String description, ProductStatus status, Integer originalPrice, String imageUrl) {
         // 생성자 생성 시점에서 검증 로직을 넣기
         changeCategory(categoryId);
         changeName(name);
         changePrice(price);
         changeStock(stock);
         changeDescription(description);
+        changeStatus(status);
         changeImageUrl(imageUrl);
-        this.status = ProductStatus.ON_SALE;
+        this.rating = 0.0;
     }
 
     // 상품 생성 시 id가 필요한데, 엔티티에서는 setter 방식으로 id를 만들 수 없으니
@@ -46,18 +47,6 @@ public class Product {
             throw new ConflictException("id는 이미 할당되었습니다.");
         }
         this.id = id;
-    }
-
-    public static Product create(Long categoryId, String name, int price, int stock, String description) {
-        // static 을 사용하는 이유
-        // 1. 이름 검증은 생성자/도메인 메서드에서 반드시 수행되도록 하기 위함
-        // 2. 생성 시점의 도메인 규칙을 한 곳에 고정시키게 하기 위함.
-        // 비즈니스 의미가 있는 객체는 거의 다 static factory가 더 좋다.
-        return new Product(categoryId, name, price, stock, description, null);
-    }
-
-    public static Product create(Long categoryId, String name, int price, int stock, String description, String imageUrl) {
-        return new Product(categoryId, name, price, stock, description, imageUrl);
     }
 
     public void changeCategory(Long categoryId) {
@@ -93,6 +82,7 @@ public class Product {
 
         // 정가가 판매가보다 작아지는 경우 자동 정리
         // 관리자가 price를 바꾸면 originalPrice보다 price가 더 높은 상황이 생길 수 있음. -> 규칙 위반
+        // 판매가 인상으로 정가보다 높아지면 할인 의미가 없어지므로 정가 자동 제거
         if(this.originalPrice != null && this.originalPrice <= this.price) {
             this.originalPrice = null;
         }
@@ -129,6 +119,13 @@ public class Product {
         this.description = normalized;
     }
 
+    private void changeStatus(ProductStatus status) {
+        if(status == null) {
+            throw new IllegalArgumentException("상품 상태는 필수입니다.");
+        }
+        this.status = status;
+    }
+
     public void changeOriginalPrice(Integer originalPrice) {
         if(originalPrice == null) {
             this.originalPrice = null;
@@ -148,7 +145,7 @@ public class Product {
         this.originalPrice = originalPrice;
     }
 
-    private void changeImageUrl(String imageUrl) {
+    public void changeImageUrl(String imageUrl) {
         if(imageUrl == null) {
             this.imageUrl = null;
             return;

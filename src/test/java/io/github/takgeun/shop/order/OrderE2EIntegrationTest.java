@@ -102,7 +102,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
         Long productId = givenOnSaleProduct(1000, 2);
         MockHttpSession session = sessionAsMember(memberId);
 
-        int beforeStock = productService.getPublic(productId).getStock();
+        int beforeStock = productService.getForOrderPublic(productId).getStock();
 
         String json = """
                 {
@@ -112,7 +112,8 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
                     "recipientPhone": "010-1111-2222",
                     "shippingZipCode": "12345",
                     "shippingAddress": "서울시 영등포구",
-                    "requestMessage": null
+                    "ShippingAddressDetail" : "101동 202호",
+                    "requestMessage": "문 앞"
                 }
                 """.formatted(productId);
 
@@ -125,7 +126,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.message").exists());
 
         // then
-        int afterStock = productService.getPublic(productId).getStock();
+        int afterStock = productService.getForOrderPublic(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 }

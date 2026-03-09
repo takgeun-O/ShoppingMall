@@ -23,23 +23,47 @@ public class GlobalViewModelAdvice {
      */
     @ModelAttribute
     public void global(HttpSession session, Model model) {
-        model.addAttribute("loginMemberId", session.getAttribute(SessionConst.LOGIN_MEMBER_ID));
-        model.addAttribute("loginMemberName", session.getAttribute(SessionConst.LOGIN_MEMBER_NAME));
-        model.addAttribute("loginRole", session.getAttribute(SessionConst.LOGIN_ROLE));
+        Long loginMemberId = getLoginMemberId(session);
+        String loginMemberName = getLoginMemberName(session);
+        MemberRole loginRole = getLoginRole(session);
+        boolean isAdmin = (loginRole == MemberRole.ADMIN);
+        String treeMode = isAdmin ? "admin" : "public";
 
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        MemberRole role = (roleObj instanceof MemberRole) ? (MemberRole) roleObj : null;
-        boolean admin = (role == MemberRole.ADMIN);
-
-        String treeMode = admin ? "admin" : "public";
+        model.addAttribute("loginMemberId", loginMemberId);
+        model.addAttribute("loginMemberName", loginMemberName);
+        model.addAttribute("loginRole", loginRole);
+        model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("treeMode", treeMode);
-
         model.addAttribute("categoryTree",
-                admin ? categoryService.getAllAdminCategories()
-                : categoryService.getAllPublicCategories()
-        );
+                isAdmin
+                        ? categoryService.getAllAdminCategories()
+                        : categoryService.getAllPublicCategories());
 
         // 헤더 드롭다운용 루트 카테고리 (이건 항상 public 전용으로 할 것. 어차피 대표 카테고리는 admin이 의미 없음)
         model.addAttribute("rootCategories", categoryService.getTopCategories());
+    }
+
+    private Long getLoginMemberId(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
+        return (value instanceof Long memberId) ? memberId : null;
+    }
+
+    private String getLoginMemberName(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(SessionConst.LOGIN_MEMBER_NAME);
+        return (value instanceof String memberName) ? memberName : null;
+    }
+
+    private MemberRole getLoginRole(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(SessionConst.LOGIN_ROLE);
+        return (value instanceof MemberRole role) ? role : null;
     }
 }

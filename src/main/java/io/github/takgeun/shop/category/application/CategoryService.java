@@ -7,6 +7,7 @@ import io.github.takgeun.shop.category.domain.CategoryStatus;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.ProductRepository;
+import io.github.takgeun.shop.product.view.dto.CategoryOptionView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -167,6 +168,14 @@ public class CategoryService {
         }
 
         categoryRepository.deleteById(id);
+    }
+
+    // 카테고리 옵션 조회 메서드
+    public List<CategoryOptionView> findAllForAdminSelect() {
+        return categoryRepository.findAllAdmin().stream()
+                .sorted(Comparator.comparing(Category::getId))
+                .map(category -> CategoryOptionView.of(category.getId(), category.getName()))
+                .toList();
     }
 
     private void validateNoCycle(Long categoryId, Long newParentId) {

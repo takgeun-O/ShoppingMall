@@ -6,7 +6,8 @@ import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 
-import io.github.takgeun.shop.product.view.dto.ProductCardView;
+import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
+import io.github.takgeun.shop.product.view.form.ProductCreateForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Service
@@ -34,8 +34,8 @@ public class ProductService {
         } else {
             // 자손 포함 카테고리 id 구하기
             List<Long> categoryIds = admin
-                    ? categoryService.findPublicDescendantIdsIncludingSelf(categoryId)
-                    : categoryService.findAdminDescendantIdsIncludingSelf(categoryId);
+                    ? categoryService.findAdminDescendantIdsIncludingSelf(categoryId)
+                    : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
 
             // IN 조회
             base = productRepository.findAllByCategoryIdIn(categoryIds);
@@ -74,10 +74,31 @@ public class ProductService {
     }
 
     // 생성 (관리자)
-    public Long create(Long categoryId, String name, int price, int stock, String description) {
-        Product product = Product.create(categoryId, name, price, stock, description);
-        productRepository.save(product);
-        return product.getId();
+    public Long create(
+            Long categoryId,
+            String name,
+            Integer price,
+            Integer stock,
+            String description,
+            ProductStatus status,
+            Integer originalPrice,
+            String imageUrl
+    ) {
+        validateOriginalPrice(price, originalPrice);
+
+        Product product = new Product(
+                categoryId,
+                name,
+                price,
+                stock,
+                description,
+                status,
+                originalPrice,
+                imageUrl
+        );
+
+        Product saved = productRepository.save(product);
+        return saved.getId();
     }
 
     // 수정 (부분 수정)
@@ -87,7 +108,8 @@ public class ProductService {
                        String name,
                        Integer price,
                        Integer stock,
-                       String description) {
+                       String description,
+                       String imageUrl) {
 
         Product p = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
@@ -97,6 +119,7 @@ public class ProductService {
         if(price != null) p.changePrice(price);
         if(stock != null) p.changeStock(stock);
         if(description != null) p.changeDescription(description);
+        if(imageUrl != null) p.changeImageUrl(imageUrl);
 
         productRepository.save(p);
     }
@@ -174,5 +197,20 @@ public class ProductService {
 
     private long safeLong(Long v) {
         return v == null ? 0L : v;
+    }
+
+    private void validateOriginalPrice(Integer price, Integer originalPrice) {
+
+        if(originalPrice == null) {
+            return;
+        }
+
+        if(originalPrice <= 0) {
+            throw new IllegalArgumentException("정가는 0보다 커야 합니다.");
+        }
+
+        if(price != null && originalPrice < price) {
+            throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
+        }
     }
 }

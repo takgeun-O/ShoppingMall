@@ -9,7 +9,7 @@ import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import jakarta.servlet.http.HttpSession;
+import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -48,8 +48,8 @@ public class TestDataInitializer implements ApplicationRunner {
         Long furniture   = categoryService.create("가구", null);
         Long clothing    = categoryService.create("의류", null);
 
-        Long computer = categoryService.create("컴퓨터", electronics);
-        Long phone    = categoryService.create("휴대폰", electronics);
+        Long computer  = categoryService.create("컴퓨터", electronics);
+        Long phone     = categoryService.create("휴대폰", electronics);
         Long accessory = categoryService.create("주변기기", electronics);
 
         Long laptop  = categoryService.create("노트북", computer);
@@ -79,66 +79,276 @@ public class TestDataInitializer implements ApplicationRunner {
         // =========================
 
         // 전자(루트) 테스트 1개
-        Long electronicsTestId = productService.create(electronics, "전자제품 랜덤", 10_000, 10, "전자 카테고리 테스트 상품");
+        Long electronicsTestId = createProduct(
+                electronics,
+                "전자제품 랜덤",
+                10_000,
+                10,
+                "전자 카테고리 테스트 상품",
+                img("electronics-random"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
         // 컴퓨터 > 노트북
-        Long macbookId = productService.create(laptop, "맥북 프로 14", 3_000_000, 5, "애플 노트북");
+        Long macbookId = createProduct(
+                laptop,
+                "맥북 프로 14",
+                3_000_000,
+                5,
+                "애플 노트북",
+                img("macbook-pro"),
+                3_500_000,
+                ProductStatus.ON_SALE
+        );
 
-        // 할인 테스트: 원가(정가) 세팅
-        productService.changeOriginalPrice(macbookId, 3_500_000);
+        Long ultrabookId = createProduct(
+                laptop,
+                "윈도우 울트라북",
+                1_800_000,
+                8,
+                "가벼운 업무용",
+                img("ultrabook"),
+                2_100_000,
+                ProductStatus.ON_SALE
+        );
 
-        Long ultrabookId = productService.create(laptop, "윈도우 울트라북", 1_800_000, 8, "가벼운 업무용");
-        productService.changeOriginalPrice(ultrabookId, 2_100_000);
-
-        Long readyLaptopId = productService.create(laptop, "출시 예정 노트북", 2_200_000, 20, "판매 준비");
-        productService.changeStatus(readyLaptopId, ProductStatus.READY);
+        Long readyLaptopId = createProduct(
+                laptop,
+                "출시 예정 노트북",
+                2_200_000,
+                20,
+                "판매 준비",
+                img("laptop-upcoming"),
+                null,
+                ProductStatus.READY
+        );
 
         // 컴퓨터 > 데스크탑
-        Long gamingDesktopId = productService.create(desktop, "게이밍 데스크탑", 2_500_000, 3, "RTX 탑재");
-        Long miniPcId = productService.create(desktop, "미니 PC", 900_000, 0, "재고 0 테스트"); // stock 0 => 품절
+        Long gamingDesktopId = createProduct(
+                desktop,
+                "게이밍 데스크탑",
+                2_500_000,
+                3,
+                "RTX 탑재",
+                img("gaming-desktop"),
+                null,
+                ProductStatus.ON_SALE
+        );
+
+        Long miniPcId = createProduct(
+                desktop,
+                "미니 PC",
+                900_000,
+                0,
+                "재고 0 테스트",
+                img("mini-pc"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
         // 컴퓨터 > 모니터
-        Long qhdMonitorId = productService.create(monitor, "27인치 QHD 모니터", 350_000, 12, "가성비 모니터");
-        productService.changeOriginalPrice(qhdMonitorId, 420_000);
+        Long qhdMonitorId = createProduct(
+                monitor,
+                "27인치 QHD 모니터",
+                350_000,
+                12,
+                "가성비 모니터",
+                img("monitor-qhd"),
+                420_000,
+                ProductStatus.ON_SALE
+        );
 
-        Long hiddenMonitorId = productService.create(monitor, "프로토타입 모니터", 1_200_000, 2, "숨김 테스트");
-        productService.changeStatus(hiddenMonitorId, ProductStatus.HIDDEN);
+        Long hiddenMonitorId = createProduct(
+                monitor,
+                "프로토타입 모니터",
+                1_200_000,
+                2,
+                "숨김 테스트",
+                img("prototype-monitor"),
+                null,
+                ProductStatus.HIDDEN
+        );
 
         // 휴대폰
-        Long iphoneId = productService.create(phone, "아이폰 15", 1_500_000, 0, "품절 상태 (재고 0)");
-        Long galaxyId = productService.create(phone, "갤럭시 S24", 1_400_000, 7, "삼성 최신폰");
-        productService.changeOriginalPrice(galaxyId, 1_550_000);
+        Long iphoneId = createProduct(
+                phone,
+                "아이폰 15",
+                1_500_000,
+                0,
+                "품절 상태 (재고 0)",
+                img("iphone"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
-        Long readyPhoneId = productService.create(phone, "판매준비중", 1_500_000, 10, "판매 준비");
-        productService.changeStatus(readyPhoneId, ProductStatus.READY);
+        Long galaxyId = createProduct(
+                phone,
+                "갤럭시 S24",
+                1_400_000,
+                7,
+                "삼성 최신폰",
+                img("galaxy"),
+                1_550_000,
+                ProductStatus.ON_SALE
+        );
+
+        Long readyPhoneId = createProduct(
+                phone,
+                "판매준비중",
+                1_500_000,
+                10,
+                "판매 준비",
+                img("phone-upcoming"),
+                null,
+                ProductStatus.READY
+        );
 
         // 주변기기
-        Long keyboardId = productService.create(keyboard, "기계식 키보드", 129_000, 25, "청축/갈축 랜덤");
-        Long mouseId = productService.create(mouse, "무선 마우스", 59_000, 30, "사무용");
-        Long headsetId = productService.create(audio, "게이밍 헤드셋", 89_000, 0, "품절 테스트");
+        Long keyboardId = createProduct(
+                keyboard,
+                "기계식 키보드",
+                129_000,
+                25,
+                "청축/갈축 랜덤",
+                img("keyboard"),
+                null,
+                ProductStatus.ON_SALE
+        );
+
+        Long mouseId = createProduct(
+                mouse,
+                "무선 마우스",
+                59_000,
+                30,
+                "사무용",
+                img("mouse"),
+                null,
+                ProductStatus.ON_SALE
+        );
+
+        Long headsetId = createProduct(
+                audio,
+                "게이밍 헤드셋",
+                89_000,
+                0,
+                "품절 테스트",
+                img("headset"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
         // 가구
-        Long ergoChairId = productService.create(officeChair, "인체공학 사무의자", 250_000, 6, "허리 지지대 포함");
-        productService.changeOriginalPrice(ergoChairId, 299_000);
+        Long ergoChairId = createProduct(
+                officeChair,
+                "인체공학 사무의자",
+                250_000,
+                6,
+                "허리 지지대 포함",
+                img("ergonomic-chair"),
+                299_000,
+                ProductStatus.ON_SALE
+        );
 
-        Long meshChairId = productService.create(officeChair, "메쉬 의자", 180_000, 15, "통풍 좋은 메쉬");
+        Long meshChairId = createProduct(
+                officeChair,
+                "메쉬 의자",
+                180_000,
+                15,
+                "통풍 좋은 메쉬",
+                img("mesh-chair"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
-        Long woodenChairId = productService.create(diningChair, "원목 식탁 의자", 120_000, 10, "원목 느낌");
-        Long hiddenDiningId = productService.create(diningChair, "전시 상품", 90_000, 1, "숨김 테스트");
-        productService.changeStatus(hiddenDiningId, ProductStatus.HIDDEN);
+        Long woodenChairId = createProduct(
+                diningChair,
+                "원목 식탁 의자",
+                120_000,
+                10,
+                "원목 느낌",
+                img("wood-chair"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
-        Long bedId = productService.create(bed, "퀸사이즈 침대 프레임", 420_000, 4, "프레임 단품");
-        Long storageId = productService.create(storage, "수납장", 160_000, 9, "거실 수납장");
+        Long hiddenDiningId = createProduct(
+                diningChair,
+                "전시 상품",
+                90_000,
+                1,
+                "숨김 테스트",
+                img("display-chair"),
+                null,
+                ProductStatus.HIDDEN
+        );
+
+        Long bedId = createProduct(
+                bed,
+                "퀸사이즈 침대 프레임",
+                420_000,
+                4,
+                "프레임 단품",
+                img("bed"),
+                null,
+                ProductStatus.ON_SALE
+        );
+
+        Long storageId = createProduct(
+                storage,
+                "수납장",
+                160_000,
+                9,
+                "거실 수납장",
+                img("storage-cabinet"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
         // 의류
-        Long tshirtId = productService.create(tshirt, "베이직 티셔츠", 19_900, 50, "기본 티");
-        productService.changeOriginalPrice(tshirtId, 29_900);
+        Long tshirtId = createProduct(
+                tshirt,
+                "베이직 티셔츠",
+                19_900,
+                50,
+                "기본 티",
+                img("tshirt"),
+                29_900,
+                ProductStatus.ON_SALE
+        );
 
-        Long shirtId = productService.create(shirt, "옥스포드 셔츠", 49_900, 20, "단정한 셔츠");
+        Long shirtId = createProduct(
+                shirt,
+                "옥스포드 셔츠",
+                49_900,
+                20,
+                "단정한 셔츠",
+                img("shirt"),
+                null,
+                ProductStatus.ON_SALE
+        );
 
-        Long jeansId = productService.create(bottoms, "데님 팬츠", 59_900, 18, "기본 데님");
-        Long readyOuterId = productService.create(outerwear, "신상 코트", 189_000, 10, "판매 준비");
-        productService.changeStatus(readyOuterId, ProductStatus.READY);
+        Long jeansId = createProduct(
+                bottoms,
+                "데님 팬츠",
+                59_900,
+                18,
+                "기본 데님",
+                img("jeans"),
+                null,
+                ProductStatus.ON_SALE
+        );
+
+        Long readyOuterId = createProduct(
+                outerwear,
+                "신상 코트",
+                189_000,
+                10,
+                "판매 준비",
+                img("coat"),
+                null,
+                ProductStatus.READY
+        );
 
         // =========================
         // 주문 더미
@@ -172,7 +382,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 )
         );
 
-        // 3) user1: QHD 모니터 1개 + 키보드 1개 (멀티 아이템 테스트)
+        // 3) user1: QHD 모니터 1개 + 키보드 1개
         orderService.checkout(
                 userId1,
                 List.of(
@@ -187,6 +397,38 @@ public class TestDataInitializer implements ApplicationRunner {
                         "101동 202호",
                         "경비실에 맡겨주세요"
                 )
+        );
+    }
+
+    private Long createProduct(
+            Long categoryId,
+            String name,
+            int price,
+            int stock,
+            String description,
+            String imageUrl,
+            Integer originalPrice,
+            ProductStatus status
+    ) {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setCategoryId(categoryId);
+        request.setName(name);
+        request.setPrice(price);
+        request.setStock(stock);
+        request.setDescription(description);
+        request.setImageUrl(imageUrl);
+        request.setOriginalPrice(originalPrice);
+        request.setStatus(status);
+
+        return productService.create(
+                request.getCategoryId(),
+                request.getName(),
+                request.getPrice(),
+                request.getStock(),
+                request.getDescription(),
+                request.getStatus(),
+                request.getOriginalPrice(),
+                request.getImageUrl()
         );
     }
 
@@ -206,5 +448,43 @@ public class TestDataInitializer implements ApplicationRunner {
         form.setAddressDetail(addressDetail);
         form.setRequestMessage(requestMessage);
         return form;
+    }
+
+    private String img(String key) {
+        return switch (key) {
+            case "electronics-random" -> "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80";
+            case "macbook-pro" -> "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80";
+            case "ultrabook" -> "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=800&q=80";
+            case "laptop-upcoming" -> "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=800&q=80";
+
+            case "gaming-desktop" -> "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=800&q=80";
+            case "mini-pc" -> "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?auto=format&fit=crop&w=800&q=80";
+
+            case "monitor-qhd" -> "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80";
+            case "prototype-monitor" -> "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=800&q=80";
+
+            case "iphone" -> "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80";
+            case "galaxy" -> "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=800&q=80";
+            case "phone-upcoming" -> "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80";
+
+            case "keyboard" -> "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80";
+            case "mouse" -> "https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=800&q=80";
+            case "headset" -> "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=80";
+
+            case "ergonomic-chair" -> "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=800&q=80";
+            case "mesh-chair" -> "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80";
+            case "wood-chair" -> "https://images.unsplash.com/photo-1519947486511-46149fa0a254?auto=format&fit=crop&w=800&q=80";
+            case "display-chair" -> "https://images.unsplash.com/photo-1501045661006-fcebe0257c3f?auto=format&fit=crop&w=800&q=80";
+
+            case "bed" -> "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80";
+            case "storage-cabinet" -> "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80";
+
+            case "tshirt" -> "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80";
+            case "shirt" -> "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80";
+            case "jeans" -> "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=800&q=80";
+            case "coat" -> "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80";
+
+            default -> "/images/no-image.png";
+        };
     }
 }

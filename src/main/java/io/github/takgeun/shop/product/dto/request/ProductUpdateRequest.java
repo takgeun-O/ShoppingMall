@@ -1,10 +1,7 @@
 package io.github.takgeun.shop.product.dto.request;
 
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,12 +26,16 @@ public class ProductUpdateRequest {     // 부분 수정
     @Size(max = 2000, message = "설명은 2000자 이하입니다.")
     private String description;         // null 이면 변경 안함 (설명 삭제는 빈 문자열로)
 
+    @Size(max = 500, message = "imageUrl은 500자 이하입니다.")
+    private String imageUrl;            // null이면 변경 없음, ""면 이미지 제거
+
     public static ProductUpdateRequest of(
             Long categoryId,
             String name,
             Integer price,
             Integer stock,
-            String description
+            String description,
+            String imageUrl
     ) {
         ProductUpdateRequest request = new ProductUpdateRequest();
         request.categoryId = categoryId;
@@ -42,6 +43,7 @@ public class ProductUpdateRequest {     // 부분 수정
         request.price = price;
         request.stock = stock;
         request.description = description;
+        request.imageUrl = imageUrl;
         return request;
     }
 }

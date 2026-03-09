@@ -16,8 +16,8 @@
             <div class="inline-flex items-center justify-center w-14 h-14 bg-gray-900 rounded-2xl mb-4">
                 <span class="text-white text-2xl font-bold">O</span>
             </div>
-            <h1 class="text-3xl font-semibold text-gray-900 mb-2">Create your account</h1>
-            <p class="text-gray-600">Start your journey with Omniora</p>
+            <h1 class="text-3xl font-semibold text-gray-900 mb-2">회원가입</h1>
+            <p class="text-gray-600">Omniora와 함께 새로운 여정을 시작해보세요.</p>
         </div>
 
         <!-- Main Card -->
@@ -27,7 +27,7 @@
 
                 <!-- Email -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-900 mb-2">Email address</label>
+                    <label for="email" class="block text-sm font-medium text-gray-900 mb-2">이메일 주소</label>
                     <input
                             id="email"
                             type="email"
@@ -45,7 +45,7 @@
 
                 <!-- Password -->
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-900 mb-2">Password</label>
+                    <label for="password" class="block text-sm font-medium text-gray-900 mb-2">비밀번호</label>
 
                     <div class="relative">
                         <input
@@ -73,12 +73,12 @@
                         <span th:errors="*{password}">Password error</span>
                     </div>
 
-                    <p class="mt-2 text-xs text-gray-500">8~20 characters</p>
+                    <p class="mt-2 text-xs text-gray-500">8~20자 사이로 입력해주세요.</p>
                 </div>
 
                 <!-- Confirm Password -->
                 <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-900 mb-2">Confirm password</label>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-900 mb-2">비밀번호 확인</label>
                     <input
                             id="confirmPassword"
                             type="password"
@@ -96,12 +96,12 @@
 
                 <!-- Full Name -->
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-900 mb-2">Full name</label>
+                    <label for="name" class="block text-sm font-medium text-gray-900 mb-2">이름</label>
                     <input
                             id="name"
                             type="text"
                             th:field="*{name}"
-                            placeholder="John Doe"
+                            placeholder="홍길동"
                             class="w-full px-4 py-3 bg-gray-50 border rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 outline-none
                    border-gray-200 hover:border-gray-300 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-900/5"
                             th:classappend="${#fields.hasErrors('name')} ? ' border-red-500 bg-red-50 focus:ring-red-500/10' : ''"
@@ -114,7 +114,7 @@
 
                 <!-- Phone -->
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-900 mb-2">Phone number</label>
+                    <label for="phone" class="block text-sm font-medium text-gray-900 mb-2">휴대폰번호</label>
                     <input
                             id="phone"
                             type="text"
@@ -128,7 +128,7 @@
                         <span class="font-bold">×</span>
                         <span th:errors="*{phone}">Phone error</span>
                     </div>
-                    <p class="mt-2 text-xs text-gray-500">Digits, spaces, + and - only</p>
+                    <p class="mt-2 text-xs text-gray-500">숫자, 공백, +, -만 입력할 수 있습니다.</p>
                 </div>
 
                 <!-- Terms -->
@@ -143,11 +143,17 @@
                             />
                         </div>
                         <span class="text-sm text-gray-600 leading-relaxed">
-              I agree to the
-              <a th:href="@{/terms}" class="text-gray-900 hover:underline">Terms of Service</a>
-              and
-              <a th:href="@{/privacy}" class="text-gray-900 hover:underline">Privacy Policy</a>
-            </span>
+                            <a th:href="@{/terms}"
+                               class="font-semibold text-blue-600 underline underline-offset-4 decoration-2 hover:text-blue-700 focus:outline-none focus:ring-blue-300 rounded-sm">
+                                이용약관
+                            </a>
+                            및
+                            <a th:href="@{/privacy}"
+                               class="font-semibold text-blue-600 underline underline-offset-4 decoration-2 hover:text-blue-700 focus:outline-none focus:ring-blue-300 rounded-sm">
+                                개인정보처리방침
+                            </a>
+                            에 동의합니다.
+                        </span>
                     </label>
 
                     <div th:if="${#fields.hasErrors('agreeToTerms')}" class="flex items-center gap-1 mt-2 text-sm text-red-600">
@@ -162,7 +168,7 @@
                         class="w-full py-3.5 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
                  bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-sm"
                 >
-                    Create account
+                    회원가입하기
                     <span class="text-base">→</span>
                 </button>
             </form>
@@ -173,7 +179,7 @@
                     <div class="w-full border-t border-gray-200"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500">Or continue with</span>
+                    <span class="px-4 bg-white text-gray-500">또는 다음 계정으로 계속하기</span>
                 </div>
             </div>
 
@@ -205,8 +211,8 @@
         <!-- Sign In -->
         <div class="text-center">
             <p class="text-sm text-gray-600">
-                Already have an account?
-                <a th:href="@{/login}" class="text-gray-900 font-medium hover:underline">Sign in</a>
+                이미 계정이 있으신가요?
+                <a th:href="@{/login}" class="text-gray-900 font-medium hover:underline">로그인</a>
             </p>
         </div>
 

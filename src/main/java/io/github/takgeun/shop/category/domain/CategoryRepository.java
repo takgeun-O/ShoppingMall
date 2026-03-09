@@ -1,5 +1,8 @@
 package io.github.takgeun.shop.category.domain;
 
+import io.github.takgeun.shop.product.view.dto.CategoryOptionView;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 

@@ -11,6 +11,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class MemberUpdateRequest {
 
     // 패스워드 변경은 별도의 폼에서 관리할 것. (보안 처리 등등때문)
@@ -25,4 +26,11 @@ public class MemberUpdateRequest {
     @Pattern(regexp = "^010-\\\\d{4}-\\\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.", groups = ValidationGroups.Format.class)
     @Size(max = 20, message = "전화번호는 20자 이하입니다.", groups = ValidationGroups.Format.class)
     private String phone;
+
+    public static MemberUpdateRequest of(String name, String phone) {
+        MemberUpdateRequest request = new MemberUpdateRequest();
+        request.setName(name);
+        request.setPhone(phone);
+        return request;
+    }
 }
