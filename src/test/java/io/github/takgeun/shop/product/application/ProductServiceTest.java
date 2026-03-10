@@ -2,11 +2,9 @@ package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
-import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.dto.request.ProductUpdateRequest;
 import io.github.takgeun.shop.product.infra.MemoryProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +39,8 @@ class ProductServiceTest {
                 39000,
                 10,
                 "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 
@@ -55,6 +55,51 @@ class ProductServiceTest {
         assertEquals("튼튼한 파우치", product.getDescription());
         assertEquals("https://example.com/image.jpg", product.getImageUrl());
         assertEquals(ProductStatus.ON_SALE, product.getStatus());
+        assertNull(product.getOriginalPrice());
+    }
+
+    @Test
+    void 상품_생성_성공_정가포함() {
+        // given
+        Long categoryId = categoryService.create("전자", null);
+
+        // when
+        Long productId = productService.create(
+                categoryId,
+                "맥북 파우치",
+                39000,
+                10,
+                "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                49000,
+                "https://example.com/image.jpg"
+        );
+
+        // then
+        Product product = productService.getForDetail(true, productId);
+        assertEquals(49000, product.getOriginalPrice());
+    }
+
+    @Test
+    void 상품_생성_실패_정가가_판매가보다_작음() {
+        // given
+        Long categoryId = categoryService.create("전자", null);
+
+        // when & then
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () ->
+                productService.create(
+                        categoryId,
+                        "맥북 파우치",
+                        39000,
+                        10,
+                        "튼튼한 파우치",
+                        ProductStatus.ON_SALE,
+                        30000,
+                        "https://example.com/image.jpg"
+                )
+        );
+
+        assertEquals("정가는 판매가 이상이어야 합니다.", e.getMessage());
     }
 
     @Test
@@ -67,6 +112,8 @@ class ProductServiceTest {
                 39000,
                 10,
                 "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 
@@ -90,13 +137,18 @@ class ProductServiceTest {
     void 카테고리별_상품_목록_조회_성공_공개용() {
         // given
         Long categoryId = categoryService.create("전자", null);
-        Long productId1 = productService.create(categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치", "https://example.com/1.jpg");
-        Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치", "https://example.com/2.jpg");
-        Long productId3 = productService.create(categoryId, "비공개 상품", 20000, 20, "숨김용", "https://example.com/3.jpg");
-
-        productService.changeStatus(productId1, ProductStatus.ON_SALE);
-        productService.changeStatus(productId2, ProductStatus.HIDDEN);
-        productService.changeStatus(productId3, ProductStatus.DISCONTINUED);
+        Long productId1 = productService.create(
+                categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치",
+                ProductStatus.ON_SALE, null, "https://example.com/1.jpg"
+        );
+        productService.create(
+                categoryId, "삼성 파우치", 20000, 20, "좋은 파우치",
+                ProductStatus.HIDDEN, null, "https://example.com/2.jpg"
+        );
+        productService.create(
+                categoryId, "비공개 상품", 20000, 20, "숨김용",
+                ProductStatus.DISCONTINUED, null, "https://example.com/3.jpg"
+        );
 
         // when
         List<Product> productList = productService.findForList(false, categoryId, "latest");
@@ -111,13 +163,18 @@ class ProductServiceTest {
     void 카테고리별_상품_목록_조회_성공_관리자용() {
         // given
         Long categoryId = categoryService.create("전자", null);
-        Long productId1 = productService.create(categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치", "https://example.com/1.jpg");
-        Long productId2 = productService.create(categoryId, "삼성 파우치", 20000, 20, "좋은 파우치", "https://example.com/2.jpg");
-        Long productId3 = productService.create(categoryId, "비공개 상품", 20000, 20, "숨김용", "https://example.com/3.jpg");
-
-        productService.changeStatus(productId1, ProductStatus.ON_SALE);
-        productService.changeStatus(productId2, ProductStatus.HIDDEN);
-        productService.changeStatus(productId3, ProductStatus.DISCONTINUED);
+        productService.create(
+                categoryId, "맥북 파우치", 39000, 10, "튼튼한 파우치",
+                ProductStatus.ON_SALE, null, "https://example.com/1.jpg"
+        );
+        productService.create(
+                categoryId, "삼성 파우치", 20000, 20, "좋은 파우치",
+                ProductStatus.HIDDEN, null, "https://example.com/2.jpg"
+        );
+        productService.create(
+                categoryId, "비공개 상품", 20000, 20, "숨김용",
+                ProductStatus.DISCONTINUED, null, "https://example.com/3.jpg"
+        );
 
         // when
         List<Product> productList = productService.findForList(true, categoryId, "latest");
@@ -137,27 +194,22 @@ class ProductServiceTest {
                 39000,
                 10,
                 "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/old.jpg"
-        );
-
-        ProductUpdateRequest request = ProductUpdateRequest.of(
-                null,
-                "맥북 파우치2",
-                40000,
-                20,
-                null,
-                "https://example.com/new.jpg"
         );
 
         // when
         productService.update(
                 productId,
-                request.getCategoryId(),
-                request.getName(),
-                request.getPrice(),
-                request.getStock(),
-                request.getDescription(),
-                request.getImageUrl()
+                null,
+                "맥북 파우치2",
+                40000,
+                20,
+                null,
+                null,
+                null,
+                "https://example.com/new.jpg"
         );
 
         // then
@@ -167,6 +219,7 @@ class ProductServiceTest {
         assertEquals(20, updated.getStock());
         assertEquals("튼튼한 파우치", updated.getDescription());
         assertEquals("https://example.com/new.jpg", updated.getImageUrl());
+        assertEquals(ProductStatus.ON_SALE, updated.getStatus());
     }
 
     @Test
@@ -181,33 +234,95 @@ class ProductServiceTest {
                 39000,
                 10,
                 "튼튼한 파우치",
-                "https://example.com/image.jpg"
-        );
-
-        ProductUpdateRequest request = ProductUpdateRequest.of(
-                fashionId,
-                "맥북 파우치2",
-                40000,
-                20,
+                ProductStatus.ON_SALE,
                 null,
-                "https://example.com/image2.jpg"
+                "https://example.com/image.jpg"
         );
 
         // when
         productService.update(
                 productId,
-                request.getCategoryId(),
-                request.getName(),
-                request.getPrice(),
-                request.getStock(),
-                request.getDescription(),
-                request.getImageUrl()
+                fashionId,
+                "맥북 파우치2",
+                40000,
+                20,
+                null,
+                null,
+                null,
+                "https://example.com/image2.jpg"
         );
 
         // then
         Product updated = productService.getForDetail(true, productId);
         assertEquals(fashionId, updated.getCategoryId());
+        assertEquals("맥북 파우치2", updated.getName());
         assertEquals("https://example.com/image2.jpg", updated.getImageUrl());
+    }
+
+    @Test
+    void 상품_수정_성공_정가_변경() {
+        // given
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = productService.create(
+                categoryId,
+                "맥북 파우치",
+                39000,
+                10,
+                "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                45000,
+                "https://example.com/image.jpg"
+        );
+
+        // when
+        productService.update(
+                productId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                50000,
+                null
+        );
+
+        // then
+        Product updated = productService.getForDetail(true, productId);
+        assertEquals(50000, updated.getOriginalPrice());
+    }
+
+    @Test
+    void 상품_수정_성공_상태_변경() {
+        // given
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = productService.create(
+                categoryId,
+                "맥북 파우치",
+                39000,
+                10,
+                "튼튼한 파우치",
+                ProductStatus.READY,
+                null,
+                "https://example.com/image.jpg"
+        );
+
+        // when
+        productService.update(
+                productId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                ProductStatus.HIDDEN,
+                null,
+                null
+        );
+
+        // then
+        Product updated = productService.getForDetail(true, productId);
+        assertEquals(ProductStatus.HIDDEN, updated.getStatus());
     }
 
     @Test
@@ -220,27 +335,22 @@ class ProductServiceTest {
                 39000,
                 10,
                 "튼튼한 파우치",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 
-        ProductUpdateRequest request = ProductUpdateRequest.of(
+        // when
+        productService.update(
+                productId,
+                null,
+                null,
                 null,
                 null,
                 null,
                 null,
                 null,
                 ""
-        );
-
-        // when
-        productService.update(
-                productId,
-                request.getCategoryId(),
-                request.getName(),
-                request.getPrice(),
-                request.getStock(),
-                request.getDescription(),
-                request.getImageUrl()
         );
 
         // then
@@ -253,25 +363,18 @@ class ProductServiceTest {
         // given
         Long categoryId = categoryService.create("전자", null);
 
-        ProductUpdateRequest request = ProductUpdateRequest.of(
-                categoryId,
-                "연필",
-                1000,
-                2,
-                "desc",
-                "https://example.com/image.jpg"
-        );
-
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
                 () -> productService.update(
                         999L,
-                        request.getCategoryId(),
-                        request.getName(),
-                        request.getPrice(),
-                        request.getStock(),
-                        request.getDescription(),
-                        request.getImageUrl()
+                        categoryId,
+                        "연필",
+                        1000,
+                        2,
+                        "desc",
+                        ProductStatus.ON_SALE,
+                        null,
+                        "https://example.com/image.jpg"
                 ));
 
         assertEquals("존재하지 않는 상품입니다.", e.getMessage());
@@ -287,6 +390,8 @@ class ProductServiceTest {
                 2_000_000,
                 20,
                 "빠른 맥북",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 
@@ -318,6 +423,8 @@ class ProductServiceTest {
                 10000,
                 1,
                 "설명",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 
@@ -343,6 +450,8 @@ class ProductServiceTest {
                 10000,
                 10,
                 "설명",
+                ProductStatus.ON_SALE,
+                null,
                 "https://example.com/image.jpg"
         );
 

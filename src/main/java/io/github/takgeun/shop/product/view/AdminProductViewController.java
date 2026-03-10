@@ -2,17 +2,22 @@ package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.view.dto.ProductCardView;
+import io.github.takgeun.shop.product.view.dto.AdminProductListItemView;
+import io.github.takgeun.shop.product.view.dto.AdminProductSummaryView;
 import io.github.takgeun.shop.product.view.dto.ProductDetailView;
 import io.github.takgeun.shop.product.view.form.ProductCreateForm;
+import io.github.takgeun.shop.product.view.form.ProductUpdateForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,55 +36,6 @@ public class AdminProductViewController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
-
-    /**
-     * 상품 목록 페이지 (관리자 전용)
-     * GET /admin/products?categoryId={categoryId}&sort={sort}
-     *
-     * 관리자 컨트롤러 관심사
-     * - 전체 상품 조회
-     * - 숨김/준비중/판매중지 상품까지 조회
-     * - 상품 등록
-     * - 상품 수정
-     * - 상품 상태 변경
-     * - 관리자 권한 체크
-     */
-    @GetMapping
-    public String list(
-            @RequestParam(required = false) @Positive Long categoryId,
-            @RequestParam(required = false, defaultValue = "latest") String sort,
-            Model model,
-            HttpSession session
-    ) {
-
-        log.info("관리자 상품목록 진입 : categoryId={}, sort={}", categoryId, sort);
-        requireAdmin(session);
-
-        // sort 검증 (아무 값 들어오는 것 방지)
-        String normalizedSort = normalizeSort(sort);
-
-        // admin 컨트롤러니까 true 고정
-        List<Product> products = productService.findForList(true, categoryId, normalizedSort);
-
-        List<ProductCardView> cards = products.stream()
-                .map(ProductCardView::from)
-                .toList();
-
-        // 제목용 카테고리명 (관리자 기준만 사용)
-        String selectedCategoryName = null;
-        if (categoryId != null) {
-            selectedCategoryName = categoryService.findAdminNameOrNull(categoryId);
-        }
-
-        model.addAttribute("products", cards);
-        model.addAttribute("selectedCategoryId", categoryId);
-        model.addAttribute("selectedCategoryName", selectedCategoryName);
-        model.addAttribute("sort", normalizedSort);
-        model.addAttribute("treeMode", "admin");        // 관리자 뷰 고정
-        model.addAttribute("isAdmin", true);
-
-        return "admin/products/list";
-    }
 
     /**
      * 상품 상세 페이지 (관리자 전용)
@@ -110,10 +66,37 @@ public class AdminProductViewController {
     }
 
     /**
-     * 상품 등록 폼
-     * GET /admin/products/create
+     * 관리자 상품 관리 페이지
+     * GET /admin/products
      */
-    @GetMapping("/create")
+    @GetMapping
+    public String list(Model model, HttpSession session) {
+
+        requireAdmin(session);
+
+        log.info("관리자 상품 관리 페이지 진입");
+
+        List<Product> products = productService.findForList(true, null, "latest");
+
+        List<AdminProductListItemView> views = products.stream()
+                .map(this::toAdminListItemView)
+                .toList();
+
+        AdminProductSummaryView summary = AdminProductSummaryView.of(views);
+
+        model.addAttribute("products", views);
+        model.addAttribute("summary", summary);
+        model.addAttribute("treeMode", "admin");
+        model.addAttribute("isAdmin", true);
+
+        return "admin/products/list";
+    }
+
+    /**
+     * 상품 등록 폼
+     * GET /admin/products/new
+     */
+    @GetMapping("/new")
     public String createForm(Model model, HttpSession session) {
         requireAdmin(session);
 
@@ -123,19 +106,16 @@ public class AdminProductViewController {
             model.addAttribute("form", form);
         }
 
-        model.addAttribute("categories", categoryService.getAllAdminCategories());
-        model.addAttribute("productStatuses", ProductStatus.values());
-        model.addAttribute("treeMode", "admin");
-        model.addAttribute("isAdmin", true);
+        populateProductFormModel(model);
 
-        return "admin/products/create";
+        return "admin/products/new";
     }
 
     /**
      * 상품 등록 처리
-     * POST /admin/products/create
+     * POST /admin/products
      */
-    @PostMapping("/create")
+    @PostMapping
     public String create(
             @Valid @ModelAttribute("form") ProductCreateForm form,
             BindingResult bindingResult,
@@ -144,18 +124,12 @@ public class AdminProductViewController {
     ) {
         requireAdmin(session);
 
-        if(form.isInvalidPriceRelation()) {
-            bindingResult.rejectValue("price", "invalid.price", "판매가는 정가보다 클 수 없습니다.");
-            bindingResult.rejectValue("originalPrice", "invalid.originalPrice", "정가는 판매가보다 작을 수 없습니다.");
-        }
+        validatePriceRelation(form.getPrice(), form.getOriginalPrice(), bindingResult);
 
         if(bindingResult.hasErrors()) {
             // 에러 났을 때 제자리 포워딩하는 동시에 정보 그대로 옮기기
-            model.addAttribute("categories", categoryService.getAllAdminCategories());
-            model.addAttribute("productStatuses", ProductStatus.values());
-            model.addAttribute("treeMode", "admin");
-            model.addAttribute("isAdmin", true);
-            return "admin/products/create";
+            populateProductFormModel(model);
+            return "admin/products/new";
         }
 
         try {
@@ -169,15 +143,121 @@ public class AdminProductViewController {
                     form.getOriginalPrice(),
                     form.getImageUrl()
             );
+
+            log.info("상품 등록 완료, productId={}", productId);
             return "redirect:/admin/products/" + productId;
         } catch (IllegalArgumentException e) {
             bindingResult.reject("createFail", e.getMessage());
-            model.addAttribute("categories", categoryService.getAllAdminCategories());
-            model.addAttribute("treeMode", "admin");
-            model.addAttribute("isAdmin", true);
-            return "admin/products/create";
+            populateProductFormModel(model);
+            return "admin/products/new";
         }
     }
+
+    /**
+     * 상품 수정 폼
+     * GET /admin/products/{id}/edit
+     */
+    @GetMapping("/{id}/edit")
+    public String editForm(
+            @PathVariable("id") @Positive Long productId,
+            Model model,
+            HttpSession session
+    ) {
+        requireAdmin(session);
+
+        Product product = productService.getForDetail(true, productId);
+
+        if(!model.containsAttribute("form")) {
+            model.addAttribute("form", ProductUpdateForm.from(product));
+        }
+
+        model.addAttribute("productId", productId);
+        populateProductFormModel(model);
+
+        return "admin/products/edit";
+    }
+
+    /**
+     * 상품 수정 처리
+     * POST /admin/products/{id}/edit
+     */
+    @PostMapping("/{id}/edit")
+    public String edit(
+            @PathVariable("id") @Positive Long productId,
+            @Valid @ModelAttribute("form") ProductUpdateForm form,
+            BindingResult bindingResult,
+            Model model,
+            HttpSession session
+    ) {
+        requireAdmin(session);
+
+        validatePriceRelation(form.getPrice(), form.getOriginalPrice(), bindingResult);
+
+        if(bindingResult.hasErrors()) {
+            model.addAttribute("productId", productId);
+            populateProductFormModel(model);
+            return "admin/products/edit";
+        }
+
+        try {
+            productService.update(
+                    productId,
+                    form.getCategoryId(),
+                    form.getName(),
+                    form.getPrice(),
+                    form.getStock(),
+                    form.getDescription(),
+                    form.getStatus(),
+                    form.getOriginalPrice(),
+                    form.getImageUrl()
+            );
+
+            log.info("상품 수정 완료. productId={}", productId);
+            return "redirect:/admin/products";
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            bindingResult.reject("updateFail", e.getMessage());
+            model.addAttribute("productId", productId);
+            populateProductFormModel(model);
+            return "admin/products/edit";
+        }
+    }
+
+    /**
+     * 상품 숨김 처리
+     * POST /admin/products/{id}/hide
+     */
+    @PostMapping("/{id}/hide")
+    public String hide(
+            @PathVariable("id") @Positive Long productId,
+            HttpSession session
+    ) {
+        requireAdmin(session);
+
+        productService.changeStatus(productId, ProductStatus.HIDDEN);
+        log.info("상품 숨김 처리. productId={}", productId);
+
+        return "redirect:/admin/products";
+    }
+
+    /**
+     * 상품 공개 처리
+     * POST /admin/products/{id}/show
+     */
+    @PostMapping("/{id}/show")
+    public String show(
+            @PathVariable("id") @Positive Long productId,
+            HttpSession session
+    ) {
+        requireAdmin(session);
+
+        productService.changeStatus(productId, ProductStatus.ON_SALE);
+        log.info("상품 공개 처리. productId={}", productId);
+
+        return "redirect:/admin/products";
+    }
+
 
     private void requireAdmin(HttpSession session) {
         if (session == null) {
@@ -189,11 +269,48 @@ public class AdminProductViewController {
         }
     }
 
+    private void populateProductFormModel(Model model) {
+        model.addAttribute("categories", categoryService.getAllAdminCategories());
+        model.addAttribute("productStatuses", ProductStatus.values());
+        model.addAttribute("treeMode", "admin");
+        model.addAttribute("isAdmin", true);
+    }
+
+    private void validatePriceRelation(Integer price, Integer originalPrice, BindingResult bindingResult) {
+        if(price == null || originalPrice == null) {
+            return;
+        }
+
+        if(originalPrice < price) {
+            bindingResult.rejectValue("originalPrice", "invalid.originalPrice", "정가는 판매가 이상이어야 합니다.");
+        }
+    }
+
     private String normalizeSort(String sort) {
         if (sort == null || sort.isBlank()) return "latest";
         return switch (sort) {
             case "latest", "best", "sale", "price-low", "price-high", "rating" -> sort;
             default -> "latest";
         };
+    }
+
+    private AdminProductListItemView toAdminListItemView(Product product) {
+        String categoryName = categoryService.findAdminNameOrNull(product.getCategoryId());
+
+        String imageUrl = product.getImageUrl();
+        if(imageUrl == null || imageUrl.trim().isBlank()) {
+            imageUrl = "/images/no-image.png";
+        }
+
+        return AdminProductListItemView.of(
+                product.getId(),
+                product.getName(),
+                product.getPrice(),
+                product.getOriginalPrice(),
+                product.getStock(),
+                imageUrl,
+                categoryName != null ? categoryName : "미분류",
+                product.getStatus()
+        );
     }
 }

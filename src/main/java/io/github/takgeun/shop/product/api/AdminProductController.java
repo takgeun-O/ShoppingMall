@@ -104,6 +104,8 @@ public class AdminProductController {
                 request.getPrice(),
                 request.getStock(),
                 request.getDescription(),
+                request.getStatus(),
+                request.getOriginalPrice(),
                 request.getImageUrl()
         );
 

@@ -120,7 +120,7 @@ public class Product {
         this.description = normalized;
     }
 
-    private void changeStatus(ProductStatus status) {
+    public void changeStatus(ProductStatus status) {
         if(status == null) {
             throw new IllegalArgumentException("상품 상태는 필수입니다.");
         }

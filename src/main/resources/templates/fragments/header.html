@@ -89,17 +89,10 @@
                             사용자님
                         </span>
 
-                        <!-- 일반 사용자 -->
+                        <!-- 일반 사용자 & 관리자 계정 공용 -->
                         <a th:href="@{/members/me}"
                            class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100">
                             마이페이지
-                        </a>
-
-                        <!-- 관리자 -->
-                        <a th:if="${isAdmin}"
-                           th:href="@{/admin/products}"
-                           class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-                            관리자페이지
                         </a>
 
                         <!-- 로그아웃: POST 유지 -->
@@ -118,22 +111,21 @@
 
     <!-- Sub Navigation -->
     <div class="bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center h-12 space-x-6">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-12 items-center space-x-6">
 
-                <!-- SHOP 일반 사용자 -->
-                <th:block th:if="${activeTop=='SHOP' and !isAdmin}">
+                <!-- SHOP : 관리자/일반사용자 공통 -->
+                <th:block th:if="${activeTop=='SHOP'}">
                     <a th:href="@{/}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         쇼핑홈
                     </a>
 
-                    <!-- Categories dropdown (hover) -->
+                    <!-- Categories dropdown -->
                     <div class="relative group">
                         <button type="button"
-                                class="text-sm text-gray-700 hover:text-gray-900 font-medium flex items-center space-x-1">
+                                class="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900">
                             <span>카테고리</span>
-                            <!-- ChevronDown -->
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                  viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -141,9 +133,7 @@
                             </svg>
                         </button>
 
-                        <!-- dropdown panel -->
-                        <div class="absolute top-full left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50
-                                    hidden group-hover:block">
+                        <div class="absolute left-0 top-full z-50 hidden w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg group-hover:block">
                             <a th:each="c : ${rootCategories}"
                                th:href="@{/products(categoryId=${c.id})}"
                                th:text="${c.name}"
@@ -159,56 +149,28 @@
                     </div>
 
                     <a th:href="@{/products(sort='best')}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         베스트상품
                     </a>
 
                     <a th:href="@{/products(sort='sale')}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         할인상품
-                    </a>
-                </th:block>
-
-                <!-- SHOP - 관리자 -->
-                <th:block th:if="${activeTop=='SHOP' and isAdmin}">
-                    <a th:href="@{/admin/products}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                        관리자 홈
-                    </a>
-
-                    <a th:href="@{/admin/products}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                        상품 관리
-                    </a>
-
-                    <a th:href="@{/admin/products/create}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                        상품 등록
-                    </a>
-
-                    <a th:href="@{/admin/categories}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                        카테고리 관리
-                    </a>
-
-                    <a th:href="@{/admin/orders}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
-                        주문 관리
                     </a>
                 </th:block>
 
                 <!-- COMMUNITY -->
                 <th:block th:if="${activeTop=='COMMUNITY'}">
                     <a th:href="@{/community}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         커뮤니티홈
                     </a>
                     <a th:href="@{/community/hot}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         인기글
                     </a>
                     <a th:href="@{/community/recommend}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         제품추천글
                     </a>
                 </th:block>
@@ -216,15 +178,15 @@
                 <!-- CS -->
                 <th:block th:if="${activeTop=='CS'}">
                     <a th:href="@{/cs}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         고객센터홈
                     </a>
                     <a th:href="@{/cs/faq}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         FAQ
                     </a>
                     <a th:href="@{/cs/inquiry}"
-                       class="text-sm text-gray-700 hover:text-gray-900 font-medium">
+                       class="text-sm font-medium text-gray-700 hover:text-gray-900">
                         문의하기
                     </a>
                 </th:block>

@@ -33,6 +33,7 @@ public class ProductCreateForm {
     @Size(max = 1000, message = "설명은 1000자 이하입니다.")
     private String description;
 
+    @NotBlank(message = "상품 이미지는 필수입니다.")
     @Size(max = 500, message = "이미지 URL은 500자 이하입니다.")
     private String imageUrl;
 

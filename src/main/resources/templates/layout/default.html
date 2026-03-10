@@ -6,29 +6,26 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">Omniora</title>
 
-    <link rel="stylesheet" th:href="@{/css/tailwind.css}">       <!-- 베이스/유틸 제공 -->
-    <link rel="stylesheet" th:href="@{/css/app.css}">           <!-- 프로젝트에서 필요한 것만 덮어쓰기 -->
+    <link rel="stylesheet" th:href="@{/css/tailwind.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 
-    <!-- 페이지별 head 확장 영역 -->
     <th:block th:if="${headExtra != null}">
         <th:block th:replace="${headExtra}"></th:block>
     </th:block>
-
 </head>
 
-<body>
-
-<div class="om-layout-root">
+<body class="min-h-screen bg-white text-gray-900">
+<div class="min-h-screen flex flex-col">
     <div th:replace="~{fragments/header :: siteHeader(${activeTop})}"></div>
 
-    <main class="om-layout-main">
-        <div th:replace="${content}"></div>
+    <main class="flex-1">
+        <th:block th:replace="${content}"></th:block>
     </main>
 
     <div th:replace="~{fragments/footer :: footer}"></div>
 </div>
-
 </body>
 </html>

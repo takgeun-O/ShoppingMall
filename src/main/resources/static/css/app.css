@@ -2,16 +2,6 @@
 /* ✅ Tailwind 유틸/태그 전역 스타일 재정의 금지 */
 /* ✅ 커스텀은 om- prefix만 */
 
-.om-layout-root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.om-layout-main {
-  flex: 1;
-}
-
 .no-spinner::-webkit-outer-spin-button,
 .no-spinner::-webkit-inner-spin-button {
   -webkit-appearance: none;

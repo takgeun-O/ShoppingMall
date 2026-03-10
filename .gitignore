@@ -36,4 +36,15 @@ out/
 ### VS Code ###
 .vscode/
 
+### Node ###
 node_modules/
+dist/
+.npm/
+*.log
+
+### macOS ###
+.DS_Store
+
+### Env ###
+.env
+.env.*

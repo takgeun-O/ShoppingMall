@@ -35,7 +35,7 @@
 
         <!-- Form Card -->
         <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <form th:action="@{/admin/products/create}"
+            <form th:action="@{/admin/products}"
                   th:object="${form}"
                   method="post"
                   novalidate
@@ -170,7 +170,7 @@
                 <!-- Image URL -->
                 <div>
                     <label for="imageUrl" class="text-sm font-semibold text-gray-900">
-                        상품 이미지 URL
+                        상품 이미지 URL <span class="text-red-500">*</span>
                     </label>
                     <input id="imageUrl"
                            type="url"

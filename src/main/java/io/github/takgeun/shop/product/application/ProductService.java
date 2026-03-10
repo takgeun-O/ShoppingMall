@@ -99,14 +99,14 @@ public class ProductService {
         return saved.getId();
     }
 
-    // 수정 (부분 수정)
-    // null 인 항목은 수정하지 않음
     public void update(Long productId,
                        Long categoryId,
                        String name,
                        Integer price,
                        Integer stock,
                        String description,
+                       ProductStatus status,
+                       Integer originalPrice,
                        String imageUrl) {
 
         Product p = productRepository.findById(productId)
@@ -115,9 +115,20 @@ public class ProductService {
         if(categoryId != null) p.changeCategory(categoryId);
         if(name != null) p.changeName(name);
         if(price != null) p.changePrice(price);
-        if(stock != null) p.changeStock(stock);
         if(description != null) p.changeDescription(description);
+        if(originalPrice != null) p.changeOriginalPrice(originalPrice);
         if(imageUrl != null) p.changeImageUrl(imageUrl);
+
+        // 재고 0 -> 무조건 SOLD_OUT
+        // 재고 > 0 + status 전달 -> 전달된 상태
+        // 재고 > 0 + status 없음 -> 기존 상태 유지
+        if(stock != null) p.changeStock(stock);
+
+        if(p.getStock() == 0) {
+            p.changeStatus(ProductStatus.SOLD_OUT);
+        } else if (status != null) {
+            p.changeStatus(status);
+        }
 
         productRepository.save(p);
     }

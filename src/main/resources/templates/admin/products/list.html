@@ -2,7 +2,7 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/default :: layout(
-          '상품 목록',
+          '상품 관리',
           ~{::body},
           null,
           'SHOP'
@@ -10,139 +10,254 @@
 
 <body>
 
-<div class="bg-gray-50 min-h-screen">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="min-h-screen bg-gray-50">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="mb-2 text-3xl font-bold text-gray-900"
-                        th:text="${selectedCategoryName != null ? selectedCategoryName : '전체 상품'}">
-                        전체 상품
-                    </h1>
-                    <p class="text-gray-600">
-                        총 <span th:text="${#lists.size(products)}">0</span>개의 상품
-                    </p>
+                    <h1 class="mb-2 text-3xl font-bold text-gray-900">상품 관리</h1>
+                    <p class="text-gray-600">상품 재고와 상태를 관리하세요</p>
                 </div>
 
-                <a th:if="${isAdmin}"
-                   th:href="@{/admin/products/create}"
-                   class="inline-flex items-center rounded-full bg-gray-900 px-6 py-3 text-sm font-medium text-white shadow-md transition-shadow hover:shadow-lg hover:bg-gray-800 whitespace-nowrap">
-                    <span class="mr-2 flex h-5 w-5 items-center justify-center text-base leading-none">+</span>
-                    <span>상품 등록</span>
+                <a th:href="@{/admin/products/new}"
+                   class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:bg-indigo-700 hover:shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="mr-2 h-5 w-5"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    상품 등록
                 </a>
             </div>
         </div>
 
-        <!-- Filters and Sorting -->
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <!-- Product List Table -->
+        <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+            <div class="overflow-x-auto">
+                <div class="min-w-[1100px]">
 
-            <div class="flex items-center gap-2">
-                <!-- 피그마: 필터 버튼(동작 없음) -->
-                <button type="button"
-                        class="inline-flex items-center px-3 py-2 text-sm border rounded-md hover:bg-gray-50">
-                    <!-- 아이콘 대신 텍스트(원하면 svg로 교체 가능) -->
-                    <span class="mr-2">☰</span>
-                    필터
-                </button>
+                    <!-- Table Header -->
+                    <div class="border-b bg-gray-50 px-6 py-4">
+                        <div class="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+                            <div class="col-span-1">이미지</div>
+                            <div class="col-span-3">상품명</div>
+                            <div class="col-span-2">가격</div>
+                            <div class="col-span-1 text-center">재고</div>
+                            <div class="col-span-2 text-center">상태</div>
+                            <div class="col-span-3 text-right">관리</div>
+                        </div>
+                    </div>
 
-                <!-- categoryId가 있을 때 전체보기 -->
-                <a th:if="${selectedCategoryId != null}"
-                   th:href="@{/products(sort=${sort})}"
-                   class="inline-flex items-center px-3 py-2 text-sm rounded-md hover:bg-gray-50">
-                    전체보기
-                </a>
+                    <!-- Table Body -->
+                    <div class="divide-y">
+                        <div th:each="product : ${products}"
+                             class="px-6 py-4 transition-colors hover:bg-gray-50">
+                            <div class="grid grid-cols-12 items-center gap-4">
+
+                                <!-- Product Image -->
+                                <div class="col-span-1">
+                                    <div class="h-16 w-16 overflow-hidden rounded-lg bg-gray-100">
+                                        <img th:src="${product.imageUrl}"
+                                             th:alt="${product.name}"
+                                             class="h-full w-full object-cover"
+                                             onerror="this.src='/images/no-image.png'"/>
+                                    </div>
+                                </div>
+
+                                <!-- Product Name -->
+                                <div class="col-span-3">
+                                    <p class="font-semibold text-gray-900"
+                                       th:text="${product.name}">상품명</p>
+                                    <p class="text-sm text-gray-500"
+                                       th:text="${product.categoryName}">카테고리</p>
+                                </div>
+
+                                <!-- Price -->
+                                <div class="col-span-2">
+                                    <p class="font-bold text-gray-900"
+                                       th:text="'₩' + ${#numbers.formatInteger(product.price, 0, 'COMMA')}">
+                                        ₩289,000
+                                    </p>
+                                    <p th:if="${product.originalPrice != null}"
+                                       class="text-sm text-gray-400 line-through"
+                                       th:text="'₩' + ${#numbers.formatInteger(product.originalPrice, 0, 'COMMA')}">
+                                        ₩350,000
+                                    </p>
+                                </div>
+
+                                <!-- Stock -->
+                                <div class="col-span-1 text-center">
+                                    <p class="font-semibold"
+                                       th:classappend="${product.stock == 0} ? ' text-red-600' :
+                                                      (${product.stock < 10} ? ' text-orange-600' : ' text-gray-900')"
+                                       th:text="${product.stock == 0 ? '품절' : product.stock}">
+                                        45
+                                    </p>
+                                    <p th:if="${product.stock == 0}"
+                                       class="text-xs text-red-600">
+                                        No stock
+                                    </p>
+                                </div>
+
+                                <!-- Status : 최종 상태 보정은 ProductService에서 진행 -->
+                                <div class="col-span-2 text-center">
+                                    <span th:if="${product.status.name() == 'ON_SALE'}"
+                                          class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                                        판매중
+                                    </span>
+                                    <span th:if="${product.status.name() == 'HIDDEN'}"
+                                          class="inline-flex rounded-full bg-gray-500 px-3 py-1 text-xs font-semibold text-white">
+                                        숨김
+                                    </span>
+                                    <span th:if="${product.status.name() == 'READY'}"
+                                          class="inline-flex rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                                        준비중
+                                    </span>
+                                    <span th:if="${product.status.name() == 'SOLD_OUT'}"
+                                          class="inline-flex rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white">
+                                        품절
+                                    </span>
+                                    <span th:if="${product.status.name() == 'DISCONTINUED'}"
+                                          class="inline-flex rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                                        판매종료
+                                    </span>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="col-span-3 flex items-center justify-end gap-2">
+                                    <a th:href="@{/admin/products/{id}/edit(id=${product.id})}"
+                                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             class="mr-1 h-4 w-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke="currentColor"
+                                             stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                  d="M16.862 4.487a2.25 2.25 0 113.182 3.182L8.25 19.463 4 20l.537-4.25L16.862 4.487z"/>
+                                        </svg>
+                                        수정
+                                    </a>
+
+                                    <form th:if="${product.status.name() != 'HIDDEN'}"
+                                          th:action="@{/admin/products/{id}/hide(id=${product.id})}"
+                                          method="post"
+                                          class="m-0">
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-600 hover:bg-gray-50 hover:text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="mr-1 h-4 w-4"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke="currentColor"
+                                                 stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M3 3l18 18M10.477 10.477A3 3 0 0012 15a3 3 0 002.523-4.523M9.88 5.09A10.94 10.94 0 0112 5c5.523 0 10 7 10 7a18.32 18.32 0 01-4.072 4.782M6.228 6.228C3.679 8.07 2 10 2 10s7 7 10 7a9.77 9.77 0 003.084-.505"/>
+                                            </svg>
+                                            숨김
+                                        </button>
+                                    </form>
+
+                                    <form th:if="${product.status.name() == 'HIDDEN'}"
+                                          th:action="@{/admin/products/{id}/show(id=${product.id})}"
+                                          method="post"
+                                          class="m-0">
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-green-600 hover:bg-green-50 hover:text-green-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="mr-1 h-4 w-4"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke="currentColor"
+                                                 stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                            공개
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div th:if="${#lists.isEmpty(products)}"
+                         class="px-6 py-16 text-center">
+                        <p class="mb-4 text-gray-500">등록된 상품이 없습니다.</p>
+                        <a th:href="@{/admin/products/new}"
+                           class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="mr-2 h-4 w-4"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            첫 상품 등록하기
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">전체 상품</p>
+                <p class="text-2xl font-bold text-gray-900"
+                   th:text="${summary.totalCount}">0</p>
             </div>
 
-            <!-- sort select -->
-            <form method="get" th:action="@{/products}">
-                <input type="hidden" name="categoryId" th:value="${selectedCategoryId}"/>
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">판매중</p>
+                <p class="text-2xl font-bold text-green-600"
+                   th:text="${summary.onSaleCount}">0</p>
+            </div>
 
-                <select name="sort"
-                        class="w-[180px] border rounded-md px-3 py-2 text-sm bg-white"
-                        onchange="this.form.submit()">
-                    <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
-                    <option value="best" th:selected="${sort == 'best'}">인기순</option>
-                    <option value="price-low" th:selected="${sort == 'price-low'}">낮은 가격순</option>
-                    <option value="price-high" th:selected="${sort == 'price-high'}">높은 가격순</option>
-                    <option value="rating" th:selected="${sort == 'rating'}">평점순</option>
-                </select>
-            </form>
-        </div>
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">판매 준비</p>
+                <p class="text-2xl font-bold text-blue-600"
+                   th:text="${summary.readyCount}">0</p>
+            </div>
 
-        <!-- Products Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-
-            <a th:each="p : ${products}"
-               th:href="@{/products/{id}(id=${p.id})}"
-               class="group">
-
-                <div class="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white rounded-lg">
-
-                    <div class="aspect-square relative overflow-hidden bg-gray-100">
-
-                        <img th:src="${p.imageUrl}"
-                             th:alt="${p.name}"
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
-
-                        <!-- badge: 있으면 표시 -->
-                        <span th:if="${p.badge != null}"
-                              th:text="${p.badge}"
-                              class="absolute top-3 left-3 text-xs font-semibold text-white px-2 py-1 rounded"
-                              th:classappend="
-                                      ${p.badge == 'BEST'} ? ' bg-blue-600' :
-                                      ${p.badge == 'NEW'} ? ' bg-green-600' :
-                                      ${p.badge == 'SALE'} ? ' bg-red-600' :
-                                      ' bg-orange-600'">
-                                BEST
-                        </span>
-
-                    </div>
-
-                    <!-- 카드 하단 상품명, 별점, 리뷰수, 가격 -->
-                    <div class="p-4">
-                        <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
-                            th:text="${p.name}">
-                            상품명
-                        </h3>
-
-                        <div class="flex items-center mb-2">
-                            <span class="text-yellow-500">★</span>
-                            <span class="text-sm text-gray-600 ml-1"
-                                  th:text="${p.rating} + ' (' + ${p.reviews} + ')'">4.8 (123)</span>
-                        </div>
-
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-xl font-bold text-gray-900" th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
-                                289,000원
-                            </span>
-
-                            <span th:if="${p.originalPrice != null}"
-                                  class="text-sm text-gray-400 line-through"
-                                  th:text="${#numbers.formatInteger(p.originalPrice, 0, 'COMMA')} + '원'">
-                                    350,000원
-                            </span>
-                        </div>
-
-                        <!-- T(패키지명.클래스명) -> T(java.lang.Math) : java.lang.Math 클래스를 참조. 자바의 static 메소드 참조할 때는 T()로 감싸야 한다. -->
-                        <div th:if="${p.originalPrice != null}" class="mt-1">
-                            <span class="text-sm font-semibold text-red-600"
-                                  th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
-                                    10% 할인
-                            </span>
-                        </div>
-
-                    </div>
-                </div>
-            </a>
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">숨김</p>
+                <p class="text-2xl font-bold text-gray-600"
+                   th:text="${summary.hiddenCount}">0</p>
+            </div>
 
         </div>
 
-        <!-- Empty -->
-        <div th:if="${#lists.isEmpty(products)}"
-             class="text-center text-gray-500 mt-12">
-            등록된 상품이 없습니다.
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">품절</p>
+                <p class="text-2xl font-bold text-orange-600"
+                   th:text="${summary.soldOutCount}">0</p>
+            </div>
+
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">판매 종료</p>
+                <p class="text-2xl font-bold text-red-600"
+                   th:text="${summary.discontinuedCount}">0</p>
+            </div>
+
+            <div class="rounded-xl bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-1">재고 부족</p>
+                <p class="text-2xl font-bold text-amber-600"
+                   th:text="${summary.lowStockCount}">0</p>
+            </div>
+
         </div>
 
     </div>
