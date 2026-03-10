@@ -6,10 +6,11 @@ import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
-import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.view.dto.ProductCardView;
 import io.github.takgeun.shop.product.view.dto.ProductDetailView;
 import io.github.takgeun.shop.product.view.form.ProductCreateForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -18,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -89,16 +89,22 @@ public class AdminProductViewController {
     public String detail(
             @PathVariable @Positive Long productId,
             Model model,
-            HttpSession session) {
+            HttpSession session, HttpServletRequest request) {
 
         requireAdmin(session);
 
         Product product = productService.getForDetail(true, productId);
         ProductDetailView view = ProductDetailView.from(product);
 
+        String returnUrl = request.getRequestURI();
+        String query = request.getQueryString();
+        if(query != null) {
+            returnUrl += "?" + query;
+        }
+
         model.addAttribute("product", view);
-        model.addAttribute("treeMode", "admin");
-        model.addAttribute("isAdmin", true);
+        model.addAttribute("treeMode", "public");
+        model.addAttribute("returnUrl", returnUrl);
 
         return "admin/products/detail";
     }
@@ -112,10 +118,13 @@ public class AdminProductViewController {
         requireAdmin(session);
 
         if(!model.containsAttribute("form")) {
-            model.addAttribute("form", new ProductCreateForm());
+            ProductCreateForm form = new ProductCreateForm();
+            form.setStatus(ProductStatus.READY);
+            model.addAttribute("form", form);
         }
 
         model.addAttribute("categories", categoryService.getAllAdminCategories());
+        model.addAttribute("productStatuses", ProductStatus.values());
         model.addAttribute("treeMode", "admin");
         model.addAttribute("isAdmin", true);
 
@@ -135,9 +144,15 @@ public class AdminProductViewController {
     ) {
         requireAdmin(session);
 
+        if(form.isInvalidPriceRelation()) {
+            bindingResult.rejectValue("price", "invalid.price", "판매가는 정가보다 클 수 없습니다.");
+            bindingResult.rejectValue("originalPrice", "invalid.originalPrice", "정가는 판매가보다 작을 수 없습니다.");
+        }
+
         if(bindingResult.hasErrors()) {
             // 에러 났을 때 제자리 포워딩하는 동시에 정보 그대로 옮기기
             model.addAttribute("categories", categoryService.getAllAdminCategories());
+            model.addAttribute("productStatuses", ProductStatus.values());
             model.addAttribute("treeMode", "admin");
             model.addAttribute("isAdmin", true);
             return "admin/products/create";

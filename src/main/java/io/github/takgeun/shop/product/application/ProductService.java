@@ -6,8 +6,6 @@ import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 
-import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
-import io.github.takgeun.shop.product.view.form.ProductCreateForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

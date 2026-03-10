@@ -14,12 +14,12 @@ public class ProductCreateForm {
     @NotNull(message = "카테고리는 필수입니다.")
     private Long categoryId;
 
-    @NotNull(message = "상품명은 필수입니다.")
+    @NotBlank(message = "상품명은 필수입니다.")
     @Size(max = 100, message = "상품명은 100자 이하입니다.")
     private String name;
 
     @NotNull(message = "가격은 필수입니다.")
-    @Min(value = 0, message = "가격은 0 이상이어야 합니다.")
+    @Min(value = 1, message = "가격은 1 이상이어야 합니다.")
     private Integer price;
 
     @Min(value = 1, message = "정가는 1 이상이어야 합니다.")
@@ -38,4 +38,11 @@ public class ProductCreateForm {
 
     @NotNull(message = "상품 상태는 필수입니다.")
     private ProductStatus status;
+
+    public boolean isInvalidPriceRelation() {
+        if(price == null || originalPrice == null) {
+            return false;
+        }
+        return price > originalPrice;
+    }
 }

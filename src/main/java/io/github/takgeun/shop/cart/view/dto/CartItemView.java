@@ -29,9 +29,15 @@ public class CartItemView {
             resolvedImageUrl = "/images/no-image.png";
         } else {
             String trimmed = imageUrl.trim();
-            // "/..." 형태면 그대로
+            // "/..." 또는 "//..." 형태면 그대로 https://...
             // 아니면 "/" 붙여서 절대경로로 고정시키기 (정적 리소스 기준임)
-            resolvedImageUrl = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+            if(trimmed.startsWith("/") ||
+            trimmed.startsWith("http://") ||
+            trimmed.startsWith("https://")) {
+                resolvedImageUrl = trimmed;
+            } else {
+                resolvedImageUrl = "/" + trimmed;
+            }
         }
 
         int resolvedQty = Math.max(quantity, 1);

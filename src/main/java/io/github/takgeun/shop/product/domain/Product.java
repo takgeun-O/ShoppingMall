@@ -29,6 +29,7 @@ public class Product {
         changeCategory(categoryId);
         changeName(name);
         changePrice(price);
+        changeOriginalPrice(originalPrice);
         changeStock(stock);
         changeDescription(description);
         changeStatus(status);

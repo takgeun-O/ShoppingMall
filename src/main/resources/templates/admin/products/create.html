@@ -38,6 +38,7 @@
             <form th:action="@{/admin/products/create}"
                   th:object="${form}"
                   method="post"
+                  novalidate
                   class="space-y-6">
 
                 <!-- Global Errors -->
@@ -169,7 +170,7 @@
                 <!-- Image URL -->
                 <div>
                     <label for="imageUrl" class="text-sm font-semibold text-gray-900">
-                        상품 이미지 URL <span class="text-red-500">*</span>
+                        상품 이미지 URL
                     </label>
                     <input id="imageUrl"
                            type="url"
@@ -199,29 +200,27 @@
                     </label>
                     <select id="status"
                             th:field="*{status}"
-                            class="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900">
-                        <option th:value="${T(io.github.takgeun.shop.product.domain.ProductStatus).READY}">
-                            READY - 판매 준비 중
-                        </option>
-                        <option th:value="${T(io.github.takgeun.shop.product.domain.ProductStatus).ON_SALE}">
-                            ON_SALE - 판매 중
-                        </option>
-                        <option th:value="${T(io.github.takgeun.shop.product.domain.ProductStatus).HIDDEN}">
-                            HIDDEN - 숨김 처리
+                            class="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2"
+                            th:classappend="${#fields.hasErrors('status')} ? ' border-red-500 focus:ring-red-500' : ' border-gray-300 focus:ring-gray-900'">
+                        <option value="">상품 상태를 선택하세요</option>
+                        <option th:each="status : ${productStatuses}"
+                                th:value="${status}"
+                                th:text="${status.displayName}"
+                                th:attr="data-description=${status.description}">
+                            상태명
                         </option>
                     </select>
 
-                    <p class="mt-2 text-xs text-gray-500"
-                       th:if="${form.status != null and form.status.name() == 'READY'}">
-                        상품이 아직 판매 준비 중이며 고객이 구매할 수 없는 상태입니다.
+                    <p th:if="${#fields.hasErrors('status')}"
+                       th:errors="*{status}"
+                       class="mt-1 text-sm text-red-600">
+                        상품 상태 에러
                     </p>
-                    <p class="mt-2 text-xs text-gray-500"
-                       th:if="${form.status != null and form.status.name() == 'ON_SALE'}">
-                        상품이 고객에게 노출되며 바로 구매 가능한 상태입니다.
-                    </p>
-                    <p class="mt-2 text-xs text-gray-500"
-                       th:if="${form.status != null and form.status.name() == 'HIDDEN'}">
-                        상품은 저장되어 있지만 고객 화면에는 노출되지 않습니다.
+
+                    <p id="statusDescription"
+                       class="mt-2 text-xs text-gray-500"
+                       th:text="${form.status != null ? form.status.description : '상품 상태를 선택해 주세요.'}">
+                        상태 설명
                     </p>
                 </div>
 
@@ -251,5 +250,21 @@
     </div>
 </div>
 
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        const statusSelect = document.getElementById("status");
+        const descriptionEl = document.getElementById("statusDescription");
+
+        function updateStatusDescription() {
+            const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+            const description = selectedOption.getAttribute("data-description");
+
+            descriptionEl.textContent = description || "상품 상태를 선택해 주세요.";
+        }
+
+        statusSelect.addEventListener("change", updateStatusDescription);
+        updateStatusDescription();
+    });
+</script>
 </body>
 </html>

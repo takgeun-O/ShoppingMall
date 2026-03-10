@@ -57,7 +57,8 @@ public class ProductDetailView {
      * 최소 버전 (imageUrl은 fallback으로 강제함)
      */
     public static ProductDetailView from(Product p) {
-        return from(p, 0, null, List.of(), null);
+        String imageUrl = p.getImageUrl();
+        return from(p, 0, imageUrl, List.of(), null);
     }
 
     /**
