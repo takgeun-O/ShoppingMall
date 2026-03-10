@@ -8,6 +8,7 @@ import io.github.takgeun.shop.order.application.OrderCheckoutService;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.view.dto.CheckoutItemView;
 import io.github.takgeun.shop.order.view.dto.OrderCompleteView;
+import io.github.takgeun.shop.order.view.dto.OrderHistoryPageView;
 import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -32,6 +33,7 @@ public class OrderViewController {
 
     private final CartService cartService;
     private final OrderCheckoutService orderCheckoutService;
+    private final OrderHistoryViewService orderHistoryViewService;
 
     /**
      * 주문/결제 페이지
@@ -148,6 +150,7 @@ public class OrderViewController {
         model.addAttribute("order", view);
         return "public/orders/complete";
     }
+
 
     private CartViewResult getCartViewOrEmpty(HttpSession session) {
         if(session == null) {

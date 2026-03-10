@@ -398,6 +398,152 @@ public class TestDataInitializer implements ApplicationRunner {
                         "경비실에 맡겨주세요"
                 )
         );
+
+        // 4) user1: 갤럭시 S24 1개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(galaxyId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "빠른 배송 부탁드립니다."
+                )
+        );
+
+        // 5) user1: 인체공학 사무의자 1개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(ergoChairId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        null
+                )
+        );
+
+        // 6) user1: 베이직 티셔츠 2개 + 데님 팬츠 1개
+        orderService.checkout(
+                userId1,
+                List.of(
+                        CheckoutItem.of(tshirtId, 2),
+                        CheckoutItem.of(jeansId, 1)
+                ),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "부재 시 문 앞에 놔주세요"
+                )
+        );
+
+        // 7) user1: 원목 식탁 의자 2개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(woodenChairId, 2)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        null
+                )
+        );
+
+        // 8) user1: 윈도우 울트라북 1개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(ultrabookId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "평일 오후 배송 희망"
+                )
+        );
+
+        // 9) user1: 수납장 1개 + 메쉬 의자 1개
+        orderService.checkout(
+                userId1,
+                List.of(
+                        CheckoutItem.of(storageId, 1),
+                        CheckoutItem.of(meshChairId, 1)
+                ),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        null
+                )
+        );
+
+        // 10) user1: 옥스포드 셔츠 2개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(shirtId, 2)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "옷걸이 포장 부탁드립니다."
+                )
+        );
+
+        // 11) user1: 게이밍 데스크탑 1개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(gamingDesktopId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "파손 주의"
+                )
+        );
+
+        // 12) user1: 수납장 1개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(storageId, 1)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        null
+                )
+        );
+
+        // 13) user1: 베이직 티셔츠 3개
+        orderService.checkout(
+                userId1,
+                List.of(CheckoutItem.of(tshirtId, 3)),
+                checkoutForm(
+                        "테스트",
+                        "010-1111-2222",
+                        "06236",
+                        "서울특별시 강남구 테헤란로 123",
+                        "101동 202호",
+                        "주말 전 배송 부탁드립니다."
+                )
+        );
     }
 
     private Long createProduct(

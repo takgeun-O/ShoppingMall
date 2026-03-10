@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '주문 내역',
+          ~{::body},
+          null,
+          'MYPAGE'
+      )}">
+
+<body>
+
+<div class="min-h-screen bg-gray-50">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="mb-2 text-3xl font-bold text-gray-900">주문 내역</h1>
+                    <p class="text-gray-600">
+                        총 <span th:text="${totalOrders}">0</span>개의 주문
+                    </p>
+                </div>
+
+                <a th:href="@{/members/me}"
+                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    <span class="mr-1">←</span>
+                    <span>마이페이지</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${totalOrders == 0}"
+             class="rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                <span class="text-3xl">📦</span>
+            </div>
+            <h3 class="mb-2 text-xl font-bold text-gray-900">주문 내역이 없습니다</h3>
+            <p class="mb-6 text-gray-600">아직 주문하신 상품이 없습니다.</p>
+            <a th:href="@{/products}"
+               class="inline-flex items-center rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800">
+                쇼핑 시작하기
+            </a>
+        </div>
+
+        <th:block th:if="${totalOrders > 0}">
+
+            <!-- Desktop View -->
+            <div class="hidden md:block">
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+
+                    <!-- Table Header -->
+                    <div class="border-b bg-gray-50 px-6 py-4">
+                        <div class="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+                            <div class="col-span-2">주문번호</div>
+                            <div class="col-span-2">주문일자</div>
+                            <div class="col-span-4">상품정보</div>
+                            <div class="col-span-2 text-right">결제금액</div>
+                            <div class="col-span-1 text-center">주문상태</div>
+                            <div class="col-span-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- Table Body -->
+                    <div class="divide-y">
+                        <div th:each="order : ${orders}"
+                             class="px-6 py-4 transition-colors hover:bg-gray-50">
+                            <div class="grid grid-cols-12 items-center gap-4">
+
+                                <!-- Order ID -->
+                                <div class="col-span-2">
+                                    <p class="text-sm font-medium text-gray-900"
+                                       th:text="${order.orderId}">
+                                        ORD20260310001
+                                    </p>
+                                </div>
+
+                                <!-- Order Date -->
+                                <div class="col-span-2">
+                                    <p class="text-sm text-gray-600"
+                                       th:text="${order.orderDateText}">
+                                        2026.03.10
+                                    </p>
+                                </div>
+
+                                <!-- Product Info -->
+                                <div class="col-span-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                            <img th:src="${order.productImageUrl}"
+                                                 th:alt="${order.productName}"
+                                                 class="h-full w-full object-cover" />
+                                        </div>
+
+                                        <div class="min-w-0">
+                                            <p class="truncate font-medium text-gray-900"
+                                               th:text="${order.productName}">
+                                                상품명
+                                            </p>
+                                            <p th:if="${order.extraItemCount > 0}"
+                                               class="text-sm text-gray-500">
+                                                외 <span th:text="${order.extraItemCount}">1</span>개
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Total Amount -->
+                                <div class="col-span-2 text-right">
+                                    <p class="font-bold text-gray-900"
+                                       th:text="${#numbers.formatInteger(order.totalAmount, 3, 'COMMA')} + '원'">
+                                        607,000원
+                                    </p>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="col-span-1 text-center">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                                          th:classappend="' ' + ${order.statusBadgeClass}"
+                                          th:text="${order.statusLabel}">
+                                        결제완료
+                                    </span>
+                                </div>
+
+                                <!-- Action -->
+                                <div class="col-span-1 text-right">
+                                    <a th:href="@{/orders/{orderId}(orderId=${order.orderId})}"
+                                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                        상세보기
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile View -->
+            <div class="space-y-4 md:hidden">
+                <div th:each="order : ${orders}"
+                     class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div class="mb-3 flex items-start gap-3">
+                        <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                            <img th:src="${order.productImageUrl}"
+                                 th:alt="${order.productName}"
+                                 class="h-full w-full object-cover" />
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="mb-1 truncate font-semibold text-gray-900"
+                               th:text="${order.productName}">
+                                상품명
+                            </p>
+
+                            <p th:if="${order.extraItemCount > 0}"
+                               class="mb-2 text-sm text-gray-500">
+                                외 <span th:text="${order.extraItemCount}">1</span>개
+                            </p>
+
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+                                  th:classappend="' ' + ${order.statusBadgeClass}"
+                                  th:text="${order.statusLabel}">
+                                배송중
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">주문번호</span>
+                            <span class="font-medium text-gray-900"
+                                  th:text="${order.orderId}">
+                                ORD20260310001
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">주문일자</span>
+                            <span class="text-gray-900"
+                                  th:text="${order.orderDateText}">
+                                2026.03.10
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">결제금액</span>
+                            <span class="font-bold text-gray-900"
+                                  th:text="${#numbers.formatInteger(order.totalAmount, 3, 'COMMA')} + '원'">
+                                607,000원
+                            </span>
+                        </div>
+                    </div>
+
+                    <a th:href="@{/orders/{orderId}(orderId=${order.orderId})}"
+                       class="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                        상세보기
+                    </a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div th:if="${totalPages > 1}"
+                 class="mt-8 flex items-center justify-center gap-2">
+
+                <!-- Previous -->
+                <a th:href="@{/members/me/orders(page=${currentPage - 1})}"
+                   th:if="${currentPage > 1}"
+                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    <span>←</span>
+                    <span class="ml-1 hidden sm:inline">Previous</span>
+                </a>
+
+                <span th:if="${currentPage == 1}"
+                      class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
+                    <span>←</span>
+                    <span class="ml-1 hidden sm:inline">Previous</span>
+                </span>
+
+                <!-- Page Numbers -->
+                <div class="flex items-center gap-1">
+                    <th:block th:each="pageNum : ${pageNumbers}">
+                        <a th:if="${pageNum != currentPage}"
+                           th:href="@{/members/me/orders(page=${pageNum})}"
+                           class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                           th:text="${pageNum}">
+                            1
+                        </a>
+
+                        <span th:if="${pageNum == currentPage}"
+                              class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-sm font-medium text-white"
+                              th:text="${pageNum}">
+                            1
+                        </span>
+                    </th:block>
+                </div>
+
+                <!-- Next -->
+                <a th:href="@{/members/me/orders(page=${currentPage + 1})}"
+                   th:if="${currentPage < totalPages}"
+                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    <span class="mr-1 hidden sm:inline">Next</span>
+                    <span>→</span>
+                </a>
+
+                <span th:if="${currentPage == totalPages}"
+                      class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
+                    <span class="mr-1 hidden sm:inline">Next</span>
+                    <span>→</span>
+                </span>
+            </div>
+
+        </th:block>
+    </div>
+</div>
+
+</body>
+</html>

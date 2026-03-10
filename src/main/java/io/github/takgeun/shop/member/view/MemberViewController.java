@@ -18,10 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -29,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/members")
+@RequestMapping("/members/me")
 public class MemberViewController {
 
     private final MemberService memberService;
@@ -39,7 +36,7 @@ public class MemberViewController {
      * 마이 페이지 조회
      * GET /members/me
      */
-    @GetMapping("/me")
+    @GetMapping()
     public String me(HttpServletRequest request, Model model) {
 
         Long memberId = getLoginMemberId(request);
@@ -66,7 +63,7 @@ public class MemberViewController {
     /**
      * 마이페이지 수정폼
      */
-    @GetMapping("/me/edit")
+    @GetMapping("/edit")
     public String editForm(HttpServletRequest request, Model model) {
 
         // 로그인 유효 확인
@@ -96,7 +93,7 @@ public class MemberViewController {
      * 수정 성공 후 redirect:/members/me/edit (수정페이지로 이동)
      * 수정 실패 시 public/members/edit 제자리로 포워드
      */
-    @PostMapping("/me/edit")
+    @PostMapping("/edit")
     public String edit(@Validated(SignupValidationSequence.class) @ModelAttribute("form") MemberEditForm form,
                        BindingResult bindingResult,
                        HttpServletRequest request,
@@ -140,7 +137,7 @@ public class MemberViewController {
      * 탈퇴(비활성화) - edit페이지에서 POST로 호출
      * 탈퇴 성공 후 redirect:/ (홈으로 이동)
      */
-    @PostMapping("/me/deactivate")
+    @PostMapping("/deactivate")
     public String deactivate(HttpServletRequest request, RedirectAttributes ra) {
 
         Long memberId = getLoginMemberId(request);
