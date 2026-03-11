@@ -42,37 +42,23 @@ public class TestDataInitializer implements ApplicationRunner {
         memberService.changeRole(adminId1, MemberRole.ADMIN);
 
         // =========================
-        // 카테고리
+        // 카테고리 (2단까지만 허용)
         // =========================
         Long electronics = categoryService.create("전자", null);
         Long furniture   = categoryService.create("가구", null);
         Long clothing    = categoryService.create("의류", null);
 
-        Long computer  = categoryService.create("컴퓨터", electronics);
-        Long phone     = categoryService.create("휴대폰", electronics);
-        Long accessory = categoryService.create("주변기기", electronics);
+        Long computer   = categoryService.create("컴퓨터", electronics);
+        Long phone      = categoryService.create("휴대폰", electronics);
+        Long accessory  = categoryService.create("주변기기", electronics);
 
-        Long laptop  = categoryService.create("노트북", computer);
-        Long desktop = categoryService.create("데스크탑", computer);
-        Long monitor = categoryService.create("모니터", computer);
+        Long seating    = categoryService.create("의자", furniture);
+        Long bed        = categoryService.create("침대", furniture);
+        Long storage    = categoryService.create("수납가구", furniture);
 
-        Long keyboard = categoryService.create("키보드", accessory);
-        Long mouse    = categoryService.create("마우스", accessory);
-        Long audio    = categoryService.create("오디오", accessory);
-
-        Long seating = categoryService.create("의자", furniture);
-        Long bed     = categoryService.create("침대", furniture);
-        Long storage = categoryService.create("수납가구", furniture);
-
-        Long officeChair = categoryService.create("사무용 의자", seating);
-        Long diningChair = categoryService.create("식탁 의자", seating);
-
-        Long tops      = categoryService.create("상의", clothing);
-        Long bottoms   = categoryService.create("하의", clothing);
-        Long outerwear = categoryService.create("아우터", clothing);
-
-        Long tshirt = categoryService.create("티셔츠", tops);
-        Long shirt  = categoryService.create("셔츠", tops);
+        Long tops       = categoryService.create("상의", clothing);
+        Long bottoms    = categoryService.create("하의", clothing);
+        Long outerwear  = categoryService.create("아우터", clothing);
 
         // =========================
         // 상품
@@ -90,9 +76,9 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
-        // 컴퓨터 > 노트북
+        // 전자 > 컴퓨터
         Long macbookId = createProduct(
-                laptop,
+                computer,
                 "맥북 프로 14",
                 3_000_000,
                 5,
@@ -103,7 +89,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long ultrabookId = createProduct(
-                laptop,
+                computer,
                 "윈도우 울트라북",
                 1_800_000,
                 8,
@@ -114,7 +100,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long readyLaptopId = createProduct(
-                laptop,
+                computer,
                 "출시 예정 노트북",
                 2_200_000,
                 20,
@@ -124,9 +110,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.READY
         );
 
-        // 컴퓨터 > 데스크탑
         Long gamingDesktopId = createProduct(
-                desktop,
+                computer,
                 "게이밍 데스크탑",
                 2_500_000,
                 3,
@@ -137,7 +122,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long miniPcId = createProduct(
-                desktop,
+                computer,
                 "미니 PC",
                 900_000,
                 0,
@@ -147,9 +132,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
-        // 컴퓨터 > 모니터
         Long qhdMonitorId = createProduct(
-                monitor,
+                computer,
                 "27인치 QHD 모니터",
                 350_000,
                 12,
@@ -160,7 +144,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long hiddenMonitorId = createProduct(
-                monitor,
+                computer,
                 "프로토타입 모니터",
                 1_200_000,
                 2,
@@ -170,7 +154,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.HIDDEN
         );
 
-        // 휴대폰
+        // 전자 > 휴대폰
         Long iphoneId = createProduct(
                 phone,
                 "아이폰 15",
@@ -204,9 +188,9 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.READY
         );
 
-        // 주변기기
+        // 전자 > 주변기기
         Long keyboardId = createProduct(
-                keyboard,
+                accessory,
                 "기계식 키보드",
                 129_000,
                 25,
@@ -217,7 +201,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long mouseId = createProduct(
-                mouse,
+                accessory,
                 "무선 마우스",
                 59_000,
                 30,
@@ -228,7 +212,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long headsetId = createProduct(
-                audio,
+                accessory,
                 "게이밍 헤드셋",
                 89_000,
                 0,
@@ -238,9 +222,9 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
-        // 가구
+        // 가구 > 의자
         Long ergoChairId = createProduct(
-                officeChair,
+                seating,
                 "인체공학 사무의자",
                 250_000,
                 6,
@@ -251,7 +235,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long meshChairId = createProduct(
-                officeChair,
+                seating,
                 "메쉬 의자",
                 180_000,
                 15,
@@ -262,7 +246,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long woodenChairId = createProduct(
-                diningChair,
+                seating,
                 "원목 식탁 의자",
                 120_000,
                 10,
@@ -273,7 +257,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long hiddenDiningId = createProduct(
-                diningChair,
+                seating,
                 "전시 상품",
                 90_000,
                 1,
@@ -283,6 +267,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.HIDDEN
         );
 
+        // 가구 > 침대
         Long bedId = createProduct(
                 bed,
                 "퀸사이즈 침대 프레임",
@@ -294,6 +279,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
+        // 가구 > 수납가구
         Long storageId = createProduct(
                 storage,
                 "수납장",
@@ -305,9 +291,9 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
-        // 의류
+        // 의류 > 상의
         Long tshirtId = createProduct(
-                tshirt,
+                tops,
                 "베이직 티셔츠",
                 19_900,
                 50,
@@ -318,7 +304,7 @@ public class TestDataInitializer implements ApplicationRunner {
         );
 
         Long shirtId = createProduct(
-                shirt,
+                tops,
                 "옥스포드 셔츠",
                 49_900,
                 20,
@@ -328,6 +314,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
+        // 의류 > 하의
         Long jeansId = createProduct(
                 bottoms,
                 "데님 팬츠",
@@ -339,6 +326,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 ProductStatus.ON_SALE
         );
 
+        // 의류 > 아우터
         Long readyOuterId = createProduct(
                 outerwear,
                 "신상 코트",

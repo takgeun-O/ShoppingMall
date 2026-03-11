@@ -133,7 +133,7 @@ public class OrderService {
         order.changeStatus(OrderStatus.CANCELED);
 
         // 재고 원복
-        for (OrderItem item : order.getItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             productService.increaseStock(item.getProductId(), item.getQuantity());
         }
 

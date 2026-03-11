@@ -146,7 +146,7 @@ public class OrderCheckoutService {
     }
 
     private OrderCompleteView buildCompleteViewFromOrder(Order order) {
-        List<OrderCompleteView.OrderItemView> items = order.getItems().stream()
+        List<OrderCompleteView.OrderItemView> items = order.getOrderItems().stream()
                 .map(i -> new OrderCompleteView.OrderItemView(
                         i.getProductId(),
                         i.getProductNameSnapshot(),

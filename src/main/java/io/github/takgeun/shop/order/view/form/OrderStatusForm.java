@@ -6,9 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 // form 전용 DTO
-@Getter @Setter
+@Getter
+@Setter
 public class OrderStatusForm {
 
-    @NotNull(message = "상태는 필수입니다.")
+    @NotNull(message = "주문 상태를 선택해주세요.")
     private OrderStatus status;
 }

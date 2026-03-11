@@ -30,7 +30,7 @@ public class AdminCategoryController {
     // 카테고리 수정 성공 -> 204 No Content
     @PatchMapping("/{id}")
     public ResponseEntity<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryUpdateRequest request) {
-        categoryService.update(id, request.getName(), request.getParentId(), request.getStatus());
+        categoryService.update(id, request.getName(), request.getParentId());
         return ResponseEntity.noContent().build();
     }
 

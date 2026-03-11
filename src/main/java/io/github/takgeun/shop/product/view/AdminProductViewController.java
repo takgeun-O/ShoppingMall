@@ -8,16 +8,14 @@ import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.view.dto.AdminProductListItemView;
-import io.github.takgeun.shop.product.view.dto.AdminProductSummaryView;
+import io.github.takgeun.shop.product.view.dto.admin.AdminProductListItemView;
+import io.github.takgeun.shop.product.view.dto.admin.AdminProductSummaryView;
 import io.github.takgeun.shop.product.view.dto.ProductDetailView;
 import io.github.takgeun.shop.product.view.form.ProductCreateForm;
 import io.github.takgeun.shop.product.view.form.ProductUpdateForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,6 +104,7 @@ public class AdminProductViewController {
             model.addAttribute("form", form);
         }
 
+        // categories / productStatuses / treeMode / isAdmin
         populateProductFormModel(model);
 
         return "admin/products/new";

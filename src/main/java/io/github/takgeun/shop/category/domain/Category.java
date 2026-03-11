@@ -3,11 +3,14 @@ package io.github.takgeun.shop.category.domain;
 import io.github.takgeun.shop.global.error.ConflictException;
 import lombok.Getter;
 
+import java.util.Locale;
+
 @Getter             // 엔티티에는 보통 @Getter만 두고, 변경은 의미 있는 도메인을 통해서만 진행하기.
 public class Category {
     private Long id;
     private String name;    // 화면 표시용 : 앞뒤 공백 trim만 사용
     private String nameKey; // 중복/검색용 키 : case-insensitive 비교용, trim + lowerCase (DB 사용 시 이 컬럼에 UNIQUE 걸기)
+    private String slug;    // URL 식별자
     private Long parentId;
     private CategoryStatus status;
 
@@ -15,14 +18,29 @@ public class Category {
     protected Category() {
     }
 
-    private Category(String name, Long parentId, CategoryStatus status) {
-        if(status == null) {
-            throw new IllegalArgumentException("status는 필수입니다.");
-        }
-//        this.name = name;           // 이렇게 하면 생성자 생성 시 검증 로직을 넣을 수 없음.
+    private Category(String name, String slug, Long parentId, CategoryStatus status) {
+
         changeName(name);
+        changeSlug(slug);
         changeParent(parentId);
-        this.status = status;
+        changeStatus(status);
+    }
+
+    // static 을 사용하는 이유
+    // 1. 이름 검증은 생성자/도메인 메서드에서 반드시 수행되도록 하기 위함
+    // 2. 생성 시점의 도메인 규칙을 한 곳에 고정시키게 하기 위함.
+    // 비즈니스 의미가 있는 객체는 거의 다 static factory가 더 좋다.
+    public static Category create(String name, String slug, Long parentId) {
+        return new Category(name, slug, parentId, CategoryStatus.ACTIVE);
+    }
+
+    public static String createSlug(String name) {
+        if (name == null || name.trim().isBlank()) {
+            throw new IllegalArgumentException("slug를 생성할 카테고리명이 비어있습니다.");
+        }
+        return name.trim()
+                .toLowerCase()
+                .replaceAll("\\s+", "-");   // \s 는 공백문자임.
     }
 
     // 카테고리 생성 시 id가 필요한데, 엔티티에는 setter 방식으로 id를 만들 수는 없으니
@@ -35,29 +53,26 @@ public class Category {
         if (this.id != null) {
             throw new ConflictException("id는 이미 할당되었습니다.");
         }
-        if(this.parentId != null && this.parentId.equals(id)) {
+        if (this.parentId != null && this.parentId.equals(id)) {
             throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
         }
         this.id = id;
     }
 
-    // static 을 사용하는 이유
-    // 1. 이름 검증은 생성자/도메인 메서드에서 반드시 수행되도록 하기 위함
-    // 2. 생성 시점의 도메인 규칙을 한 곳에 고정시키게 하기 위함.
-    // 비즈니스 의미가 있는 객체는 거의 다 static factory가 더 좋다.
-    public static Category create(String name, Long parentId) {
-        return new Category(name, parentId, CategoryStatus.ACTIVE);
-    }
-
     public static String normalizeDisplayName(String raw) {
-        if(raw == null) return null;
+        if (raw == null) return null;
         return raw.trim();
     }
 
     public static String normalizeKey(String raw) {
-        if(raw == null) return null;
+        if (raw == null) return null;
         String trimmed = raw.trim();
-        return trimmed.toLowerCase();
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    public static String normalizeSlug(String raw) {
+        if (raw == null) return null;
+        return raw.trim().toLowerCase(Locale.ROOT);
     }
 
     public void changeName(String rawName) {
@@ -67,7 +82,7 @@ public class Category {
         }
 
         String display = normalizeDisplayName(rawName);
-        if(display.isEmpty()) {
+        if (display.isEmpty()) {
             throw new IllegalArgumentException("카테고리명은 비어 있을 수 없습니다.");
         }
         if (display.length() > 50) {
@@ -75,20 +90,6 @@ public class Category {
         }
         this.name = display;
         this.nameKey = normalizeKey(display);
-    }
-
-    public boolean isActive() {
-        return this.status == CategoryStatus.ACTIVE;
-    }
-
-    public void activate() {
-        if (this.status == CategoryStatus.ACTIVE) return;
-        this.status = CategoryStatus.ACTIVE;
-    }
-
-    public void deactivate() {
-        if (this.status == CategoryStatus.INACTIVE) return;
-        this.status = CategoryStatus.INACTIVE;
     }
 
     public void changeParent(Long parentId) {
@@ -101,7 +102,51 @@ public class Category {
         this.parentId = parentId;
     }
 
-    public boolean isPublicVisible() {
+    public void changeSlug(String rawSlug) {
+        if (rawSlug == null) {
+            throw new IllegalArgumentException("slug는 필수입니다.");
+        }
+
+        String normalized = normalizeSlug(rawSlug);
+
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("slug는 비어 있을 수 없습니다.");
+        }
+        if (normalized.length() > 100) {
+            throw new IllegalArgumentException("slug는 100자 이하입니다.");
+        }
+        if (!normalized.matches("^[a-z0-9가-힣-]+$")) {
+            throw new IllegalArgumentException("slug는 영문 소문자, 숫자, 한글, 하이픈(-)만 사용할 수 있습니다.");
+        }
+
+        this.slug = normalized;
+    }
+
+    public void changeStatus(CategoryStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("카테고리 상태는 필수입니다.");
+        }
+        this.status = status;
+    }
+
+    public boolean isActive() {
+        // 이건 상품이 active 상태인지 묻는 의도로 쓸 것.
         return this.status == CategoryStatus.ACTIVE;
+    }
+
+    public boolean isPublicVisible() {
+        // 이건 상품이 고객에게 보여질 것인지 여부로 쓸 것
+        // active 상태의 상품인데 아직 비공개로 할 지 등등 나중에 정하기
+        return this.status == CategoryStatus.ACTIVE;
+    }
+
+    public void activate() {
+        if (this.status == CategoryStatus.ACTIVE) return;
+        this.status = CategoryStatus.ACTIVE;
+    }
+
+    public void deactivate() {
+        if (this.status == CategoryStatus.INACTIVE) return;
+        this.status = CategoryStatus.INACTIVE;
     }
 }

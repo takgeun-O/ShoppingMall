@@ -1,10 +1,11 @@
-package io.github.takgeun.shop.product.view.dto;
+package io.github.takgeun.shop.product.view.dto.admin;
 
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.Getter;
 
 import java.util.List;
 
+// 화면에 필요한 값만 담는 읽기 전용 객체
 @Getter
 public class AdminProductSummaryView {
 

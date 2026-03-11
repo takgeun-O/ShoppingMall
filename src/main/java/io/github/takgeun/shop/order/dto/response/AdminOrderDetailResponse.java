@@ -74,7 +74,7 @@ public class AdminOrderDetailResponse {
         if (order == null) throw new IllegalArgumentException("order는 필수입니다.");
         if (buyer == null) throw new IllegalArgumentException("buyer는 필수입니다.");
 
-        List<OrderItemLine> items = order.getItems().stream()
+        List<OrderItemLine> items = order.getOrderItems().stream()
                 .map(OrderItemLine::from)
                 .toList();
 

@@ -1,75 +1,203 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('주문 관리', ~{::body}, ~{}, 'admin')}">
-<body>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(
+          '주문 관리',
+          ~{::content},
+          'orders'
+      )}">
 
-<div class="box">
-    <div class="flex-between" style="margin-bottom: 12px;">
-        <h1 style="margin:0;">주문 관리</h1>
-        <a class="btn btn-outline" th:href="@{/admin}">관리자 홈</a>
+<th:block th:fragment="content">
+    <div class="p-8">
+        <div class="mx-auto max-w-7xl">
+
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="mb-2 text-3xl font-bold text-gray-900">주문 관리</h1>
+                <p class="text-gray-600">고객 주문을 조회하고 배송 상태를 관리합니다</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <form th:action="@{/admin/orders}" method="get" class="flex flex-col gap-4 md:flex-row">
+                    <div class="relative flex-1">
+                        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="h-5 w-5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="1.8">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="m21 21-4.35-4.35m1.85-5.15a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                            </svg>
+                        </span>
+                        <input type="text"
+                               name="keyword"
+                               th:value="${keyword}"
+                               placeholder="주문번호, 고객명, 이메일로 검색..."
+                               class="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"/>
+                    </div>
+
+                    <div class="w-full md:w-[220px]">
+                        <select name="status"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900">
+                            <option value="ALL" th:selected="${status == null or status == 'ALL'}">전체 주문</option>
+                            <option value="ORDERED" th:selected="${status == 'ORDERED'}">주문완료</option>
+                            <option value="PAYMENT_COMPLETED" th:selected="${status == 'PAYMENT_COMPLETED'}">결제완료</option>
+                            <option value="PREPARING" th:selected="${status == 'PREPARING'}">배송준비</option>
+                            <option value="SHIPPING" th:selected="${status == 'SHIPPING'}">배송중</option>
+                            <option value="DELIVERED" th:selected="${status == 'DELIVERED'}">배송완료</option>
+                            <option value="CANCELED" th:selected="${status == 'CANCELED'}">주문취소</option>
+                        </select>
+                    </div>
+
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800">
+                        검색
+                    </button>
+                </form>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <!-- Table Header -->
+                <div class="border-b bg-gray-50 px-6 py-4">
+                    <div class="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+                        <div class="col-span-2">주문번호</div>
+                        <div class="col-span-2">고객</div>
+                        <div class="col-span-3">상품</div>
+                        <div class="col-span-2 text-right">주문금액</div>
+                        <div class="col-span-2 text-center">상태</div>
+                        <div class="col-span-1 text-right">관리</div>
+                    </div>
+                </div>
+
+                <!-- Table Body -->
+                <div class="divide-y divide-gray-100" th:if="${orders != null and !#lists.isEmpty(orders)}">
+                    <div th:each="order : ${orders}"
+                         class="px-6 py-4 transition-colors hover:bg-gray-50">
+                        <div class="grid grid-cols-12 items-center gap-4">
+
+                            <!-- Order Info -->
+                            <div class="col-span-2">
+                                <p class="font-medium text-gray-900"
+                                   th:text="${order.orderNumber}">ORD20260310001</p>
+                                <p class="text-xs text-gray-500"
+                                   th:text="${order.orderDate}">2026.03.10</p>
+                            </div>
+
+                            <!-- Customer -->
+                            <div class="col-span-2">
+                                <p class="text-sm font-medium text-gray-900"
+                                   th:text="${order.customerName}">홍길동</p>
+                                <p class="text-xs text-gray-500"
+                                   th:text="${order.customerEmail}">hong@example.com</p>
+                            </div>
+
+                            <!-- Product -->
+                            <div class="col-span-3">
+                                <p class="text-sm text-gray-900"
+                                   th:text="${order.representativeProductName}">디자이너 핸드백</p>
+                                <p class="text-xs text-gray-500"
+                                   th:if="${order.itemCount > 1}"
+                                   th:text="|외 ${order.itemCount - 1}개|">외 2개</p>
+                            </div>
+
+                            <!-- Amount -->
+                            <div class="col-span-2 text-right">
+                                <p class="font-bold text-gray-900"
+                                   th:text="|₩${#numbers.formatInteger(order.totalAmount, 3, 'COMMA')}|">₩607,000</p>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-span-2 text-center">
+                                <span th:if="${order.status.name() == 'ORDERED'}"
+                                      class="inline-flex rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                                    주문완료
+                                </span>
+                                <span th:if="${order.status.name() == 'PAYMENT_COMPLETED'}"
+                                      class="inline-flex rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                                    결제완료
+                                </span>
+                                <span th:if="${order.status.name() == 'PREPARING'}"
+                                      class="inline-flex rounded-full bg-orange-600 px-3 py-1 text-xs font-semibold text-white">
+                                    배송준비
+                                </span>
+                                <span th:if="${order.status.name() == 'SHIPPING'}"
+                                      class="inline-flex rounded-full bg-cyan-600 px-3 py-1 text-xs font-semibold text-white">
+                                    배송중
+                                </span>
+                                <span th:if="${order.status.name() == 'DELIVERED'}"
+                                      class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                                    배송완료
+                                </span>
+                                <span th:if="${order.status.name() == 'CANCELED'}"
+                                      class="inline-flex rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                                    주문취소
+                                </span>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="col-span-1 text-right">
+                                <a th:href="@{/admin/orders/{orderNumber}(orderNumber=${order.id})}"
+                                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                                    상세
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${orders == null or #lists.isEmpty(orders)}"
+                     class="px-6 py-16 text-center text-gray-500">
+                    조회된 주문이 없습니다.
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-6">
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">전체 주문</p>
+                    <p class="text-xl font-bold text-gray-900"
+                       th:text="${summary.totalCount}">8</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">주문완료</p>
+                    <p class="text-xl font-bold text-blue-600"
+                       th:text="${summary.orderedCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">결제완료</p>
+                    <p class="text-xl font-bold text-purple-600"
+                       th:text="${summary.paymentCompletedCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송준비</p>
+                    <p class="text-xl font-bold text-orange-600"
+                       th:text="${summary.preparingCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송중</p>
+                    <p class="text-xl font-bold text-cyan-600"
+                       th:text="${summary.shippingCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송완료</p>
+                    <p class="text-xl font-bold text-green-600"
+                       th:text="${summary.deliveredCount}">3</p>
+                </div>
+            </div>
+
+        </div>
     </div>
-
-    <div class="muted" style="margin-bottom:12px;">
-        전체 주문 목록입니다. (필터/검색은 추후 추가)
-    </div>
-
-    <div th:if="${#lists.isEmpty(orders)}" class="card">
-        표시할 주문이 없습니다.
-    </div>
-
-    <div th:if="${!#lists.isEmpty(orders)}" class="card" style="padding:0;">
-        <table style="width:100%; border-collapse: collapse;">
-            <thead>
-            <tr style="text-align:left;">
-                <th style="padding:12px; border-bottom:1px solid #eee;">주문ID</th>
-                <th style="padding:12px; border-bottom:1px solid #eee;">상태</th>
-                <th style="padding:12px; border-bottom:1px solid #eee;">주문자</th>
-                <th style="padding:12px; border-bottom:1px solid #eee;">총액</th>
-                <th style="padding:12px; border-bottom:1px solid #eee;">주문일</th>
-                <th style="padding:12px; border-bottom:1px solid #eee;"></th>
-            </tr>
-            </thead>
-
-            <tbody>
-            <tr th:each="o : ${orders}">
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
-                    th:text="${o.orderId}">1</td>
-
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2;">
-                    <span class="cat-badge"
-                          th:text="${o.status}"
-                          th:classappend="
-                            ${o.status.name() == 'PAYMENT_COMPLETED'} ? ' badge-payment' :
-                            (${o.status.name() == 'SHIPPING'} ? ' badge-shipping' :
-                            (${o.status.name() == 'DELIVERED'} ? ' badge-delivered' :
-                            (${o.status.name() == 'CANCELED'} ? ' badge-canceled' : '')))
-                        ">
-                    </span>
-                </td>
-
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2;">
-                    <div th:text="${o.buyerName}">홍길동</div>
-                    <div class="muted" th:text="${o.buyerEmail}">email@example.com</div>
-                </td>
-
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
-                    th:text="${o.totalPrice}">10000</td>
-
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2;"
-                    th:text="${o.orderedAt}">2026-02-26T12:00</td>
-
-                <td style="padding:12px; border-bottom:1px solid #f2f2f2; text-align:right;">
-                    <a class="btn btn-outline"
-                       th:href="@{/admin/orders/{id}(id=${o.orderId})}">
-                        상세
-                    </a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
-</body>
+</th:block>
 </html>

@@ -6,6 +6,7 @@ import io.github.takgeun.shop.order.application.AdminOrderService;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.dto.request.AdminOrderUpdateStatusRequest;
 import io.github.takgeun.shop.order.dto.response.AdminOrderDetailResponse;
+import io.github.takgeun.shop.order.view.dto.admin.AdminOrderDetailView;
 import io.github.takgeun.shop.order.view.form.OrderStatusForm;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -30,11 +31,17 @@ public class AdminOrderViewController {
     /**
      * 관리자 주문 목록
      * GET /admin/orders
-     * TODO(확장) : status, keyword(회원/상품), 기간 필터 등 추가 기능
      */
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("orders", adminOrderService.getAll());
+    public String list(@RequestParam(required = false, defaultValue = "") String keyword,
+                       @RequestParam(required = false, defaultValue = "ALL") String status,
+                       Model model) {
+
+        model.addAttribute("orders", adminOrderService.getOrderList(keyword, status));
+        model.addAttribute("summary", adminOrderService.getOrderSummary());
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("status", status);
+
         return "admin/orders/list";
     }
 
@@ -46,15 +53,16 @@ public class AdminOrderViewController {
     public String detail(@PathVariable @NotNull @Positive Long orderId,
                          Model model,
                          RedirectAttributes ra) {
+
         try {
-            AdminOrderDetailResponse order = adminOrderService.getDetailForAdmin(orderId);
+            AdminOrderDetailView order = adminOrderService.getDetailForAdmin(orderId);  // 회원, 주문 NotFound
 
             OrderStatusForm statusForm = new OrderStatusForm();
-            statusForm.setStatus(order.getStatus());        // 현재 상태로 초기화
+            statusForm.setStatus(order.getStatus());
 
             model.addAttribute("order", order);
             model.addAttribute("statusForm", statusForm);
-            model.addAttribute("statuses", OrderStatus.values());   // select 옵션용
+            model.addAttribute("statuses", adminOrderService.getAvailableNextStatuses(orderId));
 
             return "admin/orders/detail";
         } catch (NotFoundException e) {
@@ -64,7 +72,7 @@ public class AdminOrderViewController {
     }
 
     /**
-     * 관리자 주문 상태 변경 (PRG)
+     * 관리자 주문 상태 변경
      * POST /admin/orders/{orderId}/status
      */
     @PostMapping("/{orderId}/status")
@@ -74,14 +82,11 @@ public class AdminOrderViewController {
                                Model model,
                                RedirectAttributes ra) {
 
-        log.info("orderId={}, received status={}", orderId, form.getStatus());
+        log.info("관리자 주문 상태 변경 시도 : orderId={}, status={}", orderId, form.getStatus());
 
-        // 폼 검증 실패 --> 같은 화면 forward (에러 표시)
         if(bindingResult.hasErrors()) {
-            // 검증 오류 시에도 같은 화면 forward하면서 기존에 있던 정보도 그대로 보이게끔 해야함.
             try {
-                AdminOrderDetailResponse order = adminOrderService.getDetailForAdmin(orderId);
-
+                AdminOrderDetailView order = adminOrderService.getDetailForAdmin(orderId);
                 model.addAttribute("order", order);
                 model.addAttribute("statuses", OrderStatus.values());
                 return "admin/orders/detail";
@@ -91,16 +96,14 @@ public class AdminOrderViewController {
             }
         }
 
-        // 실제 변경
         try {
             adminOrderService.changeStatus(orderId, form.getStatus());
             ra.addFlashAttribute("success", "주문 상태가 변경되었습니다.");
-            return "redirect:/admin/orders/" + orderId;     // PRG
+            return "redirect:/admin/orders/" + orderId;
         } catch (NotFoundException e) {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/admin/orders";
         } catch (ConflictException | IllegalArgumentException e) {
-            // order.changeStatus()에서 발생되는 예외 처리
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/admin/orders/" + orderId;
         }

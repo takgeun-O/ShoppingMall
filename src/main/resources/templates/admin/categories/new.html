@@ -1,33 +1,135 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('[관리자] 카테고리 생성', ~{::body}, ~{}, 'admin')}">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(
+          '카테고리 추가',
+          ~{::content},
+          'categories'
+      )}">
 
-<body>
+<th:block th:fragment="content">
+    <div class="p-8">
+        <div class="mx-auto max-w-3xl">
 
-<h1>[관리자] 카테고리 생성</h1>
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 class="mb-2 text-3xl font-bold text-gray-900">카테고리 추가</h1>
+                        <p class="text-gray-600">새로운 상품 카테고리를 등록하세요</p>
+                    </div>
 
-<div th:replace="~{fragments/header :: siteHeader}"></div>
+                    <a th:href="@{/admin/categories}"
+                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+                        목록으로
+                    </a>
+                </div>
+            </div>
 
-<form th:action="@{/admin/categories}" th:object="${form}" method="post">
-    <div>
-        <label>카테고리명</label><br/>
-        <input type="text" th:field="*{name}"/>
-        <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" style="color:red;"></div>
+            <!-- Form Card -->
+            <div class="overflow-hidden rounded-2xl bg-white shadow-sm">
+                <div class="border-b bg-gray-50 px-6 py-4">
+                    <h2 class="text-base font-semibold text-gray-900">카테고리 정보 입력</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        카테고리명과 상위 카테고리를 설정할 수 있습니다.
+                    </p>
+                </div>
+
+                <form th:action="@{/admin/categories}"
+                      th:object="${form}"
+                      method="post"
+                      class="space-y-6 px-6 py-6">
+
+                    <!-- Global Errors -->
+                    <div th:if="${#fields.hasGlobalErrors()}"
+                         class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p class="mb-2 font-semibold">입력값을 다시 확인해주세요.</p>
+                        <ul class="list-disc space-y-1 pl-5">
+                            <li th:each="e : ${#fields.globalErrors()}"
+                                th:text="${e}">
+                                전역 오류 메시지
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">
+                            카테고리명 <span class="text-red-500">*</span>
+                        </label>
+                        <input id="name"
+                               type="text"
+                               th:field="*{name}"
+                               placeholder="예: 전자제품, 남성의류, 스킨케어"
+                               class="mt-2 w-full rounded-xl border px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2"
+                               th:classappend="${#fields.hasErrors('name')} ? ' border-red-500 focus:ring-red-500' : ' border-gray-300 focus:ring-blue-500'"/>
+
+                        <p class="mt-2 text-xs text-gray-500">
+                            고객과 관리자 모두가 이해하기 쉬운 이름으로 작성하세요.
+                        </p>
+
+                        <p th:if="${#fields.hasErrors('name')}"
+                           th:errors="*{name}"
+                           class="mt-2 text-sm text-red-600">
+                            카테고리명 오류
+                        </p>
+                    </div>
+
+                    <!-- Parent Category -->
+                    <div>
+                        <label for="parentId" class="block text-sm font-medium text-gray-700">
+                            상위 카테고리
+                        </label>
+                        <select id="parentId"
+                                th:field="*{parentId}"
+                                class="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">없음 (최상위 카테고리)</option>
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat.id}"
+                                    th:text="${cat.name}">
+                                카테고리명
+                            </option>
+                        </select>
+
+                        <p class="mt-2 text-xs text-gray-500">
+                            선택하면 해당 카테고리의 하위 카테고리로 등록됩니다.
+                        </p>
+
+                        <p th:if="${#fields.hasErrors('parentId')}"
+                           th:errors="*{parentId}"
+                           class="mt-2 text-sm text-red-600">
+                            상위 카테고리 오류
+                        </p>
+                    </div>
+
+                    <!-- Preview Guide -->
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <h3 class="text-sm font-semibold text-gray-900">등록 안내</h3>
+                        <ul class="mt-2 space-y-1 text-sm text-gray-600">
+                            <li>• 상위 카테고리를 선택하지 않으면 최상위 카테고리로 생성됩니다.</li>
+                            <li>• 슬러그는 서버에서 규칙에 맞게 자동 생성하도록 두는 것이 안전합니다.</li>
+                            <li>• 동일한 이름 또는 정책상 허용되지 않는 구조는 저장 시 검증될 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
+                        <a th:href="@{/admin/categories}"
+                           class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+                            취소
+                        </a>
+
+                        <button type="submit"
+                                class="inline-flex items-center justify-center rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800">
+                            <span class="mr-2 text-base">＋</span>
+                            카테고리 저장
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
     </div>
+</th:block>
 
-    <div style="margin-top:12px;">
-        <label>부모 카테고리(선택)</label><br/>
-        <select th:field="*{parentId}">
-            <option th:value="${null}">최상위</option>
-            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
-        </select>
-    </div>
-
-    <div style="margin-top:16px;">
-        <button type="submit">생성</button>
-        <a th:href="@{/admin/categories}">목록</a>
-    </div>
-</form>
-
-</body>
 </html>

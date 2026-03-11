@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(pageTitle, content, activeMenu)">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle != null ? pageTitle + ' | Omniora Admin' : 'Omniora Admin'}">Omniora Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900">
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200 bg-white">
+        <!-- Logo/Header -->
+        <div class="flex h-16 shrink-0 items-center border-b border-gray-200 px-6">
+            <a th:href="@{/}" class="group flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md transition-shadow group-hover:shadow-lg">
+                    <span class="text-lg font-bold text-white">O</span>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="truncate font-bold text-gray-900">Omniora</h1>
+                    <p class="text-xs text-gray-500">Admin Panel</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto px-3 py-6">
+            <ul class="space-y-1">
+                <li>
+                    <a th:href="@{/admin}"
+                       class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                       th:classappend="${activeMenu == 'dashboard'} ? ' bg-blue-50 text-blue-600 shadow-sm' : ' text-gray-700 hover:bg-gray-50 hover:text-gray-900'">
+                        <span class="text-sm"
+                              th:classappend="${activeMenu == 'dashboard'} ? ' text-blue-600' : ' text-gray-400'">📊</span>
+                        <span th:classappend="${activeMenu == 'dashboard'} ? ' font-semibold' : ' font-medium'">
+                            대시보드
+                        </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a th:href="@{/admin/products}"
+                       class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                       th:classappend="${activeMenu == 'products'} ? ' bg-blue-50 text-blue-600 shadow-sm' : ' text-gray-700 hover:bg-gray-50 hover:text-gray-900'">
+                        <span class="text-sm"
+                              th:classappend="${activeMenu == 'products'} ? ' text-blue-600' : ' text-gray-400'">📦</span>
+                        <span th:classappend="${activeMenu == 'products'} ? ' font-semibold' : ' font-medium'">
+                            상품 관리
+                        </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a th:href="@{/admin/categories}"
+                       class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                       th:classappend="${activeMenu == 'categories'} ? ' bg-blue-50 text-blue-600 shadow-sm' : ' text-gray-700 hover:bg-gray-50 hover:text-gray-900'">
+                        <span class="text-sm"
+                              th:classappend="${activeMenu == 'categories'} ? ' text-blue-600' : ' text-gray-400'">🌳</span>
+                        <span th:classappend="${activeMenu == 'categories'} ? ' font-semibold' : ' font-medium'">
+                            카테고리 관리
+                        </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a th:href="@{/admin/orders}"
+                       class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                       th:classappend="${activeMenu == 'orders'} ? ' bg-blue-50 text-blue-600 shadow-sm' : ' text-gray-700 hover:bg-gray-50 hover:text-gray-900'">
+                        <span class="text-sm"
+                              th:classappend="${activeMenu == 'orders'} ? ' text-blue-600' : ' text-gray-400'">🛒</span>
+                        <span th:classappend="${activeMenu == 'orders'} ? ' font-semibold' : ' font-medium'">
+                            주문 관리
+                        </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a th:href="@{/admin/members}"
+                       class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200"
+                       th:classappend="${activeMenu == 'members'} ? ' bg-blue-50 text-blue-600 shadow-sm' : ' text-gray-700 hover:bg-gray-50 hover:text-gray-900'">
+                        <span class="text-sm"
+                              th:classappend="${activeMenu == 'members'} ? ' text-blue-600' : ' text-gray-400'">👥</span>
+                        <span th:classappend="${activeMenu == 'members'} ? ' font-semibold' : ' font-medium'">
+                            회원 관리
+                        </span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Footer -->
+        <div class="shrink-0 border-t border-gray-200 p-4">
+            <a th:href="@{/}"
+               class="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
+                <span>🏪</span>
+                <span>스토어로 돌아가기</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 min-w-0">
+        <div class="min-h-screen overflow-x-hidden">
+            <div th:insert="${content}">
+                <!-- page content -->
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

@@ -57,7 +57,7 @@ public class OrderResponse {
             throw new IllegalArgumentException("order는 필수입니다.");
         }
 
-        List<OrderItemResponse> itemResponses = order.getItems().stream()
+        List<OrderItemResponse> itemResponses = order.getOrderItems().stream()
                 .map(OrderItemResponse::from)
                 .toList();
 

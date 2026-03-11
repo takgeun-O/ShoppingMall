@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.product.view.dto;
+package io.github.takgeun.shop.product.view.dto.admin;
 
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.Getter;

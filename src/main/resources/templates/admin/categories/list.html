@@ -1,37 +1,179 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('[관리자] 카테고리 관리', ~{::body}, ~{}, 'admin')}">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(
+          '카테고리 관리',
+          ~{::content},
+          'categories'
+      )}">
 
-<body>
-<h1>[관리자] 카테고리 관리</h1>
+<th:block th:fragment="content">
+    <div class="p-8">
+        <div class="mx-auto max-w-7xl">
 
-<div th:if="${success}" th:text="${success}" style="padding:8px; border:1px solid #ddd;"></div>
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="mb-2 text-3xl font-bold text-gray-900">카테고리 관리</h1>
+                        <p class="text-gray-600">상품 카테고리를 체계적으로 관리하세요</p>
+                    </div>
 
-<div th:replace="~{fragments/header :: siteHeader}"></div>
+                    <a th:href="@{/admin/categories/new}"
+                       class="inline-flex items-center rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:bg-gray-800 hover:shadow-lg">
+                        <span class="mr-2 text-base">＋</span>
+                        카테고리 추가
+                    </a>
+                </div>
+            </div>
 
-<p>
-    <a th:href="@{/admin/categories/new}">+ 새 카테고리 만들기</a>
-</p>
+            <!-- Category Tree -->
+            <div class="overflow-hidden rounded-2xl bg-white shadow-sm">
+                <div class="border-b bg-gray-50 px-6 py-4">
+                    <div class="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
+                        <div class="col-span-5">카테고리명</div>
+                        <div class="col-span-2">슬러그</div>
+                        <div class="col-span-1 text-center">상품 수</div>
+                        <div class="col-span-4 text-right">관리</div>
+                    </div>
+                </div>
 
-<table border="1" cellpadding="6" cellspacing="0">
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>이름</th>
-        <th>부모ID</th>
-        <th>관리</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="c : ${categories}">
-        <td th:text="${c.id}">1</td>
-        <td th:text="${c.name}">전자</td>
-        <td th:text="${c.parentId}">null</td>
-        <td>
-            <a th:href="@{/admin/categories/{id}/edit(id=${c.id})}">수정</a>
-        </td>
-    </tr>
-    </tbody>
-</table>
-</body>
+                <div class="divide-y" th:if="${categories != null and !#lists.isEmpty(categories)}">
+                    <div th:each="category : ${categories}">
+                        <!-- Parent Category -->
+                        <div class="px-6 py-4 transition-colors hover:bg-gray-50">
+                            <div class="grid grid-cols-12 items-center gap-4">
+                                <div class="col-span-5 flex items-center gap-2">
+                                    <span class="text-lg text-blue-600">🌳</span>
+                                    <span class="font-semibold text-gray-900"
+                                          th:text="${category.name}">카테고리명</span>
+                                </div>
+
+                                <div class="col-span-2">
+                                    <span class="rounded bg-gray-100 px-2 py-1 font-mono text-sm text-gray-600"
+                                          th:text="${category.slug}">
+                                        slug
+                                    </span>
+                                </div>
+
+                                <div class="col-span-1 text-center">
+                                    <span class="font-semibold text-gray-900"
+                                          th:text="${category.productCount}">0</span>
+                                </div>
+
+                                <div class="col-span-4 flex items-center justify-end gap-2 whitespace-nowrap">
+                                    <a th:href="@{/admin/categories/new(parentId=${category.id})}"
+                                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-green-600 hover:bg-green-50 hover:text-green-600">
+                                        <span class="mr-1">＋</span>
+                                        하위 카테고리 추가
+                                    </a>
+
+                                    <a th:href="@{|/admin/categories/${category.id}/edit|}"
+                                       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                                        수정
+                                    </a>
+
+                                    <form th:action="@{|/admin/categories/${category.id}/delete|}"
+                                          method="post"
+                                          class="m-0">
+                                        <button type="submit"
+                                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-red-600 hover:bg-red-50 hover:text-red-600"
+                                                onclick="return confirm('해당 카테고리를 삭제하시겠습니까?');">
+                                            삭제
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subcategories -->
+                        <div th:if="${category.children != null and !#lists.isEmpty(category.children)}"
+                             class="bg-gray-50/50">
+                            <div th:each="child : ${category.children}"
+                                 class="ml-6 border-l-4 border-blue-200 px-6 py-3 transition-colors hover:bg-gray-100">
+                                <div class="grid grid-cols-12 items-center gap-4">
+                                    <div class="col-span-5 flex items-center gap-2 pl-6">
+                                        <span class="text-sm text-gray-400">▸</span>
+                                        <span class="text-sm text-gray-900"
+                                              th:text="${child.name}">하위 카테고리명</span>
+                                    </div>
+
+                                    <div class="col-span-2">
+                                        <span class="rounded bg-white px-2 py-1 font-mono text-xs text-gray-600"
+                                              th:text="${child.slug}">
+                                            child-slug
+                                        </span>
+                                    </div>
+
+                                    <div class="col-span-1 text-center">
+                                        <span class="text-sm text-gray-700"
+                                              th:text="${child.productCount}">0</span>
+                                    </div>
+
+                                    <div class="col-span-4 flex items-center justify-end gap-2">
+                                        <a th:href="@{|/admin/categories/${child.id}/edit|}"
+                                           class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                                            수정
+                                        </a>
+
+                                        <form th:action="@{|/admin/categories/${child.id}/delete|}"
+                                              method="post"
+                                              class="m-0">
+                                            <button type="submit"
+                                                    class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-red-600 hover:bg-red-50 hover:text-red-600"
+                                                    onclick="return confirm('해당 하위 카테고리를 삭제하시겠습니까?');">
+                                                삭제
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${categories == null or #lists.isEmpty(categories)}"
+                     class="px-6 py-16 text-center">
+                    <div class="mx-auto mb-4 text-5xl text-gray-400">🌳</div>
+                    <p class="mb-4 text-gray-500">등록된 카테고리가 없습니다.</p>
+                    <a th:href="@{/admin/categories/new}"
+                       class="inline-flex items-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                        <span class="mr-2">＋</span>
+                        첫 카테고리 추가하기
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="rounded-2xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">전체 카테고리 수</p>
+                    <p class="text-2xl font-bold text-gray-900"
+                       th:text="${summary != null ? summary.totalCategoryCount : 0}">
+                        0
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">전체 하위 카테고리 수</p>
+                    <p class="text-2xl font-bold text-blue-600"
+                       th:text="${summary != null ? summary.totalSubcategoryCount : 0}">
+                        0
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">전체 상품 수</p>
+                    <p class="text-2xl font-bold text-green-600"
+                       th:text="${summary != null ? summary.totalProductCount : 0}">
+                        0
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</th:block>
+
 </html>

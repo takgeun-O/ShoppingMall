@@ -1,8 +1,6 @@
 package io.github.takgeun.shop.category.domain;
 
-import io.github.takgeun.shop.product.view.dto.CategoryOptionView;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +23,10 @@ public interface CategoryRepository {
     // 서비스에서 Category.normalizeKey(name)로 키 만들고 전달하는 방식
     boolean existsByNameKey(String nameKey);
 
+    boolean existsBySlug(String slug);
+
     // 수정 시 내 자신 제외 중복 체크
-    boolean existsByNameKeyExceptId(String name, Long excludeId);
+    boolean existsByNameKeyExceptId(String nameKey, Long excludeId);
+
+    boolean existsBySlugExceptId(String slug, Long categoryId);
 }

@@ -36,7 +36,9 @@ public class MemoryOrderRepository implements OrderRepository {
 
     @Override
     public Optional<Order> findById(Long id) {
-        if (id == null) return Optional.empty();
+        if (id == null) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(store.get(id));
     }
 
@@ -47,7 +49,9 @@ public class MemoryOrderRepository implements OrderRepository {
 
     @Override
     public List<Order> findAllByMemberId(Long memberId) {
-        if (memberId == null) return List.of();
+        if (memberId == null) {
+            return List.of();
+        }
 
         List<Order> result = new ArrayList<>();
         for (Order order : store.values()) {

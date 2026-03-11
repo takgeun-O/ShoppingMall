@@ -25,12 +25,12 @@ public class MyPageRecentOrderView {
     public static MyPageRecentOrderView from(Order order) {
         // 스냅샷이 OrderItem에 들어가있음
         // 여러 상품이면 "대표 상품명 외 n건"
-        String name = order.getItems().isEmpty()
+        String name = order.getOrderItems().isEmpty()
                 ? "주문 상품"
-                : order.getItems().get(0).getProductNameSnapshot();
+                : order.getOrderItems().get(0).getProductNameSnapshot();
 
-        if(order.getItems().size() >= 2) {
-            name = name + " 외 " + (order.getItems().size() - 1) + "건";
+        if(order.getOrderItems().size() >= 2) {
+            name = name + " 외 " + (order.getOrderItems().size() - 1) + "건";
         }
 
         return new MyPageRecentOrderView(

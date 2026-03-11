@@ -18,7 +18,7 @@ public class Order {
     private Long memberId;
     private OrderStatus status;
 
-    private List<OrderItem> items;
+    private List<OrderItem> orderItems;
 
     // 배송정보
     private String recipientName;
@@ -39,14 +39,14 @@ public class Order {
     protected Order() {}
 
     private Order(Long memberId,
-                  List<OrderItem> items,
+                  List<OrderItem> orderItems,
                   String recipientName, String recipientPhone,
                   String shippingZipCode, String shippingAddress, String shippingAddressDetail,
                   String requestMessage,
                   int shippingFee) {
 
         if(memberId == null) throw new IllegalArgumentException("memberId는 필수입니다.");
-        if(items == null || items.isEmpty()) throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+        if(orderItems == null || orderItems.isEmpty()) throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
 
         requireText(recipientName, "recipientName은 필수입니다.");
         requireText(recipientPhone, "recipientPhone은 필수입니다.");
@@ -59,7 +59,7 @@ public class Order {
         }
 
         this.memberId = memberId;
-        this.items = List.copyOf(items);
+        this.orderItems = List.copyOf(orderItems);
 
         this.recipientName = recipientName;
         this.recipientPhone = recipientPhone;
@@ -68,7 +68,7 @@ public class Order {
         this.shippingAddressDetail = shippingAddressDetail;
         this.requestMessage = requestMessage;
 
-        this.subtotal = items.stream()
+        this.subtotal = orderItems.stream()
                 .mapToInt(OrderItem::lineTotal)
                 .sum();
         this.shippingFee = Math.max(shippingFee, 0);
@@ -106,8 +106,8 @@ public class Order {
     }
 
     public void cancel() {
-        if(this.status != OrderStatus.PAYMENT_COMPLETED) {
-            throw new ConflictException("PAYMENT_COMPLETED 상태에서만 취소할 수 있습니다.");
+        if(this.status != OrderStatus.PAYMENT_COMPLETED || this.status != OrderStatus.ORDERED) {
+            throw new ConflictException("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
         }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();

@@ -29,4 +29,6 @@ public interface ProductRepository {
     List<Product> findAllAdminByCategoryId(Long categoryId);
 
     List<Product> findAllAdmin();
+
+    int countByCategoryId(Long categoryId);
 }

@@ -110,9 +110,17 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
+    public int countByCategoryId(Long categoryId) {
+        // 카테고리별 상품 개수 (상품 개수가 int 범위를 벗어날 일 없으니 캐스팅해도 괜찮)
+        return (int) store.values().stream()
+                .filter(p -> Objects.equals(p.getCategoryId(), categoryId)) // p.getCategoryId()가 NULL일 때 NPE 방지
+                .count();
+    }
+
+    @Override
     public List<Product> findAllAdminByCategoryId(Long categoryId) {
         return store.values().stream()
-                .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
+                .filter(p -> Objects.equals(p.getCategoryId(), categoryId)) // p.getCategoryId()가 NULL일 때 NPE 방지
                 .toList();
     }
 }

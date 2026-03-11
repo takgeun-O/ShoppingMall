@@ -95,6 +95,13 @@
                             마이페이지
                         </a>
 
+                        <!-- 관리자 페이지 진입 -->
+                        <a th:if="${loginRole != null and loginRole.name() == 'ADMIN'}"
+                           th:href="@{/admin}"
+                           class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-orange-700 hover:text-gray-900 hover:bg-gray-100">
+                            관리자
+                        </a>
+
                         <!-- 로그아웃: POST 유지 -->
                         <form th:action="@{/logout}" method="post" class="inline">
                             <button type="submit"

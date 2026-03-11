@@ -129,6 +129,12 @@ public class MemoryCategoryRepository implements CategoryRepository {
     }
 
     @Override
+    public boolean existsBySlug(String slug) {
+        return store.values().stream()
+                .anyMatch(c -> c.getSlug().equals(slug));
+    }
+
+    @Override
     public boolean existsByNameKeyExceptId(String nameKey, Long excludeId) {
         if(nameKey == null || nameKey.isEmpty()) return false;
 
@@ -136,5 +142,12 @@ public class MemoryCategoryRepository implements CategoryRepository {
                 .anyMatch(c -> c.getId() != null
                         && !c.getId().equals(excludeId)
                         && nameKey.equals(c.getNameKey()));
+    }
+
+    @Override
+    public boolean existsBySlugExceptId(String slug, Long categoryId) {
+        return store.values().stream()
+                .anyMatch(c -> c.getSlug().equals(slug) &&
+                        !c.getId().equals(categoryId));
     }
 }

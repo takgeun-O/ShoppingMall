@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.product.view.dto;
 
 import io.github.takgeun.shop.product.domain.Product;
+import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.Getter;
 
 @Getter
@@ -15,6 +16,7 @@ public class ProductCardView {
     private final double rating;       // 템플릿에서 p.rating
     private final int reviews;         // 템플릿에서 p.reviews
     private final String badge;        // 템플릿에서 p.badge (BEST/NEW/SALE/HOT 등)
+    private final ProductStatus status;
 
     private ProductCardView(Long id,
                             String name,
@@ -23,7 +25,8 @@ public class ProductCardView {
                             String imageUrl,
                             double rating,
                             int reviews,
-                            String badge) {
+                            String badge,
+                            ProductStatus status) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -32,6 +35,7 @@ public class ProductCardView {
         this.rating = rating;
         this.reviews = reviews;
         this.badge = badge;
+        this.status = status;
     }
 
     /**
@@ -64,7 +68,8 @@ public class ProductCardView {
                 resolvedImageUrl,
                 p.getRating(),
                 resolvedReviews,
-                badge
+                badge,
+                p.getStatus()
         );
     }
 

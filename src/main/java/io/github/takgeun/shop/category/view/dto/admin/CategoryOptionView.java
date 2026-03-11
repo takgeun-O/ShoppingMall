@@ -1,14 +1,17 @@
-package io.github.takgeun.shop.product.view.dto;
+package io.github.takgeun.shop.category.view.dto.admin;
 
 import lombok.Getter;
 
+/**
+ * 상위 카테고리 select 용
+ */
 @Getter
 public class CategoryOptionView {
 
     private final Long id;
     private final String name;
 
-    public CategoryOptionView(Long id, String name) {
+    private CategoryOptionView(Long id, String name) {
         this.id = id;
         this.name = name;
     }

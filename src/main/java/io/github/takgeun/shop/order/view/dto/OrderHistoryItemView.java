@@ -51,7 +51,7 @@ public class OrderHistoryItemView {
             throw new IllegalArgumentException("order는 필수입니다.");
         }
 
-        List<OrderItem> items = order.getItems();
+        List<OrderItem> items = order.getOrderItems();
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("주문 상품이 없습니다.");
         }
