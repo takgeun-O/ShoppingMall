@@ -2,6 +2,7 @@ package io.github.takgeun.shop.cart;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.global.error.ConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -46,13 +47,19 @@ public class CartViewController {
 
         // 1 이하 방지
         int resolvedQty = Math.max(quantity, 1);
-        cartService.add(session, productId, resolvedQty);
 
-        ra.addFlashAttribute("success", "장바구니에 담았습니다.");
-        ra.addFlashAttribute("added", true);
-        ra.addFlashAttribute("addedProductId", productId);
-        ra.addFlashAttribute("addedQty", resolvedQty);
+        try {
+            cartService.add(session, productId, resolvedQty);       // ConflictException 잡아야함.
 
+            ra.addFlashAttribute("success", "장바구니에 담았습니다.");
+            ra.addFlashAttribute("added", true);
+            ra.addFlashAttribute("addedProductId", productId);
+            ra.addFlashAttribute("addedQty", resolvedQty);
+        } catch (ConflictException e) {
+            // 에러 터지면 뷰에다가 그냥 에러 정보만 보내주고 끝.
+            ra.addFlashAttribute("error", e.getMessage());
+            ra.addFlashAttribute("errorProductId", productId);
+        }
 
         return "redirect:" + resolveReturnUrl(returnUrl, "/cart");
     }
@@ -65,13 +72,20 @@ public class CartViewController {
     public String changeQuantity(
             @PathVariable Long id,
             @RequestParam int delta,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes ra) {
 
         if(delta == 0) {
             return "redirect:/cart";
         }
 
-        cartService.changeQuantity(session, id, delta);
+        try {
+            cartService.changeQuantity(session, id, delta);     // ConflictException 잡아야함.
+        } catch (ConflictException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            ra.addFlashAttribute("errorProductId", id);
+        }
+
         return "redirect:/cart";
     }
 

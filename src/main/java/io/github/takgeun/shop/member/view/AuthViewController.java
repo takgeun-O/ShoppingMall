@@ -114,7 +114,7 @@ public class AuthViewController {
             Long memberId = authService.login(form.getEmail(), form.getPassword());
 
             // role 세션 저장 (AdminAuthInterceptor 쪽에서 사용)
-            Member member = memberService.get(memberId);
+            Member member = memberService.findById(memberId);
             HttpSession session = request.getSession(true); // 세션이 있으면 그 세션을 반환하고 없으면 새로 만들어서 반환
             session.setAttribute(SessionConst.LOGIN_MEMBER_ID, memberId);
             session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());

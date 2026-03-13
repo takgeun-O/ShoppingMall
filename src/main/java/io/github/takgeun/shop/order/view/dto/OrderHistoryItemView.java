@@ -3,6 +3,7 @@ package io.github.takgeun.shop.order.view.dto;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderStatus;
+import io.github.takgeun.shop.order.view.support.OrderStatusView;
 import lombok.Getter;
 
 import java.time.format.DateTimeFormatter;
@@ -64,6 +65,7 @@ public class OrderHistoryItemView {
         int extraItemCount = Math.max(items.size() - 1, 0);
 
         OrderStatus status = order.getStatus();
+        OrderStatusView statusView = OrderStatusView.from(status);
 
         return new OrderHistoryItemView(
                 order.getId(),
@@ -72,8 +74,8 @@ public class OrderHistoryItemView {
                 productImageUrl,
                 order.getTotalPrice(),
                 status,
-                getStatusLabel(status),
-                getStatusBadgeClass(status),
+                statusView.getLabel(),
+                statusView.getBadgeClass(),
                 extraItemCount
         );
     }
@@ -93,31 +95,5 @@ public class OrderHistoryItemView {
         }
 
         return "/" + trimmed;
-    }
-
-    private static String getStatusLabel(OrderStatus status) {
-        if(status == null) return "상태 없음";
-
-        return switch (status) {
-            case ORDERED -> "주문완료";
-            case PAYMENT_COMPLETED -> "결제완료";
-            case PREPARING -> "배송준비";
-            case SHIPPING -> "배송중";
-            case DELIVERED -> "배송완료";
-            case CANCELED -> "취소";
-        };
-    }
-
-    private static String getStatusBadgeClass(OrderStatus status) {
-        if(status == null) return "bg-gray-500";
-
-        return switch (status) {
-            case ORDERED -> "bg-blue-600";
-            case PAYMENT_COMPLETED -> "bg-purple-600";
-            case PREPARING -> "bg-orange-600";
-            case SHIPPING -> "bg-cyan-600";
-            case DELIVERED -> "bg-green-600";
-            case CANCELED -> "bg-red-600";
-        };
     }
 }

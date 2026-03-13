@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
+import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -216,6 +218,12 @@ public class AdminProductViewController {
         } catch (NotFoundException e) {
             throw e;
         } catch (IllegalArgumentException e) {
+            bindingResult.reject("updateFail", e.getMessage());     // 글로벌 에러
+            model.addAttribute("productId", productId);
+            populateProductFormModel(model);
+            return "admin/products/edit";
+        } catch (ConflictException e) {
+            // 상태 변경 ConflictException 잡기용
             bindingResult.reject("updateFail", e.getMessage());
             model.addAttribute("productId", productId);
             populateProductFormModel(model);
@@ -230,12 +238,21 @@ public class AdminProductViewController {
     @PostMapping("/{id}/hide")
     public String hide(
             @PathVariable("id") @Positive Long productId,
-            HttpSession session
+            HttpSession session,
+            RedirectAttributes ra
     ) {
         requireAdmin(session);
 
-        productService.changeStatus(productId, ProductStatus.HIDDEN);
-        log.info("상품 숨김 처리. productId={}", productId);
+        try {
+            productService.changeStatus(productId, ProductStatus.HIDDEN);
+            log.info("상품 숨김 처리. productId={}", productId);
+            ra.addFlashAttribute("success", "상품을 숨김 처리했습니다.");
+        } catch (NotFoundException e) {
+            // 존재하지 않는 상품 처리
+            throw e;
+        } catch (ConflictException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
 
         return "redirect:/admin/products";
     }
@@ -247,12 +264,21 @@ public class AdminProductViewController {
     @PostMapping("/{id}/show")
     public String show(
             @PathVariable("id") @Positive Long productId,
-            HttpSession session
+            HttpSession session,
+            RedirectAttributes ra
     ) {
         requireAdmin(session);
 
-        productService.changeStatus(productId, ProductStatus.ON_SALE);
-        log.info("상품 공개 처리. productId={}", productId);
+        try {
+            productService.changeStatus(productId, ProductStatus.ON_SALE);
+            log.info("상품 공개 처리. productId={}", productId);
+            ra.addFlashAttribute("success", "상품을 판매중으로 변경했습니다.");
+        } catch (NotFoundException e) {
+            // 존재하지 않는 상품 처리
+            throw e;
+        } catch (ConflictException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
 
         return "redirect:/admin/products";
     }

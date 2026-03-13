@@ -2,6 +2,8 @@ package io.github.takgeun.shop.member.view.dto;
 
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderStatus;
+import io.github.takgeun.shop.order.view.support.OrderStatusView;
+import io.github.takgeun.shop.order.view.support.OrderStatusViewMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -10,16 +12,27 @@ import java.util.List;
 
 @Getter
 public class MyPageRecentOrderView {
+
     private final String productName;
     private final LocalDateTime orderedAt;
     private final int totalPrice;
     private final OrderStatus status;
+    private final String statusLabel;
+    private final String statusBadgeClass;
 
-    public MyPageRecentOrderView(String productName, LocalDateTime orderedAt, int totalPrice, OrderStatus status) {
+    private MyPageRecentOrderView(String productName,
+                                  LocalDateTime orderedAt,
+                                  int totalPrice,
+                                  OrderStatus status,
+                                  String statusLabel,
+                                  String statusBadgeClass
+    ) {
         this.productName = productName;
         this.orderedAt = orderedAt;
         this.totalPrice = totalPrice;
         this.status = status;
+        this.statusLabel = statusLabel;
+        this.statusBadgeClass = statusBadgeClass;
     }
 
     public static MyPageRecentOrderView from(Order order) {
@@ -33,11 +46,16 @@ public class MyPageRecentOrderView {
             name = name + " 외 " + (order.getOrderItems().size() - 1) + "건";
         }
 
+        OrderStatus status = order.getStatus();
+        OrderStatusView statusView = OrderStatusView.from(status);
+
         return new MyPageRecentOrderView(
                 name,
                 order.getOrderedAt(),
                 order.getTotalPrice(),
-                order.getStatus()
+                status,
+                statusView.getLabel(),
+                statusView.getBadgeClass()
         );
     }
 }

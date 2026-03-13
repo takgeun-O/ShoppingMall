@@ -91,6 +91,12 @@
                     </span>
                 </div>
 
+                <!-- Add to cart error feedback -->
+                <div th:if="${error} and (${errorProductId} == null or ${errorProductId} == ${product.id})"
+                     class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <span th:text="${error}">장바구니 처리 중 오류가 발생했습니다.</span>
+                </div>
+
                 <!-- Added to cart feedback -->
                 <div th:if="${added} and ${addedProductId} == ${product.id}"
                      class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">

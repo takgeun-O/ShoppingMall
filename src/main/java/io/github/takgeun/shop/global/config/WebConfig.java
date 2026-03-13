@@ -22,11 +22,15 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/admin/**")
                 .excludePathPatterns(
                         "/login",
+                        "/logout",
+                        "/signup",
                         "/css/**",
                         "/js/**",
                         "/images/**",
+                        "/assets/**",
+                        "/webjars/**",
                         "/error",
-                        "forbidden",
+                        "/forbidden",
                         "/favicon.ico"
                 );
 
@@ -38,8 +42,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "/css/**",
                         "/js/**",
                         "/images/**",
+                        "/assets/**",
+                        "/webjars/**",
                         "/error",
-                        "forbidden",
+                        "/forbidden",
                         "/favicon.ico"
                 );
     }

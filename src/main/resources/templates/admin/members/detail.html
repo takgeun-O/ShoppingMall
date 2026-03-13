@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(
+          '회원 상세정보',
+          ~{::content},
+          'members'
+      )}">
+
+<th:block th:fragment="content">
+    <div class="p-8">
+        <div class="mx-auto max-w-[1200px]">
+
+            <!-- Member Not Found -->
+            <div th:if="${member == null}"
+                 class="rounded-2xl bg-white px-6 py-16 text-center shadow-sm">
+                <svg class="mx-auto mb-4 h-16 w-16 text-gray-400"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.8"
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+                </svg>
+                <h2 class="mb-2 text-2xl font-bold text-gray-900">회원을 찾을 수 없습니다</h2>
+                <p class="mb-6 text-gray-600">요청하신 회원 정보가 존재하지 않습니다.</p>
+                <a th:href="@{/admin/members}"
+                   class="inline-flex items-center rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800">
+                    <svg class="mr-2 h-4 w-4"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                    </svg>
+                    회원 목록으로 돌아가기
+                </a>
+            </div>
+
+            <!-- Member Detail -->
+            <th:block th:if="${member != null}">
+
+                <!-- Page Header -->
+                <div class="mb-8">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <h1 class="mb-2 text-3xl font-bold text-gray-900">회원 상세정보</h1>
+                            <p class="text-gray-600">회원의 상세 정보와 주문 내역을 확인할 수 있습니다</p>
+                        </div>
+                        <a th:href="@{/admin/members}"
+                           class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            <svg class="mr-2 h-5 w-5"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                            </svg>
+                            목록으로 돌아가기
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Flash Message -->
+                <div th:if="${success != null}"
+                     class="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+                    <span th:text="${success}">회원 정보가 수정되었습니다.</span>
+                </div>
+
+                <div th:if="${error != null}"
+                     class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+                    <span th:text="${error}">오류가 발생했습니다.</span>
+                </div>
+
+                <!-- Member Profile Card -->
+                <div class="mb-6 rounded-2xl bg-white p-8 shadow-sm">
+                    <div class="flex flex-col gap-6 md:flex-row md:items-start">
+
+                        <!-- Avatar -->
+                        <div class="shrink-0">
+                            <div class="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
+                                <span class="text-4xl font-bold text-white"
+                                      th:text="${#strings.substring(member.name, 0, 1)}">홍</span>
+                            </div>
+                        </div>
+
+                        <!-- Member Info -->
+                        <div class="flex-1">
+                            <div class="mb-4 flex flex-wrap items-center gap-3">
+                                <h2 class="text-2xl font-bold text-gray-900"
+                                    th:text="${member.name}">홍길동</h2>
+
+                                <span th:if="${member.status.name() == 'ACTIVE'}"
+                                      class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
+                                    활성
+                                </span>
+                                <span th:if="${member.status.name() == 'INACTIVE'}"
+                                      class="inline-flex rounded-full bg-gray-600 px-3 py-1 text-xs font-semibold text-white">
+                                    휴면
+                                </span>
+                                <span th:if="${member.status.name() == 'WITHDRAWN'}"
+                                      class="inline-flex rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                                    탈퇴
+                                </span>
+
+                                <span class="text-sm text-gray-500">
+                                    회원 ID:
+                                    <span th:text="${member.id}">M001</span>
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                                <!-- Email -->
+                                <div class="flex items-center gap-3 text-gray-700">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                                        <svg class="h-5 w-5 text-blue-600"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5H4.5a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.918l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.916a2.25 2.25 0 0 1-1.07-1.918V6.75"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-xs text-gray-500">이메일</p>
+                                        <p class="font-medium" th:text="${member.email}">hong@example.com</p>
+                                    </div>
+                                </div>
+
+                                <!-- Phone -->
+                                <div class="flex items-center gap-3 text-gray-700">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                                        <svg class="h-5 w-5 text-green-600"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M2.25 4.5A2.25 2.25 0 0 1 4.5 2.25h2.25a2.25 2.25 0 0 1 2.122 1.507l.74 2.22a2.25 2.25 0 0 1-.516 2.32l-1.214 1.214a16.5 16.5 0 0 0 6.607 6.607l1.214-1.214a2.25 2.25 0 0 1 2.32-.516l2.22.74A2.25 2.25 0 0 1 21.75 17.25V19.5a2.25 2.25 0 0 1-2.25 2.25h-.75C9.663 21.75 2.25 14.337 2.25 5.25V4.5Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-xs text-gray-500">전화번호</p>
+                                        <p class="font-medium" th:text="${member.phone}">010-1234-5678</p>
+                                    </div>
+                                </div>
+
+                                <!-- Join Date -->
+                                <div class="flex items-center gap-3 text-gray-700">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                                        <svg class="h-5 w-5 text-purple-600"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V8.25A2.25 2.25 0 0 1 5.25 6h13.5A2.25 2.25 0 0 1 21 8.25v10.5A2.25 2.25 0 0 1 18.75 21H5.25A2.25 2.25 0 0 1 3 18.75ZM3 10.5h18"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-xs text-gray-500">가입일</p>
+                                        <p class="font-medium" th:text="${member.joinDate}">2025.01.15</p>
+                                    </div>
+                                </div>
+
+                                <!-- Last Login -->
+                                <div class="flex items-center gap-3 text-gray-700">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                                        <svg class="h-5 w-5 text-orange-600"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-xs text-gray-500">마지막 로그인</p>
+                                        <p class="font-medium" th:text="${member.lastLogin}">2026.03.12 14:23</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Statistics -->
+                <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+
+                    <!-- Total Orders -->
+                    <div class="rounded-2xl bg-white p-6 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-100">
+                                <svg class="h-7 w-7 text-blue-600"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          d="M2.25 3h1.386c.51 0 .955.343 1.087.836L5.51 6.75m0 0 1.638 8.191A2.25 2.25 0 0 0 9.354 16.5h8.896a2.25 2.25 0 0 0 2.206-1.809L21.75 8.25H6.128m-.618-1.5h16.24M9 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm10.5 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-sm text-gray-600">총 주문 수</p>
+                                <p class="text-3xl font-bold text-gray-900"
+                                   th:text="${member.totalOrders}">23</p>
+                                <p class="mt-1 text-xs text-gray-500">건</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Purchase Amount -->
+                    <div class="rounded-2xl bg-white p-6 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-green-100">
+                                <svg class="h-7 w-7 text-green-600"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          d="M12 6v12m3-9H9.75a2.25 2.25 0 1 0 0 4.5h4.5a2.25 2.25 0 1 1 0 4.5H9"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-sm text-gray-600">총 구매 금액</p>
+                                <p class="text-3xl font-bold text-gray-900"
+                                   th:text="'₩' + ${#numbers.formatInteger(member.totalSpent, 3, 'COMMA')}">
+                                    ₩3,450,000
+                                </p>
+                                <p class="mt-1 text-xs text-gray-500">누적 구매액</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Last Order Date -->
+                    <div class="rounded-2xl bg-white p-6 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-purple-100">
+                                <svg class="h-7 w-7 text-purple-600"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V8.25A2.25 2.25 0 0 1 5.25 6h13.5A2.25 2.25 0 0 1 21 8.25v10.5A2.25 2.25 0 0 1 18.75 21H5.25A2.25 2.25 0 0 1 3 18.75ZM3 10.5h18"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-sm text-gray-600">최근 주문일</p>
+                                <p class="text-3xl font-bold text-gray-900"
+                                   th:text="${member.lastOrderDate != null ? member.lastOrderDate : '-'}">2026.03.10</p>
+                                <p class="mt-1 text-xs text-gray-500">마지막 구매</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+                        <h3 class="text-lg font-bold text-gray-900">최근 주문 내역</h3>
+                    </div>
+
+                    <div th:if="${member.getRecentOrders() != null and !#lists.isEmpty(member.getRecentOrders())}" class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="border-b border-gray-200 bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    주문번호
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    주문일
+                                </th>
+                                <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    주문금액
+                                </th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    주문상태
+                                </th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-700">
+                                    상세보기
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                            <tr th:each="order, stat : ${member.getRecentOrders()}"
+                                th:classappend="${stat.even} ? 'bg-white hover:bg-blue-50 transition-colors' : 'bg-gray-50 hover:bg-blue-50 transition-colors'">
+                                <td class="whitespace-nowrap px-6 py-4">
+                                    <span class="text-sm font-semibold text-gray-900"
+                                          th:text="${order.orderNumber}">ORD-2026-001234</span>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4">
+                                    <span class="text-sm text-gray-700"
+                                          th:text="${order.orderDate}">2026.03.10</span>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right">
+                                    <span class="text-sm font-bold text-gray-900"
+                                          th:text="'₩' + ${#numbers.formatInteger(order.amount, 3, 'COMMA')}">
+                                        ₩150,000
+                                    </span>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-center">
+                                    <span th:if="${order.status == '배송완료'}"
+                                          class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                                        배송완료
+                                    </span>
+                                    <span th:if="${order.status == '배송중'}"
+                                          class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                                        배송중
+                                    </span>
+                                    <span th:if="${order.status == '주문확인'}"
+                                          class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
+                                        주문확인
+                                    </span>
+                                    <span th:if="${order.status == '취소'}"
+                                          class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800">
+                                        취소
+                                    </span>
+                                    <span th:if="${order.status != '배송완료' and order.status != '배송중' and order.status != '주문확인' and order.status != '취소'}"
+                                          class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800"
+                                          th:text="${order.status}">
+                                        기타
+                                    </span>
+                                </td>
+                                <td class="whitespace-nowrap px-6 py-4 text-center">
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                       class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                                        <svg class="h-4 w-4"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M2.036 12.322a1 1 0 0 1 0-.644C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178a1 1 0 0 1 0 .644C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
+                                            <path stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                                        </svg>
+                                    </a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div th:if="${member.getRecentOrders() == null or #lists.isEmpty(member.getRecentOrders())}"
+                         class="px-6 py-16 text-center">
+                        <svg class="mx-auto mb-4 h-12 w-12 text-gray-400"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8"
+                             viewBox="0 0 24 24">
+                            <path stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  d="M2.25 3h1.386c.51 0 .955.343 1.087.836L5.51 6.75m0 0 1.638 8.191A2.25 2.25 0 0 0 9.354 16.5h8.896a2.25 2.25 0 0 0 2.206-1.809L21.75 8.25H6.128m-.618-1.5h16.24M9 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm10.5 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/>
+                        </svg>
+                        <p class="font-medium text-gray-500">주문 내역이 없습니다</p>
+                        <p class="mt-1 text-sm text-gray-400">아직 주문한 상품이 없습니다</p>
+                    </div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="rounded-2xl bg-white p-6 shadow-sm">
+                    <h3 class="mb-4 text-lg font-bold text-gray-900">관리자 작업</h3>
+                    <div class="flex flex-wrap gap-3">
+
+                        <button type="button"
+                                onclick="openStatusModal()"
+                                class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
+                            <svg class="mr-2 h-4 w-4"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="M16.023 9.348h4.992V4.356m-.45 5.442A9 9 0 1 0 6.1 18.36"/>
+                            </svg>
+                            회원 상태 변경
+                        </button>
+
+                        <a th:href="@{/admin/members/{id}/edit(id=${member.id})}"
+                           class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-green-600 hover:bg-green-50 hover:text-green-600">
+                            <svg class="mr-2 h-4 w-4"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      d="m16.862 3.487 1.65-1.65a1.875 1.875 0 1 1 2.652 2.652l-9.193 9.193a4.5 4.5 0 0 1-1.897 1.13L6 16l1.188-4.074a4.5 4.5 0 0 1 1.13-1.897l8.544-8.542ZM19.5 7.125 16.875 4.5"/>
+                            </svg>
+                            회원 정보 수정
+                        </a>
+
+                        <form th:action="@{/admin/members/{id}/withdraw(id=${member.id})}"
+                              method="post"
+                              onsubmit="return confirm('정말로 회원을 탈퇴 처리하시겠습니까?');">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:border-red-600 hover:bg-red-50 hover:text-red-600">
+                                <svg class="mr-2 h-4 w-4"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2"
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          d="M18 12A6 6 0 0 1 6 12m12 0a6 6 0 0 0-12 0m12 0v1.5a2.25 2.25 0 0 1-2.25 2.25H8.25A2.25 2.25 0 0 1 6 13.5V12"/>
+                                </svg>
+                                회원 탈퇴 처리
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+
+                <!-- Status Change Modal -->
+                <div id="statusModal"
+                     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+                    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 class="mb-4 text-xl font-bold text-gray-900">회원 상태 변경</h3>
+                        <p class="mb-6 text-gray-600">
+                            <span th:text="${member.name}">홍길동</span>님의 회원 상태를 변경하시겠습니까?
+                        </p>
+
+                        <div class="mb-6 space-y-3">
+                            <form th:action="@{/admin/members/{id}/status(id=${member.id})}" method="post">
+                                <input type="hidden" name="status" value="ACTIVE"/>
+                                <button type="submit"
+                                        class="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition hover:border-green-500 hover:bg-green-50">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-medium text-gray-900">활성</span>
+                                        <span class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">ACTIVE</span>
+                                    </div>
+                                </button>
+                            </form>
+
+                            <form th:action="@{/admin/members/{id}/status(id=${member.id})}" method="post">
+                                <input type="hidden" name="status" value="INACTIVE"/>
+                                <button type="submit"
+                                        class="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition hover:border-gray-500 hover:bg-gray-50">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-medium text-gray-900">휴면</span>
+                                        <span class="inline-flex rounded-full bg-gray-600 px-3 py-1 text-xs font-semibold text-white">INACTIVE</span>
+                                    </div>
+                                </button>
+                            </form>
+
+                            <form th:action="@{/admin/members/{id}/status(id=${member.id})}" method="post">
+                                <input type="hidden" name="status" value="WITHDRAWN"/>
+                                <button type="submit"
+                                        class="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-left transition hover:border-red-500 hover:bg-red-50">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-medium text-gray-900">탈퇴</span>
+                                        <span class="inline-flex rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">WITHDRAWN</span>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="button"
+                                    onclick="closeStatusModal()"
+                                    class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </th:block>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function openStatusModal() {
+            const modal = document.getElementById('statusModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeStatusModal() {
+            const modal = document.getElementById('statusModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        window.addEventListener('click', function (e) {
+            const modal = document.getElementById('statusModal');
+            if (e.target === modal) {
+                closeStatusModal();
+            }
+        });
+    </script>
+</th:block>
+</html>

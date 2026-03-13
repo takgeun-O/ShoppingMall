@@ -67,6 +67,11 @@
             </div>
 
             <h1 class="text-3xl font-bold text-gray-900 mb-8">주문/결제</h1>
+            <!-- 주문 생성 실패 메시지 -->
+            <div th:if="${checkoutError}"
+                 class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+                <span th:text="${checkoutError}">주문 처리 중 오류가 발생했습니다.</span>
+            </div>
 
             <!-- 폼: 배송지 + 결제 -->
             <form th:action="@{/orders}" method="post" th:object="${checkoutForm}">

@@ -22,56 +22,49 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
 
-    // 목록 : categoryId(단일) + sort + role
+    /**
+     * 목록 조회
+     * admin=true : 전체
+     * admin=false : 공개 상품만 보여주기
+     */
     public List<Product> findForList(boolean admin, Long categoryId, String sort) {
 
         // base 조회
-        List<Product> base;
-        if(categoryId == null) {
-            base = productRepository.findAll();
-        } else {
-            // 자손 포함 카테고리 id 구하기
-            List<Long> categoryIds = admin
-                    ? categoryService.findAdminDescendantIdsIncludingSelf(categoryId)
-                    : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
+        List<Product> base = findBaseProducts(admin, categoryId);
+        List<Product> visible = filterVisibleProducts(admin, base);
 
-            // IN 조회
-            base = productRepository.findAllByCategoryIdIn(categoryIds);
-        }
 
         log.info("base={}", base);
-
-        // role 기반 노출 필터
-        List<Product> visible = admin
-                ? base
-                : base.stream()
-                .filter(Product::isPublicVisible)
-                .toList();
-
         log.info("visible={}", visible);
 
         // sort 적용
         return applySort(visible, normalizeSort(sort));
     }
 
-    // 상세 : role 기반 접근
+    /**
+     * 상품 상세보기
+     */
     public Product getForDetail(boolean admin, Long productId) {
-        Product p = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+        Product product = findById(productId);
 
-        if(!admin && !p.isPublicVisible()) {
+        if(!admin && !product.isPublicVisible()) {
+            // 관리자가 아닌 계정이 공개상품을 보는 케이스면 아래와 같이 예외 처리
             throw new NotFoundException("존재하지 않는 상품입니다.");
         }
 
-        return p;
+        return product;
     }
 
-    // public 사용자 주문
+    /**
+     * 일반 사용자 주문용 조회
+     */
     public Product getForOrderPublic(Long productId) {
         return getForDetail(false, productId);
     }
 
-    // 생성 (관리자)
+    /**
+     * 상품 생성 (관리자)
+     */
     public Long create(
             Long categoryId,
             String name,
@@ -82,9 +75,11 @@ public class ProductService {
             Integer originalPrice,
             String imageUrl
     ) {
+
+        validateCreateArgs(price, stock);       // 생성 시 가격, 재고 검증
         validateOriginalPrice(price, originalPrice);
 
-        Product product = new Product(
+        Product product = Product.create(
                 categoryId,
                 name,
                 price,
@@ -99,6 +94,9 @@ public class ProductService {
         return saved.getId();
     }
 
+    /**
+     * 상품 수정 (관리자)
+     */
     public void update(Long productId,
                        Long categoryId,
                        String name,
@@ -109,28 +107,19 @@ public class ProductService {
                        Integer originalPrice,
                        String imageUrl) {
 
-        Product p = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+        Product product = findById(productId);
 
-        if(categoryId != null) p.changeCategory(categoryId);
-        if(name != null) p.changeName(name);
-        if(price != null) p.changePrice(price);
-        if(description != null) p.changeDescription(description);
-        if(originalPrice != null) p.changeOriginalPrice(originalPrice);
-        if(imageUrl != null) p.changeImageUrl(imageUrl);
+        // 값이 들어온 것만 변경
+        if(categoryId != null) product.changeCategory(categoryId);
+        if(name != null) product.changeName(name);
+        if(price != null) product.changePrice(price);
+        if(description != null) product.changeDescription(description);
+        if(originalPrice != null) product.changeOriginalPrice(originalPrice);
+        if(imageUrl != null) product.changeImageUrl(imageUrl);
+        if(stock != null) product.changeStock(stock);
+        if(status != null) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
 
-        // 재고 0 -> 무조건 SOLD_OUT
-        // 재고 > 0 + status 전달 -> 전달된 상태
-        // 재고 > 0 + status 없음 -> 기존 상태 유지
-        if(stock != null) p.changeStock(stock);
-
-        if(p.getStock() == 0) {
-            p.changeStatus(ProductStatus.SOLD_OUT);
-        } else if (status != null) {
-            p.changeStatus(status);
-        }
-
-        productRepository.save(p);
+        productRepository.save(product);
     }
 
     // 상태 변경(관리자)
@@ -139,18 +128,11 @@ public class ProductService {
             throw new IllegalArgumentException("status는 필수입니다.");
         }
 
-        Product p = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+        Product product = findById(productId);
 
-        switch (status) {
-            case ON_SALE -> p.onSale();
-            case READY -> p.ready();
-            case HIDDEN -> p.hide();
-            case DISCONTINUED -> p.discontinue();
-            case SOLD_OUT -> p.changeStock(0);  // 재고 0으로 만들기
-        }
+        applyStatus(product, status);
 
-        productRepository.save(p);
+        productRepository.save(product);
     }
 
     public void save(Product product) {
@@ -158,10 +140,9 @@ public class ProductService {
     }
 
     public void increaseStock(Long productId, int quantity) {
-        Product p = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
-        p.increaseStock(quantity);
-        productRepository.save(p);
+        Product product = findById(productId);
+        product.increaseStock(quantity);
+        productRepository.save(product);
     }
 
     /**
@@ -170,12 +151,35 @@ public class ProductService {
      * originalPrice != null : price 이상이어야 함
      */
     public void changeOriginalPrice(Long productId, Integer originalPrice) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+        Product product = findById(productId);
 
         product.changeOriginalPrice(originalPrice);
 
         productRepository.save(product);
+    }
+
+
+
+    private List<Product> findBaseProducts(boolean admin, Long categoryId) {
+        if(categoryId == null) {
+            return productRepository.findAll();
+        }
+
+        // 자손 포함 카테고리 id 구하기
+        List<Long> categoryIds = admin
+                ? categoryService.findAdminDescendantIdsIncludingSelf(categoryId)
+                : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
+
+        // IN 조회
+        return productRepository.findAllByCategoryIdIn(categoryIds);
+    }
+
+    private List<Product> filterVisibleProducts(boolean admin, List<Product> products) {
+        return admin
+                ? products
+                : products.stream()
+                .filter(Product::isPublicVisible)
+                .toList();
     }
 
 
@@ -190,10 +194,10 @@ public class ProductService {
         Comparator<Product> cmp = switch (sort) {
             case "latest" -> Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();       // 상품id가 높으면 최근에 만들어진 것.
             case "price-low" -> Comparator.comparingInt(Product::getPrice)
-                    .thenComparingLong((Product p) -> safeLong(p.getId()));
+                    .thenComparingLong((Product p) -> safeLong(p.getId()));     // 1순위 : 가격 오름차순, 2순위 : id 오름차순
             case "price-high" -> Comparator.comparingInt(Product::getPrice).reversed()
                     .thenComparingLong((Product p) -> safeLong(p.getId()));
-            case "best", "rating" -> Comparator.comparingDouble(Product::ratingKey).reversed()
+            case "best", "rating" -> Comparator.comparingDouble(Product::getRatingValue).reversed()
                     .thenComparingLong((Product p) -> safeLong(p.getId()));
             case "sale" -> Comparator.comparingInt(Product::discountPercent).reversed()
                     .thenComparingLong((Product p) -> safeLong(p.getId()));
@@ -205,7 +209,22 @@ public class ProductService {
     }
 
     private long safeLong(Long v) {
+        // Comparator는 null 비교에서 에러날 수 있음.
         return v == null ? 0L : v;
+    }
+
+    private Product findById(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+    }
+
+    private void validateCreateArgs(Integer price, Integer stock) {
+        if(price == null) {
+            throw new IllegalArgumentException("price는 필수입니다.");
+        }
+        if(stock == null) {
+            throw new IllegalArgumentException("stock은 필수입니다.");
+        }
     }
 
     private void validateOriginalPrice(Integer price, Integer originalPrice) {
@@ -220,6 +239,16 @@ public class ProductService {
 
         if(price != null && originalPrice < price) {
             throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
+        }
+    }
+
+    private void applyStatus(Product product, ProductStatus status) {
+        switch (status) {
+            case READY -> product.ready();
+            case ON_SALE -> product.onSale();
+            case HIDDEN -> product.hide();
+            case DISCONTINUED -> product.discontinue();
+            case SOLD_OUT -> throw new IllegalArgumentException("SOLD_OUT은 직접 변경할 수 없습니다. 재고를 통해 자동 반영됩니다.");
         }
     }
 }

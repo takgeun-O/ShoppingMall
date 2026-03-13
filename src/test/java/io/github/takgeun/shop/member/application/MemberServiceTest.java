@@ -106,7 +106,7 @@ class MemberServiceTest {
         Long memberId = memberService.signup(email, password, name, phone);
 
         // when
-        Member member = memberService.getByEmail(email);
+        Member member = memberService.findByEmail(email);
 
         // then
         assertEquals(1, member.getId());
@@ -122,7 +122,7 @@ class MemberServiceTest {
 
         // then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> memberService.getByEmail("ddd@ddd.com"));
+                () -> memberService.findByEmail("ddd@ddd.com"));
         assertEquals("회원이 존재하지 않습니다.", e.getMessage());
     }
 

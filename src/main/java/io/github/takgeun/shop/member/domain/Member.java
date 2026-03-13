@@ -3,15 +3,19 @@ package io.github.takgeun.shop.member.domain;
 import io.github.takgeun.shop.global.error.ConflictException;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class Member {
     private Long id;
     private String email;
-    private String password;
+    private String password;    // v1 에서는 평문 저장, 추후 DB 붙일 때 password encoder 적용 예정
     private String name;
     private String phone;
     private MemberRole role;
     private MemberStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoginAt;
 
     protected Member() {
     }
@@ -24,6 +28,12 @@ public class Member {
         changePhone(phone);
         this.role = MemberRole.USER;
         this.status = MemberStatus.ACTIVE;
+        this.createdAt = LocalDateTime.now();
+        this.lastLoginAt = null;    // 생성 시점엔 null
+    }
+
+    public static Member create(String email, String password, String name, String phone) {
+        return new Member(email, password, name, phone);
     }
 
     public void assignId(Long id) {
@@ -34,31 +44,6 @@ public class Member {
             throw new ConflictException("id는 이미 할당되었습니다.");
         }
         this.id = id;
-    }
-
-    public static Member create(String email, String password, String name, String phone) {
-        return new Member(email, password, name, phone);
-    }
-
-    /**
-     * 탈퇴 회원을 관리자 화면에서 표시하기 위한 스텁
-     * 정상 가입 로직에서 사용 금지
-     * 유효성 검증 우회 --> 외부 노출/저장에 사용 금지
-     */
-    public static Member deletedStub(Long id) {
-        Member m = new Member();        // protected 기본 생성자 사용 (검증 우회)
-
-        m.id = id;
-
-        m.email = "deleted@unkown";
-        m.password = "**********";
-        m.name = "탈퇴회원";
-        m.phone = "알 수 없음";
-
-        m.role = MemberRole.USER;
-        m.status = MemberStatus.INACTIVE;   // 탈퇴(비활성) 표시
-
-        return m;
     }
 
     public void changeEmail(String email) {
@@ -87,10 +72,7 @@ public class Member {
 
     public void changePassword(String password) {
         // password 필수 검증 (null 체크 + trim() 기준 비어있는지 체크) --> IllegalArgumentException 400 Bad Request
-        if(password == null) {
-            throw new IllegalArgumentException("password는 필수입니다.");
-        }
-        if(password.isEmpty()) {
+        if(password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException("password는 필수입니다.");
         }
 
@@ -140,7 +122,7 @@ public class Member {
             throw new IllegalArgumentException("전화번호의 길이가 너무 깁니다.");
         }
 
-        // 숫자, +, -, 공백만 허용 --> IllegalArgumentException 400 Bad Request
+        // 한국 휴대폰 형식 --> IllegalArgumentException 400 Bad Request
         if(!normalized.matches("^010-\\d{4}-\\d{4}$")) {
             throw  new IllegalArgumentException("전화번호 형식이 올바르지 않습니다.");
         }
@@ -162,13 +144,15 @@ public class Member {
         this.status = status;
     }
 
+    public void activate() {
+        changeStatus(MemberStatus.ACTIVE);
+    }
+
     public void deactivate() {
         changeStatus(MemberStatus.INACTIVE);
     }
 
-    public void activate() {
-        changeStatus(MemberStatus.ACTIVE);
-    }
+    public void withdraw() { changeStatus(MemberStatus.WITHDRAWN); }
 
     public boolean isActive() {
         return this.status == MemberStatus.ACTIVE;
@@ -178,5 +162,14 @@ public class Member {
         return this.role == MemberRole.ADMIN;
     }
 
+    public void updateLastLoginAt() {
+        this.lastLoginAt = LocalDateTime.now();
+    }
 
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        if(lastLoginAt == null) {
+            throw new IllegalArgumentException("lastLoginAt은 필수입니다.");
+        }
+        this.lastLoginAt = lastLoginAt;
+    }
 }

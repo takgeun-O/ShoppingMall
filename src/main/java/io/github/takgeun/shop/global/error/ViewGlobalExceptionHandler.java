@@ -21,6 +21,7 @@ public class ViewGlobalExceptionHandler {
     // 공통: 상태코드 + 뷰 + 메시지 세팅
     private ModelAndView render(HttpStatus status, String viewName, String message, HttpServletRequest request, Exception e) {
 
+        log.error("render viewName={}", viewName);
         log.error("Unhandled exception, status={}, path={}", status.value(), request.getRequestURI(), e);
 
         ModelAndView mv = new ModelAndView(viewName);

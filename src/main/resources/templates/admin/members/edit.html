@@ -1,39 +1,647 @@
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/default :: layout('관리자 정보 수정', ~{::body}, ~{::headExtra}, 'ADMIN')}">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(
+          '회원 정보 수정',
+          ~{::content},
+          'members'
+      )}">
 
-<head>
-    <th:block th:fragment="headExtra">
-        <!-- 필요하면 이 페이지 전용 head 요소 추가 (없으면 비워둬도 OK) -->
-    </th:block>
-</head>
+<th:block th:fragment="content">
+    <div class="p-8">
+        <div class="mx-auto max-w-[1200px]">
 
-<body>
+            <!-- Page Header -->
+            <div class="mb-8">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h1 class="mb-2 text-3xl font-bold text-gray-900">회원 정보 수정</h1>
+                        <p class="text-gray-600">
+                            관리자는 회원 정보를 업데이트하고 계정 상태를 관리할 수 있습니다.
+                        </p>
+                    </div>
 
-<div class="box">
-    <h1>관리자 정보 수정</h1>
+                    <div class="flex gap-3">
+                        <a th:href="@{/admin/members/{id}(id=${member.id})}"
+                           class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0Z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z"/>
+                            </svg>
+                            회원 상세보기
+                        </a>
 
-    <div th:if="${error}" th:text="${error}" class="alert alert-error"></div>
+                        <a th:href="@{/admin/members}"
+                           class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M10.25 19.25 3.75 12l6.5-7.25"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M4 12h16"/>
+                            </svg>
+                            회원 목록
+                        </a>
+                    </div>
+                </div>
 
-    <form th:action="@{/admin/members/me/edit}" th:object="${form}" method="post" class="section">
-        <div class="form-group">
-            <label>이름</label>
-            <input type="text" th:field="*{name}"/>
-            <div class="muted" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                <!-- Change Indicator -->
+                <div id="changeIndicator"
+                     class="hidden rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <div class="flex items-center gap-3">
+                        <svg class="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                  d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 001.73 3h16.9a2 2 0 001.73-3L13.71 3.86a2 2 0 00-3.42 0Z"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900">저장되지 않은 변경사항이 있습니다</p>
+                            <p class="text-xs text-amber-700">변경사항을 저장하려면 "저장" 버튼을 클릭하세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <form th:action="@{/admin/members/{id}/edit(id=${member.id})}"
+                  th:object="${form}"
+                  method="post"
+                  id="memberEditForm">
+
+                <!-- Member Edit Card -->
+                <div class="mb-6 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+
+                    <!-- Basic Information Section -->
+                    <div class="mb-8">
+                        <h3 class="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900">
+                            기본 정보
+                            <span class="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                회원 ID:
+                                <span class="ml-1" th:text="${member.id}">1</span>
+                            </span>
+                        </h3>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+                            <!-- Name -->
+                            <div>
+                                <label for="name" class="mb-2 block text-sm font-semibold text-gray-700">
+                                    이름 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       id="name"
+                                       th:field="*{name}"
+                                       data-original-field
+                                       th:attr="data-original=${form.name}"
+                                       placeholder="회원 이름 입력"
+                                       class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"/>
+                                <p class="mt-1 hidden text-xs text-blue-600 field-modified-message">
+                                    수정됨
+                                </p>
+                                <p th:if="${#fields.hasErrors('name')}"
+                                   th:errors="*{name}"
+                                   class="mt-1 text-xs text-red-600">이름 오류</p>
+                            </div>
+
+                            <!-- Email readonly -->
+                            <div>
+                                <label for="email" class="mb-2 block text-sm font-semibold text-gray-700">
+                                    이메일
+                                    <span class="ml-2 inline-flex rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                        읽기 전용
+                                    </span>
+                                </label>
+                                <input type="email"
+                                       id="email"
+                                       th:value="${member.email}"
+                                       readonly
+                                       class="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 shadow-sm"/>
+                                <p class="mt-1 text-xs text-gray-500">이메일은 변경할 수 없습니다.</p>
+                            </div>
+
+                            <!-- Phone -->
+                            <div>
+                                <label for="phone" class="mb-2 block text-sm font-semibold text-gray-700">
+                                    전화번호 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       id="phone"
+                                       th:field="*{phone}"
+                                       data-original-field
+                                       th:attr="data-original=${form.phone}"
+                                       placeholder="010-0000-0000"
+                                       class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-200"/>
+                                <p class="mt-1 hidden text-xs text-blue-600 field-modified-message">
+                                    수정됨
+                                </p>
+                                <p th:if="${#fields.hasErrors('phone')}"
+                                   th:errors="*{phone}"
+                                   class="mt-1 text-xs text-red-600">전화번호 오류</p>
+                            </div>
+
+                            <!-- Join Date readonly -->
+                            <div>
+                                <label for="joinDate" class="mb-2 block text-sm font-semibold text-gray-700">
+                                    가입일
+                                    <span class="ml-2 inline-flex rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                        읽기 전용
+                                    </span>
+                                </label>
+                                <input type="text"
+                                       id="joinDate"
+                                       th:value="${member.joinDate}"
+                                       readonly
+                                       class="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 shadow-sm"/>
+                            </div>
+
+                            <!-- Last Login readonly -->
+                            <div class="md:col-span-2">
+                                <label for="lastLogin" class="mb-2 block text-sm font-semibold text-gray-700">
+                                    마지막 로그인
+                                    <span class="ml-2 inline-flex rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                        읽기 전용
+                                    </span>
+                                </label>
+                                <input type="text"
+                                       id="lastLogin"
+                                       th:value="${member.lastLogin != null ? member.lastLogin : '-'}"
+                                       readonly
+                                       class="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600 shadow-sm"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="my-8 border-t border-gray-200"></div>
+
+                    <!-- Member Status Section -->
+                    <div class="mb-8">
+                        <h3 class="mb-6 text-xl font-bold text-gray-900">회원 상태 관리</h3>
+
+                        <div class="space-y-3">
+                            <!-- ACTIVE -->
+                            <label class="block cursor-pointer">
+                                <input type="radio"
+                                       th:field="*{status}"
+                                       value="ACTIVE"
+                                       class="peer sr-only"
+                                       data-original-field
+                                       th:attr="data-original=${form.status}">
+                                <div class="status-option rounded-lg border-2 border-gray-200 p-4 text-left transition peer-checked:border-gray-900 peer-checked:bg-gray-50 hover:border-gray-400 hover:bg-gray-50">
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300 peer-checked:border-gray-900 peer-checked:bg-gray-900">
+                                                <div class="hidden h-2 w-2 rounded-full bg-white peer-checked:block"></div>
+                                            </div>
+                                            <span class="font-semibold text-gray-900">활성</span>
+                                            <span class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">ACTIVE</span>
+                                        </div>
+                                    </div>
+                                    <p class="ml-8 text-sm text-gray-600">정상적으로 활동 중인 회원입니다.</p>
+                                </div>
+                            </label>
+
+                            <!-- INACTIVE -->
+                            <label class="block cursor-pointer">
+                                <input type="radio"
+                                       th:field="*{status}"
+                                       value="INACTIVE"
+                                       class="peer sr-only"
+                                       data-original-field
+                                       th:attr="data-original=${form.status}">
+                                <div class="status-option rounded-lg border-2 border-gray-200 p-4 text-left transition peer-checked:border-gray-900 peer-checked:bg-gray-50 hover:border-gray-400 hover:bg-gray-50">
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300 peer-checked:border-gray-900 peer-checked:bg-gray-900">
+                                                <div class="hidden h-2 w-2 rounded-full bg-white peer-checked:block"></div>
+                                            </div>
+                                            <span class="font-semibold text-gray-900">휴면</span>
+                                            <span class="inline-flex rounded-full bg-gray-600 px-3 py-1 text-xs font-semibold text-white">INACTIVE</span>
+                                        </div>
+                                    </div>
+                                    <p class="ml-8 text-sm text-gray-600">장기간 미사용으로 휴면 상태인 회원입니다.</p>
+                                </div>
+                            </label>
+
+                            <!-- WITHDRAWN -->
+                            <label class="block cursor-pointer">
+                                <input type="radio"
+                                       th:field="*{status}"
+                                       value="WITHDRAWN"
+                                       class="peer sr-only"
+                                       data-original-field
+                                       th:attr="data-original=${form.status}">
+                                <div class="status-option rounded-lg border-2 border-gray-200 p-4 text-left transition peer-checked:border-gray-900 peer-checked:bg-gray-50 hover:border-gray-400 hover:bg-gray-50">
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300 peer-checked:border-gray-900 peer-checked:bg-gray-900">
+                                                <div class="hidden h-2 w-2 rounded-full bg-white peer-checked:block"></div>
+                                            </div>
+                                            <span class="font-semibold text-gray-900">탈퇴</span>
+                                            <span class="inline-flex rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">WITHDRAWN</span>
+                                        </div>
+                                    </div>
+                                    <p class="ml-8 text-sm text-gray-600">탈퇴 처리된 회원입니다.</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <p th:if="${#fields.hasErrors('status')}"
+                           th:errors="*{status}"
+                           class="mt-2 text-xs text-red-600">상태 오류</p>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="my-8 border-t border-gray-200"></div>
+
+                    <!-- Order Statistics -->
+                    <div>
+                        <h3 class="mb-6 text-xl font-bold text-gray-900">
+                            주문 통계
+                            <span class="ml-3 inline-flex rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+                                읽기 전용
+                            </span>
+                        </h3>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+                            <!-- Total Orders -->
+                            <div class="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5">
+                                <div class="mb-3 flex items-center gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                                  d="M3 3h2l.4 2m0 0L7 13h10l2-8H5.4Z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                                  d="M7 13 5.4 5M7 13l-1 5h12M9 21a1 1 0 100-2 1 1 0 000 2Zm9 0a1 1 0 100-2 1 1 0 000 2Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-sm text-gray-600">총 주문 수</p>
+                                        <p class="text-2xl font-bold text-gray-900">
+                                            <span th:text="${member.totalOrders}">0</span>건
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Spent -->
+                            <div class="rounded-xl border border-green-100 bg-gradient-to-br from-green-50 to-white p-5">
+                                <div class="mb-3 flex items-center gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                                  d="M12 6v12m4-8a4 4 0 0 0-4-2 4 4 0 0 0 0 8 4 4 0 0 1 0 8"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-sm text-gray-600">총 구매 금액</p>
+                                        <p class="text-2xl font-bold text-gray-900"
+                                           th:text="${#numbers.formatInteger(member.totalSpent, 3, 'COMMA') + '원'}">
+                                            0원
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Order Date -->
+                            <div class="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-5">
+                                <div class="mb-3 flex items-center gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
+                                        <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                                  d="M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-sm text-gray-600">최근 주문일</p>
+                                        <p class="text-2xl font-bold text-gray-900"
+                                           th:text="${member.lastOrderDate != null ? member.lastOrderDate : '-'}">
+                                            -
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                    <h3 class="mb-4 text-lg font-bold text-gray-900">관리자 작업</h3>
+
+                    <div class="flex flex-wrap gap-3">
+                        <button type="button"
+                                id="saveButton"
+                                class="inline-flex items-center rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300">
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M17 3H5a2 2 0 0 0-2 2v14l4-4h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"/>
+                            </svg>
+                            변경사항 저장
+                        </button>
+
+                        <a th:href="@{/admin/members/{id}(id=${member.id})}"
+                           id="cancelButton"
+                           class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="m6 6 12 12M18 6 6 18"/>
+                            </svg>
+                            취소
+                        </a>
+
+                        <button type="button"
+                                id="withdrawButton"
+                                class="ml-auto inline-flex items-center rounded-lg border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-600 shadow-sm transition hover:border-red-600 hover:bg-red-50">
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                      d="M18 6 6 18M6 6l12 12"/>
+                            </svg>
+                            회원 탈퇴 처리
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <div class="form-group">
-            <label>전화번호</label>
-            <input type="text" th:field="*{phone}"/>
-            <div class="muted" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+    <!-- Status Change Confirmation Modal -->
+    <div id="statusConfirmModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div class="mb-4">
+                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                    <svg class="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.73 3h16.9a2 2 0 0 0 1.73-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+                    </svg>
+                </div>
+                <h3 class="mb-2 text-center text-xl font-bold text-gray-900">회원 상태 변경 확인</h3>
+                <p class="text-center text-gray-600">
+                    회원 상태를 변경하시겠습니까?
+                </p>
+            </div>
+
+            <div class="mb-6 rounded-lg bg-gray-50 p-4">
+                <div class="mb-2 flex items-center justify-between">
+                    <span class="text-sm text-gray-600">현재 상태:</span>
+                    <span id="currentStatusBadge"
+                          class="inline-flex rounded-full bg-gray-600 px-3 py-1 text-xs font-semibold text-white">
+                        현재 상태
+                    </span>
+                </div>
+
+                <div class="my-2 flex items-center justify-center">
+                    <svg class="h-4 w-4 -rotate-90 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M19.25 12H4.75m0 0 6.5-6.5m-6.5 6.5 6.5 6.5"/>
+                    </svg>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">변경 후:</span>
+                    <span id="newStatusBadge"
+                          class="inline-flex rounded-full bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
+                        변경 후 상태
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button"
+                        id="closeStatusModalButton"
+                        class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                    취소
+                </button>
+                <button type="button"
+                        id="confirmStatusSaveButton"
+                        class="flex-1 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800">
+                    확인
+                </button>
+            </div>
         </div>
+    </div>
 
-        <div class="flex gap-3">
-            <button class="btn btn-primary" type="submit">저장</button>
-            <a class="btn btn-outline" th:href="@{/admin/members/me}">취소</a>
+    <!-- Withdraw Confirmation Modal -->
+    <div id="withdrawConfirmModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div class="mb-4">
+                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                              d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </div>
+
+                <h3 class="mb-2 text-center text-xl font-bold text-gray-900">회원 탈퇴 처리</h3>
+                <p class="mb-4 text-center text-gray-600">
+                    해당 회원을 탈퇴 처리하시겠습니까?
+                </p>
+
+                <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p class="mb-1 text-sm font-semibold text-red-800">⚠️ 주의사항</p>
+                    <ul class="space-y-1 text-xs text-red-700">
+                        <li>• 탈퇴 처리 후에는 로그인이 불가능합니다.</li>
+                        <li>• 주문 내역은 유지되지만 활동이 제한됩니다.</li>
+                        <li>• 정책에 따라 재활성화 가능 여부를 별도로 판단해야 합니다.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button"
+                        id="closeWithdrawModalButton"
+                        class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                    취소
+                </button>
+                <button type="button"
+                        id="confirmWithdrawButton"
+                        class="flex-1 rounded-lg bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">
+                    탈퇴 처리
+                </button>
+            </div>
         </div>
-    </form>
-</div>
+    </div>
 
-</body>
+    <script th:inline="javascript">
+        const form = document.getElementById('memberEditForm');
+        const changeIndicator = document.getElementById('changeIndicator');
+        const saveButton = document.getElementById('saveButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const withdrawButton = document.getElementById('withdrawButton');
+
+        const statusConfirmModal = document.getElementById('statusConfirmModal');
+        const closeStatusModalButton = document.getElementById('closeStatusModalButton');
+        const confirmStatusSaveButton = document.getElementById('confirmStatusSaveButton');
+
+        const withdrawConfirmModal = document.getElementById('withdrawConfirmModal');
+        const closeWithdrawModalButton = document.getElementById('closeWithdrawModalButton');
+        const confirmWithdrawButton = document.getElementById('confirmWithdrawButton');
+
+        const currentStatusBadge = document.getElementById('currentStatusBadge');
+        const newStatusBadge = document.getElementById('newStatusBadge');
+
+        const originalStatus = /*[[${form.status}]]*/ 'ACTIVE';
+
+        const statusLabelMap = {
+            ACTIVE: '활성',
+            INACTIVE: '휴면',
+            WITHDRAWN: '탈퇴'
+        };
+
+        const statusClassMap = {
+            ACTIVE: 'bg-green-600',
+            INACTIVE: 'bg-gray-600',
+            WITHDRAWN: 'bg-red-600'
+        };
+
+        function getSelectedStatus() {
+            const checked = document.querySelector('input[name="status"]:checked');
+            return checked ? checked.value : null;
+        }
+
+        function isChanged() {
+            const fields = document.querySelectorAll('[data-original-field]');
+            let changed = false;
+
+            fields.forEach(field => {
+                const original = field.dataset.original ?? '';
+                let current;
+
+                if (field.type === 'radio') {
+                    if (!field.checked) return;
+                    current = field.value;
+                } else {
+                    current = field.value;
+                }
+
+                if (String(original) !== String(current)) {
+                    changed = true;
+                }
+            });
+
+            return changed;
+        }
+
+        function updateModifiedFields() {
+            document.querySelectorAll('[data-original-field]').forEach(field => {
+                if (field.type === 'radio') return;
+
+                const wrapper = field.parentElement;
+                const message = wrapper.querySelector('.field-modified-message');
+                const original = field.dataset.original ?? '';
+                const current = field.value ?? '';
+
+                if (String(original) !== String(current)) {
+                    field.classList.add('ring-2', 'ring-blue-500', 'border-blue-500', 'bg-blue-50');
+                    if (message) message.classList.remove('hidden');
+                } else {
+                    field.classList.remove('ring-2', 'ring-blue-500', 'border-blue-500', 'bg-blue-50');
+                    if (message) message.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateChangeIndicator() {
+            const changed = isChanged();
+
+            if (changed) {
+                changeIndicator.classList.remove('hidden');
+                saveButton.disabled = false;
+            } else {
+                changeIndicator.classList.add('hidden');
+                saveButton.disabled = true;
+            }
+        }
+
+        function openModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function updateStatusModal() {
+            const selectedStatus = getSelectedStatus();
+
+            currentStatusBadge.textContent = statusLabelMap[originalStatus];
+            currentStatusBadge.className = 'inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white ' + statusClassMap[originalStatus];
+
+            newStatusBadge.textContent = statusLabelMap[selectedStatus];
+            newStatusBadge.className = 'inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white ' + statusClassMap[selectedStatus];
+        }
+
+        form.addEventListener('input', () => {
+            updateModifiedFields();
+            updateChangeIndicator();
+        });
+
+        form.addEventListener('change', () => {
+            updateModifiedFields();
+            updateChangeIndicator();
+        });
+
+        saveButton.addEventListener('click', () => {
+            if (!isChanged()) {
+                alert('변경된 내용이 없습니다.');
+                return;
+            }
+
+            const selectedStatus = getSelectedStatus();
+
+            if (selectedStatus !== originalStatus) {
+                updateStatusModal();
+                openModal(statusConfirmModal);
+                return;
+            }
+
+            form.submit();
+        });
+
+        confirmStatusSaveButton.addEventListener('click', () => {
+            closeModal(statusConfirmModal);
+            form.submit();
+        });
+
+        closeStatusModalButton.addEventListener('click', () => {
+            closeModal(statusConfirmModal);
+        });
+
+        withdrawButton.addEventListener('click', () => {
+            openModal(withdrawConfirmModal);
+        });
+
+        closeWithdrawModalButton.addEventListener('click', () => {
+            closeModal(withdrawConfirmModal);
+        });
+
+        confirmWithdrawButton.addEventListener('click', () => {
+            const withdrawnRadio = document.querySelector('input[name="status"][value="WITHDRAWN"]');
+            if (withdrawnRadio) {
+                withdrawnRadio.checked = true;
+            }
+            closeModal(withdrawConfirmModal);
+            updateChangeIndicator();
+            updateStatusModal();
+            openModal(statusConfirmModal);
+        });
+
+        cancelButton.addEventListener('click', function (e) {
+            if (isChanged()) {
+                const confirmed = confirm('변경사항이 저장되지 않았습니다. 정말 취소하시겠습니까?');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        updateModifiedFields();
+        updateChangeIndicator();
+    </script>
+</th:block>
 </html>

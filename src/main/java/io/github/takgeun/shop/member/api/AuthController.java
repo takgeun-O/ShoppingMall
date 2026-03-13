@@ -46,7 +46,7 @@ public class AuthController {
                                       HttpServletRequest httpRequest
     ) {
         Long memberId = authService.login(request.getEmail(), request.getPassword());
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
 
         // 세션 생성(없을 때) -> 로그인 때는 세션이 없으면 만들어야 함.
         HttpSession session = httpRequest.getSession(true);

@@ -1,9 +1,9 @@
 package io.github.takgeun.shop.global.init;
 
-import io.github.takgeun.shop.cart.infra.SessionCartRepository;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
+import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.order.view.form.CheckoutForm;
@@ -27,7 +27,6 @@ public class TestDataInitializer implements ApplicationRunner {
     private final ProductService productService;
     private final MemberService memberService;
     private final OrderService orderService;
-    private final SessionCartRepository cartRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -45,20 +44,20 @@ public class TestDataInitializer implements ApplicationRunner {
         // 카테고리 (2단까지만 허용)
         // =========================
         Long electronics = categoryService.create("전자", null);
-        Long furniture   = categoryService.create("가구", null);
-        Long clothing    = categoryService.create("의류", null);
+        Long furniture = categoryService.create("가구", null);
+        Long clothing = categoryService.create("의류", null);
 
-        Long computer   = categoryService.create("컴퓨터", electronics);
-        Long phone      = categoryService.create("휴대폰", electronics);
-        Long accessory  = categoryService.create("주변기기", electronics);
+        Long computer = categoryService.create("컴퓨터", electronics);
+        Long phone = categoryService.create("휴대폰", electronics);
+        Long accessory = categoryService.create("주변기기", electronics);
 
-        Long seating    = categoryService.create("의자", furniture);
-        Long bed        = categoryService.create("침대", furniture);
-        Long storage    = categoryService.create("수납가구", furniture);
+        Long seating = categoryService.create("의자", furniture);
+        Long bed = categoryService.create("침대", furniture);
+        Long storage = categoryService.create("수납가구", furniture);
 
-        Long tops       = categoryService.create("상의", clothing);
-        Long bottoms    = categoryService.create("하의", clothing);
-        Long outerwear  = categoryService.create("아우터", clothing);
+        Long tops = categoryService.create("상의", clothing);
+        Long bottoms = categoryService.create("하의", clothing);
+        Long outerwear = categoryService.create("아우터", clothing);
 
         // =========================
         // 상품
@@ -126,10 +125,10 @@ public class TestDataInitializer implements ApplicationRunner {
                 "미니 PC",
                 900_000,
                 0,
-                "재고 0 테스트",
+                "품절 상태 테스트",
                 img("mini-pc"),
                 null,
-                ProductStatus.ON_SALE
+                ProductStatus.SOLD_OUT
         );
 
         Long qhdMonitorId = createProduct(
@@ -163,7 +162,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 "품절 상태 (재고 0)",
                 img("iphone"),
                 null,
-                ProductStatus.ON_SALE
+                ProductStatus.SOLD_OUT
         );
 
         Long galaxyId = createProduct(
@@ -219,7 +218,7 @@ public class TestDataInitializer implements ApplicationRunner {
                 "품절 테스트",
                 img("headset"),
                 null,
-                ProductStatus.ON_SALE
+                ProductStatus.SOLD_OUT
         );
 
         // 가구 > 의자
@@ -337,6 +336,18 @@ public class TestDataInitializer implements ApplicationRunner {
                 null,
                 ProductStatus.READY
         );
+
+        // 사용만 하고 경고 안 나게
+        Long unused1 = electronicsTestId;
+        Long unused2 = readyLaptopId;
+        Long unused3 = miniPcId;
+        Long unused4 = hiddenMonitorId;
+        Long unused5 = iphoneId;
+        Long unused6 = readyPhoneId;
+        Long unused7 = headsetId;
+        Long unused8 = hiddenDiningId;
+        Long unused9 = bedId;
+        Long unused10 = readyOuterId;
 
         // =========================
         // 주문 더미
@@ -532,6 +543,161 @@ public class TestDataInitializer implements ApplicationRunner {
                         "주말 전 배송 부탁드립니다."
                 )
         );
+
+        // =========================
+        // 회원관리 페이징 테스트용 추가 회원/주문 더미
+        // =========================
+        initMemberPagingTestData(
+                macbookId,
+                mouseId,
+                qhdMonitorId,
+                keyboardId,
+                galaxyId,
+                tshirtId,
+                jeansId,
+                storageId,
+                meshChairId
+        );
+    }
+
+    private void initMemberPagingTestData(
+            Long macbookId,
+            Long mouseId,
+            Long qhdMonitorId,
+            Long keyboardId,
+            Long galaxyId,
+            Long tshirtId,
+            Long jeansId,
+            Long storageId,
+            Long meshChairId
+    ) {
+        for (int i = 3; i <= 26; i++) {
+            String email = "paging" + i + "@test.com";
+            String name = buildMemberName(i);
+            String phone = String.format("010-2000-%04d", i);
+
+            Long memberId = memberService.signup(email, "pw12341234!", name, phone);
+
+            // 주문은 ACTIVE 상태일 때만 먼저 생성
+            if (i % 2 == 0) {
+                orderService.checkout(
+                        memberId,
+                        List.of(CheckoutItem.of(mouseId, 1)),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "04524",
+                                "서울특별시 중구 세종대로 " + i,
+                                i + "층",
+                                null
+                        )
+                );
+            }
+
+            if (i % 3 == 0) {
+                orderService.checkout(
+                        memberId,
+                        List.of(
+                                CheckoutItem.of(tshirtId, 2),
+                                CheckoutItem.of(jeansId, 1)
+                        ),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "06236",
+                                "서울특별시 강남구 테헤란로 " + (100 + i),
+                                (i % 5 + 1) + "01호",
+                                "부재 시 문 앞에 놓아주세요"
+                        )
+                );
+            }
+
+            if (i % 5 == 0) {
+                orderService.checkout(
+                        memberId,
+                        List.of(
+                                CheckoutItem.of(qhdMonitorId, 1),
+                                CheckoutItem.of(keyboardId, 1)
+                        ),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "04157",
+                                "서울특별시 마포구 월드컵북로 " + i,
+                                "A동 " + (200 + i) + "호",
+                                "평일 오후 배송 희망"
+                        )
+                );
+            }
+
+            if (i == 7 || i == 13 || i == 19) {
+                orderService.checkout(
+                        memberId,
+                        List.of(CheckoutItem.of(galaxyId, 1)),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "48058",
+                                "부산광역시 해운대구 센텀동로 " + i,
+                                "센텀빌딩 " + i + "층",
+                                "빠른 배송 부탁드립니다."
+                        )
+                );
+            }
+
+            if (i == 9 || i == 15 || i == 21) {
+                orderService.checkout(
+                        memberId,
+                        List.of(
+                                CheckoutItem.of(storageId, 1),
+                                CheckoutItem.of(meshChairId, 1)
+                        ),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "35229",
+                                "대전광역시 서구 둔산로 " + i,
+                                "오피스텔 " + i + "01호",
+                                null
+                        )
+                );
+            }
+
+            if (i == 11 || i == 17) {
+                orderService.checkout(
+                        memberId,
+                        List.of(CheckoutItem.of(macbookId, 1)),
+                        checkoutForm(
+                                name,
+                                phone,
+                                "13529",
+                                "경기도 성남시 분당구 판교역로 " + i,
+                                "테크노밸리 " + i + "층",
+                                "파손 주의"
+                        )
+                );
+            }
+
+            // 마지막에 상태 변경
+            if (i % 10 == 0) {
+                memberService.changeStatus(memberId, MemberStatus.WITHDRAWN);
+            } else if (i % 4 == 0) {
+                memberService.changeStatus(memberId, MemberStatus.INACTIVE);
+            }
+        }
+    }
+
+    private String buildMemberName(int index) {
+        return switch (index % 8) {
+            case 0 -> "김테스트" + index;
+            case 1 -> "이페이징" + index;
+            case 2 -> "박회원" + index;
+            case 3 -> "최사용자" + index;
+            case 4 -> "정관리확인" + index;
+            case 5 -> "한목록" + index;
+            case 6 -> "윤검색" + index;
+            default -> "장샘플" + index;
+        };
     }
 
     private Long createProduct(

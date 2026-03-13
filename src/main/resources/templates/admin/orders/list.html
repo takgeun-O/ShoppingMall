@@ -159,7 +159,7 @@
             </div>
 
             <!-- Summary Stats -->
-            <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-6">
+            <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
                 <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="mb-1 text-xs text-gray-600">전체 주문</p>
                     <p class="text-xl font-bold text-gray-900"
@@ -194,6 +194,12 @@
                     <p class="mb-1 text-xs text-gray-600">배송완료</p>
                     <p class="text-xl font-bold text-green-600"
                        th:text="${summary.deliveredCount}">3</p>
+                </div>
+
+                <div class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-red-700">주문취소</p>
+                    <p class="text-xl font-bold text-red-600"
+                       th:text="${summary.canceledCount}">1</p>
                 </div>
             </div>
 

@@ -2,147 +2,209 @@ package io.github.takgeun.shop.member.view;
 
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
-import io.github.takgeun.shop.member.application.MemberService;
-import io.github.takgeun.shop.member.domain.Member;
+import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
+import io.github.takgeun.shop.global.validation.ValidationGroups;
+import io.github.takgeun.shop.member.application.AdminMemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
-import io.github.takgeun.shop.member.view.form.MemberEditForm;
-import jakarta.servlet.http.HttpServletRequest;
+import io.github.takgeun.shop.member.dto.request.AdminMemberStatusUpdateRequest;
+import io.github.takgeun.shop.member.dto.request.AdminMemberUpdateRequest;
+import io.github.takgeun.shop.member.view.dto.admin.AdminMemberDetailView;
+import io.github.takgeun.shop.member.view.dto.admin.AdminMemberEditView;
+import io.github.takgeun.shop.member.view.dto.admin.AdminMemberPageView;
+import io.github.takgeun.shop.member.view.form.admin.AdminMemberEditForm;
+import io.github.takgeun.shop.member.view.form.admin.AdminMemberSearchCondition;
+import io.github.takgeun.shop.member.view.form.admin.AdminMemberStatusForm;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.nio.charset.StandardCharsets;
-
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/members")
 public class AdminMemberViewController {
 
-    private final MemberService memberService;
+    private final AdminMemberService adminMemberService;
 
     /**
-     * 관리자 마이 페이지 조회
-     * GET /admin/members/me
+     * 관리자 회원 관리 페이지
+     * GET /admin/members
      */
-    @GetMapping("/me")
-    public String me(HttpServletRequest request, Model model) {
+    @GetMapping
+    public String members(
+            @RequestParam(required = false) String nameQuery,
+            @RequestParam(required = false) String emailQuery,
+            @RequestParam(required = false, defaultValue = "ALL") String statusFilter,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer pageSize,      // 뷰에서 안 넘어오는데 사실상 10으로 고정해서 쓸 것
+            Model model,
+            HttpSession session
+    ) {
 
-        Long memberId = getLoginMemberId(request);
-        if(memberId == null) {
-            return redirectToLoginWithNext(request);    // 로그인 실패 시 로그인폼 이동
-        }
+        requireAdmin(session);
 
-        Member member = memberService.get(memberId);
-        model.addAttribute("member", member);
-        return "admin/members/me";
+        log.info("관리자 회원 관리 페이지 진입");
+
+        AdminMemberSearchCondition searchCondition = AdminMemberSearchCondition.of(
+                nameQuery,
+                emailQuery,
+                statusFilter,
+                page,
+                pageSize
+        );
+
+        AdminMemberPageView pageView = adminMemberService.getAdminMemberPage(searchCondition);
+
+        // model.addAttribute("totalMemberCount", totalMemberCount) ...
+        // 위 방식처럼 pageView를 잘게 쪼개서 뷰로 내려보내면 컨트롤러도 지저분해지고 뷰 입장에서 어디서 내려온 데이터인지 구분이 쉽지 않음.
+        // 나중에 summary에 항목이 추가되면 컨트롤러와 뷰를 같이 수정해야 할 일이 발생함. (뷰에서 계산하면 뷰만 수정하면 됨)
+        // 아래처럼 통째로 pageView를 보내서 뷰에서 계산해주는 게 더 낫다.
+        model.addAttribute("pageView", pageView);
+        model.addAttribute("searchCondition", searchCondition);
+
+        return "admin/members/list";
     }
 
     /**
-     * 관리자 마이페이지 수정폼
-     * GET /admin/members/me/edit
+     * 관리자 회원 상세보기 페이지
+     * GET /admin/members/{memberId}
      */
-    @GetMapping("/me/edit")
-    public String editForm(HttpServletRequest request, Model model) {
+    @GetMapping("/{memberId}")
+    public String memberDetail(@PathVariable Long memberId,
+                               Model model,
+                               HttpSession session) {
 
-        // 로그인 유효 확인
-        Long memberId = getLoginMemberId(request);
-        if(memberId == null) {
-            return redirectToLoginWithNext(request);
-        }
+        requireAdmin(session);
 
-        Member member = memberService.get(memberId);
+        log.info("관리자 회원 상세 페이지 진입, memberId={}", memberId);
 
-        MemberEditForm form = new MemberEditForm();
-        form.setName(member.getName());
-        form.setPhone(member.getPhone());
+        AdminMemberDetailView member = adminMemberService.getAdminMemberDetail(memberId);
+        model.addAttribute("member", member);
 
+        return "admin/members/detail";
+    }
+
+    /**
+     * 관리자 회원 수정 페이지
+     * GET /admin/members/{memberId}/edit
+     */
+    @GetMapping("/{memberId}/edit")
+    public String editMemberForm(@PathVariable Long memberId,
+                                 Model model,
+                                 HttpSession session) {
+
+        requireAdmin(session);
+
+        log.info("관리자 회원 수정 페이지 진입, memberId={}", memberId);
+
+        AdminMemberEditView member = adminMemberService.getAdminMemberEditView(memberId);   // 읽기 전용 표시용 (id, email, joinDate, lastLogin, totalOrders, totalSpent, lastOrderDate)
+        AdminMemberEditForm form = AdminMemberEditForm.from(member);                        // 실제 수정용 (name, phone, status)
+
+        model.addAttribute("member", member);
         model.addAttribute("form", form);
+
         return "admin/members/edit";
     }
 
     /**
-     * 관리자 마이페이지 수정 처리
+     * 관리자 회원 수정 처리 (회원 수정 페이지에서 행하는 모든 수정 처리)
+     * POST /admin/members/{memberId}/edit
      */
-    @PostMapping("/me/edit")
-    public String edit(@Valid @ModelAttribute("form") MemberEditForm form,
-                       BindingResult bindingResult,
-                       HttpServletRequest request,
-                       RedirectAttributes ra) {
+    @PostMapping("/{memberId}/edit")
+    public String editMember(@PathVariable Long memberId,
+                             @Validated(CheckoutValidationSequence.class) @ModelAttribute("form") AdminMemberEditForm form,
+                             BindingResult bindingResult,
+                             Model model,
+                             HttpSession session,
+                             RedirectAttributes ra) {
 
-        Long memberId = getLoginMemberId(request);
-        if(memberId == null) {
-            return redirectToLoginWithNext(request);
-        }
+        requireAdmin(session);
+
+        log.info("관리자 회원 수정 처리 memberId={}", memberId);
 
         if(bindingResult.hasErrors()) {
+            AdminMemberEditView member = adminMemberService.getAdminMemberEditView(memberId);
+            model.addAttribute("member", member);
+            model.addAttribute("form", form);
             return "admin/members/edit";
         }
 
-        // 비밀번호 변경은 별도 UI상에서 분리할 예정 (여기서는 name, phone만 변경)
-        memberService.updateProfile(memberId, form.getName(), null, form.getPhone());
+        // 서비스 호출용 DTO (이름, 폰번호, 상태만 변경)
+        AdminMemberUpdateRequest request = AdminMemberUpdateRequest.of(
+                form.getName(),
+                form.getPhone(),
+                form.getStatus()
+        );
 
-        ra.addFlashAttribute("success", "관리자 정보가 수정되었습니다.");
-        return "redirect:/admin/members/me";
+        adminMemberService.updateMember(memberId, request);
+
+        ra.addFlashAttribute("success", "회원 정보가 수정되었습니다.");
+        return "redirect:/admin/members/" + memberId;
     }
 
     /**
-     * 관리자 비활성화
+     * 관리자 회원 상태 변경 처리 (회원 상세정보 페이지에서 바꾸는 것)
+     * POST /admin/members/{memberId}/status
      */
-    @PostMapping("/me/deactivate")
-    public String deactivate(HttpServletRequest request, RedirectAttributes ra) {
-        Long memberId = getLoginMemberId(request);
-        if(memberId == null) {
-            return redirectToLoginWithNext(request);
+    @PostMapping("/{memberId}/status")
+    public String changeMemberStatus(
+            @PathVariable Long memberId,
+            @Valid @ModelAttribute("form") AdminMemberStatusForm form,
+            BindingResult bindingResult,
+            HttpSession session,
+            RedirectAttributes ra) {
+
+        requireAdmin(session);
+
+        log.info("관리자 회원 상태 변경 처리, memberId={}, status={}", memberId, form.getStatus());
+
+        if(bindingResult.hasErrors()) {
+            ra.addFlashAttribute("error", "회원 상태 변경 요청이 올바르지 않습니다.");
+            return "redirect:/admin/members/" + memberId;
         }
 
-        Member member = memberService.get(memberId);
-        if(member == null || member.getRole() != MemberRole.ADMIN) {
-            throw new ForbiddenException("관리자 권한이 필요합니다.");
-        }
+        AdminMemberStatusUpdateRequest request = AdminMemberStatusUpdateRequest.of(form.getStatus());
+        adminMemberService.changeMemberStatus(memberId, request);
 
-        memberService.deactivate(memberId);
-
-        // 세션 종료시키기
-        HttpSession session = request.getSession(false);
-        if(session != null) {
-            session.invalidate();
-        }
-
-        ra.addFlashAttribute("success", "관리자 비활성화 처리되었습니다.");
-        return "redirect:/";
+        ra.addFlashAttribute("success", "회원 상태가 변경되었습니다.");
+        return "redirect:/admin/members/" + memberId;
     }
 
+    /**
+     * 관리자 회원 탈퇴 (회원 상세정보 페이지에서 탈퇴 처리)
+     * POST /admin/members/{memberId}/withdraw
+     */
+    @PostMapping("/{memberId}/withdraw")
+    public String withdrawMember(
+            @PathVariable Long memberId,
+            HttpSession session,
+            RedirectAttributes ra) {
 
-    // 헬퍼 메소드
+        requireAdmin(session);
 
-    private Long getLoginMemberId(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if(session == null) return null;
+        log.info("관리자 회원 탈퇴 처리(회원상세정보페이지), memberId={}", memberId);
 
-        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        return (idObj instanceof Long id) ? id : null;
+        adminMemberService.withdrawMember(memberId);
+
+        ra.addFlashAttribute("success", "회원이 탈퇴 처리되었습니다.");
+        return "redirect:/admin/members/" + memberId;
     }
 
-    private String redirectToLoginWithNext(HttpServletRequest request) {
-        String uri = request.getRequestURI();
-        String query = request.getQueryString();
-        String next = (query == null) ? uri : (uri + "?" + query);
+    private void requireAdmin(HttpSession session) {
 
-        String url = UriComponentsBuilder.fromPath("/login")
-                .queryParam("next", next)
-                .build()
-                .encode(StandardCharsets.UTF_8)
-                .toUriString();
-
-        return "redirect:" + url;
+        if(session == null) {
+            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
+        }
+        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
+        if(!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
+            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
+        }
     }
 }

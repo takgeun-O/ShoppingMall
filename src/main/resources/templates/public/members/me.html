@@ -164,11 +164,8 @@
                                     289,000원
                                 </p>
                                 <span class="px-2 py-1 text-xs rounded text-white"
-                                      th:text="${order.status}"
-                                      th:classappend="
-                                      ${order.status.name() == 'SHIPPING'} ? ' bg-green-600' :
-                                      (${order.status.name() == 'COMPLETED'} ? ' bg-gray-600' :
-                                      ' bg-blue-600')">
+                                      th:text="${order.statusLabel}"
+                                      th:classappend="' ' + ${order.statusBadgeClass}">
                                     배송상태
                                 </span>
                             </div>

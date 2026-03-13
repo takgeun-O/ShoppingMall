@@ -13,6 +13,11 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">장바구니</h1>
 
+        <div th:if="${error}"
+             class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <span th:text="${error}">장바구니 처리 중 오류가 발생했습니다.</span>
+        </div>
+
         <!-- Empty cart -->
         <div th:if="${#lists.isEmpty(items)}"
              class="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 text-center">
@@ -119,6 +124,13 @@
                         <div class="flex justify-between text-gray-600">
                             <span>상품 금액</span>
                             <span th:text="${#numbers.formatInteger(summary.subtotal, 3, 'COMMA')} + '원'">
+                                0원
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between text-gray-600">
+                            <span>할인 금액</span>
+                            <span th:text="${#numbers.formatInteger(summary.discountTotal, 3, 'COMMA')} + '원'">
                                 0원
                             </span>
                         </div>

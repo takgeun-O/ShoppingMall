@@ -7,11 +7,6 @@ import lombok.NoArgsConstructor;
 //@NoArgsConstructor        // 이거 쓰면 public 기본생성자가 만들어지는데 바깥에서 생성 못하도록 하기 위해 사용 X
 public class OrderItem {
 
-    /**
-     * Order : 여러 상품을 담는 Aggregate Root
-     * OrderItem : 각 내부 구성요소
-     */
-
     private Long productId;
     private String productNameSnapshot;
     private int unitPriceSnapshot;

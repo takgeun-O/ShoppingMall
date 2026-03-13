@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.order.view.dto.admin;
 
 import io.github.takgeun.shop.order.domain.OrderStatus;
+import io.github.takgeun.shop.order.view.support.OrderStatusView;
 import lombok.Getter;
 
 @Getter
@@ -13,18 +14,20 @@ public class AdminOrderItemView {
     private final String representativeProductName; // 디자이너 핸드백 외 1개 이런 식
     private final int totalAmount;
     private final OrderStatus status;
+    private final String statusLabel;
+    private final String statusBadgeClass;
     private final String orderDate;
     private final int itemCount;    // (주문개수 - 1)개
 
     private AdminOrderItemView(Long id,
-                              String orderNumber,
-                              String customerName,
-                              String customerEmail,
-                              String representativeProductName,
-                              int totalAmount,
-                              OrderStatus status,
-                              String orderDate,
-                              int itemCount) {
+                               String orderNumber,
+                               String customerName,
+                               String customerEmail,
+                               String representativeProductName,
+                               int totalAmount,
+                               OrderStatus status, String statusLabel, String statusBadgeClass,
+                               String orderDate,
+                               int itemCount) {
         this.id = id;
         this.orderNumber = orderNumber;
         this.customerName = customerName;
@@ -32,6 +35,8 @@ public class AdminOrderItemView {
         this.representativeProductName = representativeProductName;
         this.totalAmount = totalAmount;
         this.status = status;
+        this.statusLabel = statusLabel;
+        this.statusBadgeClass = statusBadgeClass;
         this.orderDate = orderDate;
         this.itemCount = itemCount;
     }
@@ -47,6 +52,8 @@ public class AdminOrderItemView {
             String orderDate,
             int itemCount
     ) {
+        OrderStatusView statusView = OrderStatusView.from(status);
+
         return new AdminOrderItemView(
                 id,
                 orderNumber,
@@ -55,7 +62,10 @@ public class AdminOrderItemView {
                 representativeProductName,
                 totalAmount,
                 status,
+                statusView.getLabel(),
+                statusView.getBadgeClass(),
                 orderDate,
-                itemCount);
+                itemCount
+        );
     }
 }

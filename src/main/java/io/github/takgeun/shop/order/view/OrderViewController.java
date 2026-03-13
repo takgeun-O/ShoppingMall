@@ -2,6 +2,7 @@ package io.github.takgeun.shop.order.view;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
 import io.github.takgeun.shop.order.application.OrderCheckoutService;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -25,6 +27,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * 이 경로는 인터셉터측에서 로그인 체크해줌
+ */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -33,7 +38,6 @@ public class OrderViewController {
 
     private final CartService cartService;
     private final OrderCheckoutService orderCheckoutService;
-    private final OrderHistoryViewService orderHistoryViewService;
 
     /**
      * 주문/결제 페이지
@@ -41,6 +45,9 @@ public class OrderViewController {
      */
     @GetMapping("/checkout")
     public String checkout(HttpServletRequest request, Model model, RedirectAttributes ra) {
+
+        // 인터셉터에서 이미 막아주고 있긴 하나 방어적 코딩
+        // 로그인 안한 사용자가 접근하면 새 세션을 생성하게 되면 불필요한 세션이 증가하니 생성하지 않게 막기
         HttpSession session = request.getSession(false);
 
         CartViewResult cartView = getCartViewOrEmpty(session);
@@ -67,7 +74,8 @@ public class OrderViewController {
      */
     @GetMapping
     public String orderRoot(HttpServletRequest request, RedirectAttributes ra) {
-        HttpSession session = request.getSession(false);        // 기존 세션 없으면 null 반환
+        HttpSession session = request.getSession(false);
+
         CartViewResult cartView = (session == null) ? CartViewResult.empty() : cartService.getCartView(session);
         if(cartView.getItems().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
@@ -81,6 +89,7 @@ public class OrderViewController {
      * POST /orders
      *
      * 검증 실패 --> checkout 화면 재렌더링
+     * 비즈니스 충돌(재고 부족 등) -> checkout 화면 재렌더링
      * 성공 --> /orders/{orderId} 로 redirect
      */
     @PostMapping
@@ -90,30 +99,22 @@ public class OrderViewController {
                               Model model,
                               RedirectAttributes ra) {
 
-        HttpSession session = request.getSession(false);
-        if(session == null) {
-            return "redirect:" + redirectToLogin("/orders/checkout");
-        }
+        HttpSession session = request.getSession(false);    // 방어적 코딩
+        Long memberId = getRequiredLoginMemberId(session);
 
-        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        if(!(idObj instanceof Long memberId)) {
-            return "redirect:" + redirectToLogin("/orders/checkout");
-        }
-
-        CartViewResult cartView = cartService.getCartView(session);
-
-        // 장바구니가 비었으면 checkout이 아닌 cart로 리다이렉트
+        CartViewResult cartView = getCartViewOrEmpty(session);
         if(cartView.getItems().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
-            return "redirect:/cart";
+            return "redirect:/cart";        // 장바구니로 리다이렉트
         }
 
+        // 폼 검증
         if(bindingResult.hasErrors()) {
-            attachCartModel(model, cartView);
-            return "public/orders/checkout";
+            attachCartModel(model, cartView);       // 폼 검증 실패 시 장바구니에 담아놨던 아이템 뷰 정보를 모델에 저장
+            return "public/orders/checkout";        // 같은 요청 안에서 model 넘겨주기 (같은 요청은 model 유지됨) -> 리다이렉트해버리면 model 사라짐 + BindingResult 사라짐 -> 폼 에러 표시 불가
         }
 
-        // CreateOrderCommand : 주문 생성용 DTO (서비스로 넘길 것)
+        // 주문 생성용 DTO (서비스로 넘길 때 쓰기)
         CreateOrderCommand cmd = new CreateOrderCommand(
                 form.getRecipientName(),
                 form.getPhoneNumber(),
@@ -123,10 +124,23 @@ public class OrderViewController {
                 form.getRequestMessage()
         );
 
-        // 실제 결제 연동 전 MVP : 주문 생성 + 결제완료 처리
-        Long orderId = orderCheckoutService.createOrderFromCart(memberId, session, cmd);
+        try {
+            Long orderId = orderCheckoutService.createOrderFromCart(memberId, session, cmd);
+            return "redirect:/orders/" + orderId;       // 주문완료 페이지로 리다이렉트
+        } catch (ConflictException e) {
+            // 사용자에게 checkout 화면에서 안내 가능한 예외만 캐치 (그 외 예외는 여기서 잡지 않음. 컨트롤러나 인터셉터 등 다른 데서 잡으니까)
+            // 재고 부족
+            // 판매 중이 아닌 상품
+            // 주문 수량 이상
+            // 주문 가능한 상품 없음
+            log.warn("주문 생성 실패: memberId={}, message={}", memberId, e.getMessage());
 
-        return "redirect:/orders/" + orderId;
+            // 해당 세션의 주문 정보(아이템들, 서머리)를 모델에 담고 체크아웃 에러와 함께 제자리 포워딩
+            CartViewResult lastestCartView = getCartViewOrEmpty(session);
+            attachCartModel(model, lastestCartView);
+            model.addAttribute("checkoutError", e.getMessage());
+            return "public/orders/checkout";
+        }
     }
 
     /**
@@ -140,16 +154,16 @@ public class OrderViewController {
                            Model model) {
 
         HttpSession session = request.getSession(false);
-        Long memberId = getLoginMemberId(session);
-        if(memberId == null) {
-            return "redirect:" + redirectToLogin("/orders/" + orderId);
-        }
+        Long memberId = getRequiredLoginMemberId(session);
 
         OrderCompleteView view = orderCheckoutService.getOrderCompleteView(session, memberId, orderId);
 
         model.addAttribute("order", view);
         return "public/orders/complete";
     }
+
+
+    // -------------------------------------------------------------------------------------------------------------
 
 
     private CartViewResult getCartViewOrEmpty(HttpSession session) {
@@ -184,5 +198,18 @@ public class OrderViewController {
 
         Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
         return (idObj instanceof  Long id) ? id : null;
+    }
+
+    private Long getRequiredLoginMemberId(HttpSession session) {
+        if(session == null) {
+            throw new IllegalArgumentException("로그인 세션이 존재하지 않습니다. 인터셉터 설정을 확인해주세요.");
+        }
+
+        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
+        if(!(idObj instanceof Long memberId)) {
+            throw new IllegalArgumentException("로그인 회원 정보가 세션에 없습니다. 인터셉터 또는 로그인 처리를 확인해주세요.");
+        }
+
+        return memberId;
     }
 }

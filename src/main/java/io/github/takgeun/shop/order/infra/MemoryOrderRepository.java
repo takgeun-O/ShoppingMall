@@ -67,6 +67,22 @@ public class MemoryOrderRepository implements OrderRepository {
     }
 
     @Override
+    public int countByMemberId(Long memberId) {
+        if(memberId == null) {
+            return 0;
+        }
+
+        int count = 0;
+        for (Order order : store.values()) {
+            if(memberId.equals(order.getMemberId())) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    @Override
     public List<Order> findAll() {
         List<Order> result = new ArrayList<>(store.values());
         result.sort(ORDERED_AT_DESC);

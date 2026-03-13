@@ -1,7 +1,5 @@
 package io.github.takgeun.shop.product.domain;
 
-// Domain(Entity/Model)
-
 import io.github.takgeun.shop.global.error.ConflictException;
 import lombok.Data;
 import lombok.Getter;
@@ -12,7 +10,7 @@ public class Product {
     private Long categoryId;
 
     private String name;
-    private int price;
+    private int price;      // 판매가
     private int stock;
     private String description;
     private ProductStatus status;
@@ -24,17 +22,48 @@ public class Product {
     protected Product() {
     }
 
-    public Product(Long categoryId, String name, int price, int stock, String description, ProductStatus status, Integer originalPrice, String imageUrl) {
+    private Product(Long categoryId,
+                   String name,
+                   int price,
+                   int stock,
+                   String description,
+                   ProductStatus status,
+                   Integer originalPrice,
+                   String imageUrl) {
+
         // 생성자 생성 시점에서 검증 로직을 넣기
         changeCategory(categoryId);
         changeName(name);
         changePrice(price);
-        changeOriginalPrice(originalPrice);
-        changeStock(stock);
+        changeStockOnly(stock);
         changeDescription(description);
-        changeStatus(status);
         changeImageUrl(imageUrl);
         this.rating = 0.0;
+        this.status = ProductStatus.READY;
+
+        changeOriginalPrice(originalPrice);
+        applyInitialStatus(status);
+        adjustStatusByStock();      // 마지막에 재고를 기준으로 상태 반영
+    }
+
+    public static Product create(Long categoryId,
+                                 String name,
+                                 int price,
+                                 int stock,
+                                 String description,
+                                 ProductStatus status,
+                                 Integer originalPrice,
+                                 String imageUrl) {
+        return new Product(
+                categoryId,
+                name,
+                price,
+                stock,
+                description,
+                status,
+                originalPrice,
+                imageUrl
+        );
     }
 
     // 상품 생성 시 id가 필요한데, 엔티티에서는 setter 방식으로 id를 만들 수 없으니
@@ -61,14 +90,8 @@ public class Product {
     }
 
     public void changeName(String name) {
-        if(name == null) {
-            throw new IllegalArgumentException("상품명은 필수입니다.");
-        }
+        String normalized = normalizeRequiredText(name, "상품명은 필수입니다.");
 
-        String normalized = name.trim();
-        if(normalized.isEmpty()) {
-            throw new IllegalArgumentException("상품명은 필수입니다.");
-        }
         if(normalized.length() > 100) {
             throw new IllegalArgumentException("상품명은 100자 이하입니다.");
         }
@@ -90,49 +113,23 @@ public class Product {
     }
 
     public void changeStock(int stock) {
-        if(stock < 0) {
-            throw new IllegalArgumentException("재고는 0 이상이어야 합니다.");
-        }
-        this.stock = stock;
-
-        if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
-            this.status = ProductStatus.SOLD_OUT;
-        }
-        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
-            this.status = ProductStatus.ON_SALE;
-        }
+        changeStockOnly(stock);
+        adjustStatusByStock();  // 최종 상태를 재고 기준으로 정리
     }
 
-    public void changeDescription(String description) {
-        if(description == null) {
-            this.description = null;
-            return;
-        }
 
-        String normalized = description.trim();
-        if(normalized.isEmpty()) {
-            this.description = null;
-            return;
-        }
-        if(normalized.length() > 2000) {
+
+    public void changeDescription(String description) {
+        String normalized = normalizeOptionalText(description);
+
+        if(normalized != null && normalized.length() > 2000) {
             throw new IllegalArgumentException("상품 설명은 2000자 이하여야 합니다.");
         }
         this.description = normalized;
     }
 
-    public void changeStatus(ProductStatus status) {
-        if(status == null) {
-            throw new IllegalArgumentException("상품 상태는 필수입니다.");
-        }
-        this.status = status;
-    }
-
     public void changeOriginalPrice(Integer originalPrice) {
-        if(originalPrice == null) {
-            this.originalPrice = null;
-            return;
-        }
-        if(originalPrice <= 0) {
+        if(originalPrice == null || originalPrice <= 0) {
             this.originalPrice = null;
             return;
         }
@@ -147,21 +144,11 @@ public class Product {
     }
 
     public void changeImageUrl(String imageUrl) {
-        if(imageUrl == null) {
-            this.imageUrl = null;
-            return;
-        }
+        String normalized = normalizeOptionalText(imageUrl);
 
-        String normalized = imageUrl.trim();
-        if(normalized.isEmpty()) {
-            this.imageUrl = null;
-            return;
-        }
-
-        if(normalized.length() > 500) {
+        if(normalized != null && normalized.length() > 500) {
             throw new IllegalArgumentException("imageUrl은 500자 이하여야 합니다.");
         }
-
         this.imageUrl = normalized;
     }
 
@@ -169,27 +156,55 @@ public class Product {
         return this.status == ProductStatus.ON_SALE || this.status == ProductStatus.SOLD_OUT;
     }
 
-    public void onSale() {
-        if(this.status == ProductStatus.DISCONTINUED) {
-            throw new ConflictException("판매 종료된 상품은 판매중으로 변경할 수 없습니다.");
-        }
-        if(this.stock == 0) {
-            throw new ConflictException("재고가 0인 상품은 판매중으로 변경할 수 없습니다.");
-        }
-        if(this.status == ProductStatus.ON_SALE) return;        // 멱등 처리
-        this.status = ProductStatus.ON_SALE;
+    public boolean isOnSale() {
+        return this.status == ProductStatus.ON_SALE;
+    }
+
+    public boolean isSoldOut() {
+        return this.status == ProductStatus.SOLD_OUT;
+    }
+
+    public boolean isHidden() {
+        return this.status == ProductStatus.HIDDEN;
+    }
+
+    public boolean isReady() {
+        return this.status == ProductStatus.READY;
+    }
+
+    public boolean isDiscontinued() {
+        return this.status == ProductStatus.DISCONTINUED;
     }
 
     public void ready() {
+        if (isDiscontinued()) {
+            throw new ConflictException("판매 종료된 상품은 READY 상태로 변경할 수 없습니다.");
+        }
+        if (isReady()) {
+            return;
+        }
         this.status = ProductStatus.READY;
     }
 
+    public void onSale() {
+        if (isDiscontinued()) {
+            throw new ConflictException("판매 종료된 상품은 판매중으로 변경할 수 없습니다.");
+        }
+        if (this.stock == 0) {
+            throw new ConflictException("재고가 0인 상품은 판매중으로 변경할 수 없습니다.");
+        }
+        if (isOnSale()) {
+            return;
+        }
+        this.status = ProductStatus.ON_SALE;
+    }
+
     public void hide() {
-        if(this.status == ProductStatus.DISCONTINUED) {
+        if (isDiscontinued()) {
             throw new ConflictException("판매 종료된 상품은 숨김으로 변경할 수 없습니다.");
         }
-        if(this.status == ProductStatus.HIDDEN) {
-            return;     // 멱등 처리
+        if (isHidden()) {
+            return;
         }
         this.status = ProductStatus.HIDDEN;
     }
@@ -210,9 +225,7 @@ public class Product {
         }
         this.stock = this.stock - quantity;
 
-        if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
-            this.status = ProductStatus.SOLD_OUT;
-        }
+        adjustStatusByStock();
     }
 
     public void increaseStock(int quantity) {
@@ -221,10 +234,7 @@ public class Product {
         }
         this.stock = this.stock + quantity;
 
-        // 재고가 0 -> 양수로 바뀌면 자동 ON_SALE 전환
-        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
-            this.status = ProductStatus.ON_SALE;
-        }
+        adjustStatusByStock();
     }
 
     // 할인율 계산
@@ -235,8 +245,74 @@ public class Product {
         return (int) Math.round((1 - (double) price / originalPrice) * 100);
     }
 
-    // 레이팅
-    public double ratingKey() {
+    // 레이팅 (추후 구현)
+    public double getRatingValue() {
         return rating;
+    }
+
+    private void applyInitialStatus(ProductStatus status) {
+        ProductStatus target = (status == null) ? ProductStatus.READY : status;
+
+        switch (target) {
+            case READY -> ready();
+            case ON_SALE -> onSale();
+            case HIDDEN -> hide();
+            case SOLD_OUT -> {
+                if(this.stock > 0) {
+                    throw new IllegalArgumentException("재고가 있는 상품은 초기 상태를 SOLD_OUT으로 설정할 수 없습니다.");
+                }
+                this.status = ProductStatus.SOLD_OUT;
+            }
+            case DISCONTINUED -> discontinue();
+        }
+    }
+
+    // 재고에 따른 상태 변경 (SOLD_OUT vs ON_SALE)
+    private void adjustStatusByStock() {
+        // SOLD_OUT, ON_SALE 외 모두 무시
+        if(this.status == ProductStatus.DISCONTINUED) {
+            return;
+        }
+        if(this.status == ProductStatus.HIDDEN) {
+            return;
+        }
+        if(this.status == ProductStatus.READY) {
+            return;
+        }
+
+        if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
+            this.status = ProductStatus.SOLD_OUT;
+        }
+        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
+            this.status = ProductStatus.ON_SALE;
+        }
+    }
+
+    private String normalizeRequiredText(String value, String message) {
+        if(value == null) {
+            throw new IllegalArgumentException(message);
+        }
+
+        String normalized = value.trim();
+        if(normalized.isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
+        return normalized;
+    }
+
+    private String normalizeOptionalText(String value) {
+        if(value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private void changeStockOnly(int stock) {
+        if(stock < 0) {
+            throw new IllegalArgumentException("재고는 0 이상이어야 합니다.");
+        }
+        this.stock = stock;
     }
 }

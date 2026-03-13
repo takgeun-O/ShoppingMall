@@ -14,7 +14,8 @@ public class Order {
      * OrderItem : 각 내부 구성요소
      */
 
-    private Long id;
+    private Long id;                // DB PK
+    private String orderNumber;     // 외부 노출용 주문번호
     private Long memberId;
     private OrderStatus status;
 
@@ -39,26 +40,28 @@ public class Order {
     protected Order() {}
 
     private Order(Long memberId,
+                  String orderNumber,
                   List<OrderItem> orderItems,
-                  String recipientName, String recipientPhone,
-                  String shippingZipCode, String shippingAddress, String shippingAddressDetail,
+                  String recipientName,
+                  String recipientPhone,
+                  String shippingZipCode,
+                  String shippingAddress,
+                  String shippingAddressDetail,
                   String requestMessage,
                   int shippingFee) {
 
-        if(memberId == null) throw new IllegalArgumentException("memberId는 필수입니다.");
-        if(orderItems == null || orderItems.isEmpty()) throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
-
+        validateMemberId(memberId);
+        validateOrderNumber(orderNumber);
+        validateOrderItems(orderItems);
         requireText(recipientName, "recipientName은 필수입니다.");
         requireText(recipientPhone, "recipientPhone은 필수입니다.");
         requireText(shippingZipCode, "shippingZipCode는 필수입니다.");
         requireText(shippingAddress, "shippingAddress는 필수입니다.");
         requireText(shippingAddressDetail, "shippingAddressDetail은 필수입니다.");
-
-        if(requestMessage != null && requestMessage.trim().length() > 200) {
-            throw new IllegalArgumentException("requestMessage는 200자 이하입니다.");
-        }
+        validateRequestMessage(requestMessage);
 
         this.memberId = memberId;
+        this.orderNumber = orderNumber;
         this.orderItems = List.copyOf(orderItems);
 
         this.recipientName = recipientName;
@@ -80,12 +83,28 @@ public class Order {
     }
 
     public static Order create(Long memberId,
-                               List<OrderItem> items,
-                               String recipientName, String recipientPhone,
-                               String shippingZipCode, String shippingAddress, String shippingAddressDetail,
+                               String orderNumber,
+                               List<OrderItem> orderItems,
+                               String recipientName,
+                               String recipientPhone,
+                               String shippingZipCode,
+                               String shippingAddress,
+                               String shippingAddressDetail,
                                String requestMessage,
                                int shippingFee) {
-        return new Order(memberId, items, recipientName, recipientPhone, shippingZipCode, shippingAddress, shippingAddressDetail, requestMessage, shippingFee);
+
+        return new Order(
+                memberId,
+                orderNumber,
+                orderItems,
+                recipientName,
+                recipientPhone,
+                shippingZipCode,
+                shippingAddress,
+                shippingAddressDetail,
+                requestMessage,
+                shippingFee
+        );
     }
 
     /**
@@ -106,12 +125,14 @@ public class Order {
     }
 
     public void cancel() {
-        if(this.status != OrderStatus.PAYMENT_COMPLETED || this.status != OrderStatus.ORDERED) {
-            throw new ConflictException("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
+        if(this.status == OrderStatus.PAYMENT_COMPLETED || this.status == OrderStatus.ORDERED) {
+            this.status = OrderStatus.CANCELED;
+            this.canceledAt = LocalDateTime.now();
+            this.updatedAt = this.canceledAt;
+            return;
         }
-        this.status = OrderStatus.CANCELED;
-        this.canceledAt = LocalDateTime.now();
-        this.updatedAt = this.canceledAt;
+
+        throw new ConflictException("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
     }
 
     /**
@@ -150,7 +171,30 @@ public class Order {
         }
     }
 
+    public boolean isCanceled() {
+        return this.status == OrderStatus.CANCELED;
+    }
+
+
     private void requireText(String value, String message) {
         if(value == null || value.trim().isEmpty()) throw new IllegalArgumentException(message);
+    }
+
+    private void validateRequestMessage(String requestMessage) {
+        if(requestMessage != null && requestMessage.trim().length() > 200) {
+            throw new IllegalArgumentException("requestMessage는 200자 이하입니다.");
+        }
+    }
+
+    private void validateOrderItems(List<OrderItem> orderItems) {
+        if(orderItems == null || orderItems.isEmpty()) throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+    }
+
+    private void validateOrderNumber(String orderNumber) {
+        if(orderNumber == null || orderNumber.isEmpty()) throw new IllegalArgumentException("orderNumber는 필수입니다.");
+    }
+
+    private void validateMemberId(Long memberId) {
+        if(memberId == null) throw new IllegalArgumentException("memberId는 필수입니다.");
     }
 }

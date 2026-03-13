@@ -23,9 +23,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.text.DateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -34,6 +38,7 @@ public class OrderService {
 
     private static final int FREE_SHIPPING_THRESHOLD = 30_000;
     private static final int SHIPPING_FEE = 3_000;
+    private static final DateTimeFormatter ORDER_NUMBER_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final OrderRepository orderRepository;
     private final ProductService productService;
@@ -45,18 +50,16 @@ public class OrderService {
      */
     public Long checkout(Long memberId, List<CheckoutItem> checkoutItems, CheckoutForm form) {
         requireAuthenticated(memberId);
-        if(form == null) throw new IllegalArgumentException("form은 필수입니다.");
+        validateCheckoutForm(form);
 
         // member ACTIVE 검증
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
         requireActiveMember(member);
 
-        if(checkoutItems == null || checkoutItems.isEmpty()) {
-            throw new ConflictException("주문 상품이 없습니다.");
-        }
+        validateCheckoutItems(checkoutItems);
 
         // product조회 + stock 감소 + OrderItem 스냅샷 생성
-        List<OrderItem> items = new ArrayList<>();
+        List<OrderItem> orderItems = new ArrayList<>();
         int subtotal = 0;
 
         for (CheckoutItem checkoutItem : checkoutItems) {
@@ -69,7 +72,7 @@ public class OrderService {
             product.decreaseStock(checkoutItem.getQuantity());
             productService.save(product);
 
-            OrderItem item = OrderItem.of(
+            OrderItem orderItem = OrderItem.of(
                     product.getId(),
                     product.getName(),
                     product.getPrice(),
@@ -78,19 +81,21 @@ public class OrderService {
                     product.getImageUrl()
             );
 
-            items.add(item);
-            subtotal += item.lineTotal();
+            orderItems.add(orderItem);
+            subtotal += orderItem.lineTotal();
         }
 
-        if(items.isEmpty()) {
+        if(orderItems.isEmpty()) {
             throw new ConflictException("유효한 주문 상품이 없습니다.");
         }
 
         int shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_FEE;
+        String orderNumber = generateOrderNumber();
 
         Order order = Order.create(
                 memberId,
-                items,
+                orderNumber,
+                orderItems,
                 form.getRecipientName(),
                 form.getPhoneNumber(),
                 form.getZipCode(),
@@ -100,10 +105,21 @@ public class OrderService {
                 shippingFee
         );
 
-        // MVP : 결제 성공 가정
-        order.changeStatus(OrderStatus.PAYMENT_COMPLETED);
+        // MVP : 결제 성공 가정함.
+        order.markPaymentCompleted();
 
-        return orderRepository.save(order).getId();
+        Order savedOrder = orderRepository.save(order);
+
+        log.info("주문 생성 완료 : orderId={}, orderNumber={}, memberId={}, itemCount={}, subtotal={}, shippingFee={}, totalPrice={}",
+                savedOrder.getId(),
+                savedOrder.getOrderNumber(),
+                memberId,
+                orderItems.size(),
+                subtotal,
+                shippingFee,
+                savedOrder.getTotalPrice());
+
+        return savedOrder.getId();
     }
 
     public List<Order> getMyOrders(Long memberId) {
@@ -145,6 +161,16 @@ public class OrderService {
 
     // 아래는 Helper 메소드들
 
+    private void validateCheckoutForm(CheckoutForm form) {
+        if(form == null) throw new IllegalArgumentException("form은 필수입니다.");
+    }
+
+    private void validateCheckoutItems(List<CheckoutItem> checkoutItems) {
+        if(checkoutItems == null || checkoutItems.isEmpty()) {
+            throw new ConflictException("주문 상품이 없습니다.");
+        }
+    }
+
     private void requireAuthenticated(Long memberId) {
         if(memberId == null) throw new UnauthorizedException("로그인이 필요합니다.");
     }
@@ -170,5 +196,19 @@ public class OrderService {
         if(!memberId.equals(order.getMemberId())) {
             throw new ForbiddenException("본인 주문만 처리할 수 있습니다.");
         }
+    }
+
+    /**
+     * 외부 노출용 주문번호 생성
+     * ORD-20260312160533-A1B2C3
+     */
+    private String generateOrderNumber() {
+        String timestamp = LocalDateTime.now().format(ORDER_NUMBER_DATE_FORMAT);
+        String suffix = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 6)
+                .toUpperCase();
+        return "ORD-" + timestamp + "-" + suffix;
     }
 }

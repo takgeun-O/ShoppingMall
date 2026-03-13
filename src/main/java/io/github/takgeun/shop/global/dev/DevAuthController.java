@@ -22,7 +22,7 @@ public class DevAuthController {
 
     @GetMapping("/login/{memberId}")
     public String devLogin(@PathVariable Long memberId, HttpSession session) {
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
         session.setAttribute(SessionConst.LOGIN_MEMBER_ID, memberId);
         session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());
         return "redirect:/";
@@ -36,7 +36,7 @@ public class DevAuthController {
 
     @GetMapping("/login-user-test")
     public String loginUserTest(HttpSession session) {
-        Member member = memberService.getByEmail("test1@test.com");
+        Member member = memberService.findByEmail("test1@test.com");
         session.setAttribute(SessionConst.LOGIN_MEMBER_ID, member.getId());
         session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());
         return "redirect:/products";
@@ -44,7 +44,7 @@ public class DevAuthController {
 
     @GetMapping("/login-admin-test")
     public String loginAdminTest(HttpSession session) {
-        Member member = memberService.getByEmail("testAdmin1@test.com");
+        Member member = memberService.findByEmail("testAdmin1@test.com");
         session.setAttribute(SessionConst.LOGIN_MEMBER_ID, member.getId());
         session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());
         return "redirect:/admin/products";
