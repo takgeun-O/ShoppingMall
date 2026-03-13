@@ -41,22 +41,22 @@ In-Memory Repository 기반으로 구성되어 있으며,
 ## 1. 프로젝트 클론
 
 ```bash
-git clone https://github.com/<your-repository>.git
+git clone https://github.com/takgeun-O/ShoppingMall.git
 cd <project-directory>
 ```
 
 ## 2. 애플리케이션 실행
 
+아래와 같이 스프링 실행 시 local 프로필 지정
 ```bash
-./gradlew bootRun
+./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
 윈도우 환경에서는 다음 명령어를 사용
 ```bash
-gradlew.bat bootRun
+gradlew.bat bootRun --args="--spring.profiles.active=local"
 ```
 
-또는 인텔리제이 IDEA에서 Application 클래스를 실행하여 서버를 시작할 수 있습니다.
 
 ## 3. 접속
 
