@@ -43,7 +43,7 @@ public class AdminOrderListResponse {
         }
 
         // ===== 상품 요약 =====
-        String firstProductName = items.getFirst().getProductNameSnapshot();
+        String firstProductName = items.get(0).getProductNameSnapshot();
         int itemCount = items.size();
 
         String productSummary =

@@ -20,17 +20,17 @@ public class OrderStatusView {
     }
 
     public static OrderStatusView from(OrderStatus status) {
-        if(status == null) {
-            return new OrderStatusView(null, "상태 없음", "bg-gray-500");
+        if (status == null) {
+            return new OrderStatusView(null, "알 수 없음", "bg-gray-400");
         }
 
         return switch (status) {
-            case ORDERED -> new OrderStatusView(status, "주문완료", "bg-slate-500");
-            case PAYMENT_COMPLETED -> new OrderStatusView(status, "결제완료", "bg-blue-600");
-            case PREPARING -> new OrderStatusView(status, "배송준비", "bg-indigo-600");
-            case SHIPPING -> new OrderStatusView(status, "배송중", "bg-green-600");
-            case DELIVERED -> new OrderStatusView(status, "배송완료", "bg-gray-700");
-            case CANCELED -> new OrderStatusView(status, "취소", "bg-red-600");
+            case ORDERED -> new OrderStatusView(status, "주문완료", "bg-blue-600 text-white");
+            case PAYMENT_COMPLETED -> new OrderStatusView(status, "결제완료", "bg-purple-600 text-white");
+            case PREPARING -> new OrderStatusView(status, "배송준비", "bg-orange-600 text-white");
+            case SHIPPING -> new OrderStatusView(status, "배송중", "bg-cyan-600 text-white");
+            case DELIVERED -> new OrderStatusView(status, "배송완료", "bg-green-600 text-white");
+            case CANCELED -> new OrderStatusView(status, "주문취소", "bg-red-600 text-white");
         };
     }
 }

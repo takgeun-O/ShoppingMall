@@ -50,15 +50,12 @@
         <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
 
             <div class="flex items-center gap-2">
-                <!-- 피그마: 필터 버튼(동작 없음) -->
                 <button type="button"
                         class="inline-flex items-center px-3 py-2 text-sm border rounded-md hover:bg-gray-50">
-                    <!-- 아이콘 대신 텍스트(원하면 svg로 교체 가능) -->
                     <span class="mr-2">☰</span>
                     필터
                 </button>
 
-                <!-- categoryId가 있을 때 전체보기 -->
                 <a th:if="${selectedCategoryId != null}"
                    th:href="@{/products(sort=${sort})}"
                    class="inline-flex items-center px-3 py-2 text-sm rounded-md hover:bg-gray-50">
@@ -87,78 +84,97 @@
 
             <a th:each="p : ${products}"
                th:href="@{/products/{id}(id=${p.id})}"
-               class="group">
+               th:with="isSoldOut=${p.status.name() == 'SOLD_OUT'}"
+               class="group block">
 
-                <div class="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white rounded-lg">
+                <div class="overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm transition-all duration-300"
+                     th:classappend="${isSoldOut} ? ' hover:shadow-lg' : ' hover:shadow-xl hover:-translate-y-1'">
 
-                    <div class="aspect-square relative overflow-hidden bg-gray-100">
+                    <!-- Image -->
+                    <div class="relative aspect-square overflow-hidden bg-gray-100">
 
                         <img th:src="${p.imageUrl}"
                              th:alt="${p.name}"
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             th:classappend="${p.status.name() == 'SOLD_OUT'} ? ' opacity-60 group-hover:scale-100' : ' group-hover:scale-105'"/>
+                             class="w-full h-full object-cover transition-transform duration-300"
+                             th:classappend="${isSoldOut}
+                                ? ' opacity-60 grayscale'
+                                : ' group-hover:scale-105'"/>
 
-                        <!-- badge: 있으면 표시 -->
-                        <span th:if="${p.badge != null}"
-                              th:text="${p.badge}"
-                              class="absolute top-3 left-3 text-xs font-semibold text-white px-2 py-1 rounded"
-                              th:classappend="
+                        <!-- Top badges -->
+                        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2">
+                            <span th:if="${p.badge != null}"
+                                  th:text="${p.badge}"
+                                  class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
+                                  th:classappend="
                                       ${p.badge == 'BEST'} ? ' bg-blue-600' :
                                       ${p.badge == 'NEW'} ? ' bg-green-600' :
                                       ${p.badge == 'SALE'} ? ' bg-red-600' :
                                       ' bg-orange-600'">
                                 BEST
-                        </span>
+                            </span>
 
-                        <!-- 품절 오버레이 -->
-                        <div th:if="${p.status.name() == 'SOLD_OUT'}"
-                             class="absolute inset-0 flex items-center justify-center bg-black/45">
-                            <span class="rounded-full bg-white px-6 py-3 text-lg font-extrabold text-red-600 shadow-lg border border-red-200">
+                            <span th:if="${isSoldOut}"
+                                  class="inline-flex items-center rounded-md border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
                                 품절
                             </span>
                         </div>
 
+                        <!-- Sold out overlay -->
+                        <div th:if="${isSoldOut}"
+                             class="absolute inset-0 flex items-center justify-center bg-black/35">
+                            <span class="inline-flex items-center rounded-full bg-red-600 px-5 py-2 text-base font-bold text-white shadow-lg">
+                                품절
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- 카드 하단 상품명, 별점, 리뷰수, 가격 -->
+                    <!-- Content -->
                     <div class="p-4">
-                        <h3 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
+                        <h3 class="mb-2 font-semibold transition-colors"
+                            th:classappend="${isSoldOut} ? ' text-gray-700' : ' text-gray-900 group-hover:text-blue-600'"
                             th:text="${p.name}">
                             상품명
                         </h3>
 
-                        <div class="flex items-center mb-2">
+                        <!-- Rating -->
+                        <div class="flex items-center mb-3">
                             <span class="text-yellow-500">★</span>
-                            <span class="text-sm text-gray-600 ml-1"
-                                  th:text="${p.rating} + ' (' + ${p.reviews} + ')'">4.8 (123)</span>
+                            <span class="ml-1 text-sm text-gray-600"
+                                  th:text="|${p.rating} (${p.reviews})|">
+                                4.8 (123)
+                            </span>
                         </div>
 
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-xl font-bold text-gray-900" th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
+                        <!-- Price -->
+                        <div class="mb-1 flex items-baseline gap-2">
+                            <span class="text-xl font-bold"
+                                  th:classappend="${isSoldOut} ? ' text-gray-400' : ' text-gray-900'"
+                                  th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')} + '원'">
                                 289,000원
                             </span>
 
                             <span th:if="${p.originalPrice != null}"
                                   class="text-sm text-gray-400 line-through"
                                   th:text="${#numbers.formatInteger(p.originalPrice, 0, 'COMMA')} + '원'">
-                                    350,000원
+                                350,000원
                             </span>
                         </div>
 
-                        <!-- T(패키지명.클래스명) -> T(java.lang.Math) : java.lang.Math 클래스를 참조. 자바의 static 메소드 참조할 때는 T()로 감싸야 한다. -->
-                        <div th:if="${p.originalPrice != null}" class="mt-1">
-                            <span class="text-sm font-semibold text-red-600"
-                                    th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
+                        <!-- Discount / stock -->
+                        <div class="min-h-[24px]">
+                            <div th:if="${p.originalPrice != null and !isSoldOut}">
+                                <span class="text-sm font-semibold text-red-600"
+                                      th:text="${T(java.lang.Math).round((1 - (p.price * 1.0) / p.originalPrice) * 100)} + '% 할인'">
                                     10% 할인
-                            </span>
-                        </div>
+                                </span>
+                            </div>
 
-                        <div th:if="${p.status.name() == 'SOLD_OUT'}" class="mt-2">
-                            <span class="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
-                                현재 품절
-                            </span>
+                            <div th:if="${isSoldOut}">
+                                <span class="text-sm font-medium text-red-600">
+                                    현재 재고가 모두 소진되었습니다.
+                                </span>
+                            </div>
                         </div>
-
                     </div>
                 </div>
             </a>
@@ -167,7 +183,7 @@
 
         <!-- Empty -->
         <div th:if="${#lists.isEmpty(products)}"
-             class="text-center text-gray-500 mt-12">
+             class="mt-12 text-center text-gray-500">
             등록된 상품이 없습니다.
         </div>
 

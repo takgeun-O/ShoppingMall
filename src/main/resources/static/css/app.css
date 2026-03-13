@@ -11,3 +11,32 @@
 .no-spinner {
   -moz-appearance: textfield;
 }
+
+
+.badge-ordered {
+  @apply bg-slate-500 text-white;
+}
+
+.badge-payment-completed {
+  @apply bg-blue-600 text-white;
+}
+
+.badge-preparing {
+  @apply bg-indigo-600 text-white;
+}
+
+.badge-shipping {
+  @apply bg-green-600 text-white;
+}
+
+.badge-delivered {
+  @apply bg-gray-700 text-white;
+}
+
+.badge-canceled {
+  @apply bg-red-600 text-white;
+}
+
+.badge-unknown {
+  @apply bg-gray-400 text-white;
+}
