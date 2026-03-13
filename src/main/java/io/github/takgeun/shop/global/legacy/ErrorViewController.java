@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.global.view;
+package io.github.takgeun.shop.global.legacy;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

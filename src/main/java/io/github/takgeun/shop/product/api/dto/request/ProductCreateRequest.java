@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.product.dto.request;
+package io.github.takgeun.shop.product.api.dto.request;
 
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import jakarta.validation.constraints.Min;

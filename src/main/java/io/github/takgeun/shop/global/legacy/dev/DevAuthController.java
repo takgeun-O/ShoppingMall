@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.global.dev;
+package io.github.takgeun.shop.global.legacy.dev;
 
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;

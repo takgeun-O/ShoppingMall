@@ -18,7 +18,7 @@ public class GlobalViewModelAdvice {
     }
 
     /**
-     * @ModelAttribute : 컨트롤러 실행 전에 Model에 값을 자동으로 추가
+     * @ModelAttribute : 클래스 레벨에서 컨트롤러 실행 전에 Model에 값을 자동으로 추가
      * 해당 메서드의 반환값을 model.addAttribute("loginMemberId", 반환값); 처럼 자동으로 넣어준다.
      */
     @ModelAttribute

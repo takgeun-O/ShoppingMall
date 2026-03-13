@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.product.dto.response;
+package io.github.takgeun.shop.product.api.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

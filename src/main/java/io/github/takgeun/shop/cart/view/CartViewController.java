@@ -1,9 +1,8 @@
-package io.github.takgeun.shop.cart;
+package io.github.takgeun.shop.cart.view;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.ConflictException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

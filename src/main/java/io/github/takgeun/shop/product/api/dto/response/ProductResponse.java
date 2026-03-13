@@ -1,6 +1,5 @@
-package io.github.takgeun.shop.product.dto.response;
+package io.github.takgeun.shop.product.api.dto.response;
 
-import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.AllArgsConstructor;

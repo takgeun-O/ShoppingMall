@@ -9,7 +9,7 @@ import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.dto.request.ProductCreateRequest;
+import io.github.takgeun.shop.product.api.dto.request.ProductCreateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
