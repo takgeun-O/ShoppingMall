@@ -16,10 +16,20 @@ public class OrderItem {
 
     protected OrderItem() {}
 
+    /**
+     * 생성 시점 불변식 검증을 도메인이 직접 책임
+     * 이유 : 도메인 객체는 잘못된 상태로 만들어지면 안됨.
+     */
     private OrderItem(Long productId, String name, int unitPrice, Integer originalPrice, int quantity, String imageUrl) {
-        if(productId == null) throw new IllegalArgumentException("productId는 필수입니다.");
-        if(name == null || name.trim().isBlank()) throw new IllegalArgumentException("productNameSnapshot은 필수입니다.");
-        if(unitPrice < 0) throw new IllegalArgumentException("unitPriceSnapshot은 0 이상입니다.");
+        if(productId == null) {
+            throw new IllegalArgumentException("productId는 필수입니다.");
+        }
+        if(name == null || name.trim().isBlank()) {
+            throw new IllegalArgumentException("productNameSnapshot은 필수입니다.");
+        }
+        if(unitPrice < 0) {
+            throw new IllegalArgumentException("unitPriceSnapshot은 0 이상이어야 합니다.");
+        }
         if(originalPrice != null) {
             if(originalPrice <= 0) {
                 throw new IllegalArgumentException("originalPriceSnapshot은 0 초과여야 합니다.");
@@ -28,25 +38,21 @@ public class OrderItem {
                 throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
             }
         }
-        if(quantity < 1) throw new IllegalArgumentException("quantity는 1 이상입니다.");
-        if(imageUrl == null || imageUrl.isBlank()) {
-            imageUrl = "/images/no-image.png";
+        if(quantity < 1) {
+            throw new IllegalArgumentException("quantity는 1 이상입니다.");
         }
+        String resolvedImageUrl = (imageUrl == null || imageUrl.isBlank())
+                ? "/images/no-image.png"
+                : imageUrl;
 
         this.productId = productId;
         this.productNameSnapshot = name;
         this.unitPriceSnapshot = unitPrice;
         this.originalPriceSnapshot = originalPrice;
         this.quantity = quantity;
-        this.imageUrlSnapshot = (imageUrl == null || imageUrl.isBlank())
-                ? "/images/no-image.png"
-                : imageUrl;
+        this.imageUrlSnapshot = resolvedImageUrl;
     }
 
-    // of() : 값을 모아서 만든다.
-    // Money of(int amount, String currency) return new Money(amount, currency);
-    // from() : 어떤 객체를 기반으로 만들어진다.
-    // ProductCardView from(Product p) : Product -> ProductCardView 변환
     public static OrderItem of(Long productId, String name, int unitPrice, Integer originalPrice, int quantity, String imageUrl) {
         return new OrderItem(productId, name, unitPrice, originalPrice, quantity, imageUrl);
     }

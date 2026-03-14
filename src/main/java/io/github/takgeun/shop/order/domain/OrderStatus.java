@@ -10,7 +10,7 @@ public enum OrderStatus {
     PREPARING("배송준비"),
     SHIPPING("배송중"),
     DELIVERED("배송완료"),
-    CANCELED("취소");
+    CANCELED("주문취소");
 
     private final String label;
 

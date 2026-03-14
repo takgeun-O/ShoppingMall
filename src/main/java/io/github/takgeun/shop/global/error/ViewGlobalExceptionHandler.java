@@ -101,17 +101,16 @@ public class ViewGlobalExceptionHandler {
     /**
      * 그 외 예상 못한 예외 (서버 오류)
      * 운영에서는 message를 고정하는 게 보안상 더 안전함
-     *
-     * 스프링에서 에러 처리 시도 -> /error 포워드 -> /error 처리 과정에서 또 예외 발생
-     * --> ViewGlobalExceptionHandler의 @ExceptionHandler(Exception.class)로 에러 처리 중 발생한 예외까지 다시 잡아서 error/500 렌더링
-     * --> 그 렌더링도 실패 --> 다시 /error ... 무한 재귀에 빠져서 StackOverflowError 가 터짐.
      */
     @ExceptionHandler(Exception.class)
     public ModelAndView handleException(Exception e, HttpServletRequest request) {
         // 예외 처리 중 발생한 예외는 스프링 기본 에러 처리에 맡겨서 무한 루프를 끊을 것.
 
-        // /error 처리 중이면 여기서 또 error/500 렌더링 시도하지 말고 그대로 던져서 루프 방지
+        // 스프링에서 에러 처리 시도 -> /error 포워드 -> /error 처리 과정에서 또 예외 발생
+        // --> ViewGlobalExceptionHandler의 @ExceptionHandler(Exception.class)로 에러 처리 중 발생한 예외까지 다시 잡아서 error/500 렌더링
+        // --> 그 렌더링도 실패 --> 다시 /error ... 무한 재귀에 빠져서 StackOverflowError 가 터짐.
         if("/error".equals(request.getRequestURI())) {
+            // /error 처리 중이면 여기서 또 error/500 렌더링 시도하지 말고 그대로 던져서 StackOverflowError 방지
             throw new RuntimeException(e);
         }
 

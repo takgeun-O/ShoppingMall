@@ -11,14 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class HomeViewController {
 
     @GetMapping("/")
-    public String home(HttpSession session, Model model) {
-
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        MemberRole role = (roleObj instanceof MemberRole mr) ? mr : null;
-        boolean admin = (role == MemberRole.ADMIN);
-
-        model.addAttribute("activeTop", "SHOP");
-        model.addAttribute("treeMode", admin ? "admin" : "public");
+    public String home() {
 
         return "public/index";
     }

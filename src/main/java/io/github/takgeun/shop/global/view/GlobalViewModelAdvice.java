@@ -18,7 +18,7 @@ public class GlobalViewModelAdvice {
     }
 
     /**
-     * @ModelAttribute : 클래스 레벨에서 컨트롤러 실행 전에 Model에 값을 자동으로 추가
+     * @ModelAttribute : 클래스 레벨에서 쓰면 컨트롤러 실행 전에 Model에 값을 자동으로 추가
      * 해당 메서드의 반환값을 model.addAttribute("loginMemberId", 반환값); 처럼 자동으로 넣어준다.
      */
     @ModelAttribute
@@ -42,6 +42,8 @@ public class GlobalViewModelAdvice {
         // 헤더 드롭다운용 루트 카테고리 (이건 항상 public 전용으로 할 것. 어차피 대표 카테고리는 admin이 의미 없음)
         model.addAttribute("rootCategories", categoryService.getTopCategories());
     }
+
+
 
     private Long getLoginMemberId(HttpSession session) {
         if (session == null) {

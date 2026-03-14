@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/admin/members")
+@RequestMapping("/admin/members/me")
 public class AdminMyPageViewController {
 
     private final MemberService memberService;
@@ -33,7 +33,7 @@ public class AdminMyPageViewController {
      * 관리자 마이 페이지 조회
      * GET /admin/members/me
      */
-    @GetMapping("/me")
+    @GetMapping
     public String me(HttpServletRequest request, Model model) {
 
         Long memberId = getLoginMemberId(request);
@@ -50,7 +50,7 @@ public class AdminMyPageViewController {
      * 관리자 마이페이지 수정폼
      * GET /admin/members/me/edit
      */
-    @GetMapping("/me/edit")
+    @GetMapping("/edit")
     public String editForm(HttpServletRequest request, Model model) {
 
         // 로그인 유효 확인
@@ -72,7 +72,7 @@ public class AdminMyPageViewController {
     /**
      * 관리자 마이페이지 수정 처리
      */
-    @PostMapping("/me/edit")
+    @PostMapping("/edit")
     public String edit(@Valid @ModelAttribute("form") MemberEditForm form,
                        BindingResult bindingResult,
                        HttpServletRequest request,
@@ -97,7 +97,7 @@ public class AdminMyPageViewController {
     /**
      * 관리자 비활성화
      */
-    @PostMapping("/me/deactivate")
+    @PostMapping("/deactivate")
     public String deactivate(HttpServletRequest request, RedirectAttributes ra) {
         Long memberId = getLoginMemberId(request);
         if(memberId == null) {

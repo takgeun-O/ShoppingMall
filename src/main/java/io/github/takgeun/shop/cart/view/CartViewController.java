@@ -3,6 +3,7 @@ package io.github.takgeun.shop.cart.view;
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -56,6 +57,9 @@ public class CartViewController {
             ra.addFlashAttribute("addedQty", resolvedQty);
         } catch (ConflictException e) {
             // 에러 터지면 뷰에다가 그냥 에러 정보만 보내주고 끝.
+            ra.addFlashAttribute("error", e.getMessage());
+            ra.addFlashAttribute("errorProductId", productId);
+        } catch (NotFoundException e) {
             ra.addFlashAttribute("error", e.getMessage());
             ra.addFlashAttribute("errorProductId", productId);
         }
