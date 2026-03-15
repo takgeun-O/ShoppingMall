@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.cart.infra;
 
+import io.github.takgeun.shop.cart.domain.CartRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Repository;
 
@@ -7,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Repository
-public class SessionCartRepository {
+public class SessionCartRepository implements CartRepository {
 
     private static final String CART_KEY = "SESSION_CART";  // 세션 저장 키
 

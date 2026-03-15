@@ -68,7 +68,7 @@ public class ProductViewController {
 
         List<Product> products = productService.findForList(admin, categoryId, normalizedSort);
 
-        log.info("products={}", products);
+        log.info("products={}", products.stream().map(Product::getName).toList());
         List<ProductCardView> cards = products.stream()
                         .map(ProductCardView::from)
                                 .toList();

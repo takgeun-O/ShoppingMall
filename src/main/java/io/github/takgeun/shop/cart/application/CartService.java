@@ -1,6 +1,6 @@
 package io.github.takgeun.shop.cart.application;
 
-import io.github.takgeun.shop.cart.infra.SessionCartRepository;
+import io.github.takgeun.shop.cart.domain.CartRepository;
 import io.github.takgeun.shop.cart.view.dto.CartItemView;
 import io.github.takgeun.shop.cart.view.dto.CartSummaryView;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,7 @@ public class CartService {
     private static final int FREE_SHIPPING_THRESHOLD = 30_000;
     private static final int SHIPPING_FEE = 3_000;
 
-    private final SessionCartRepository cartRepository;
+    private final CartRepository cartRepository;
     private final ProductService productService;
 
     /**

@@ -17,7 +17,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
 
-    // 회원가입 (유스케이스 UC-M01 구현)
+    // 회원가입
     public Long signup(String email, String password, String name, String phone) {
 
         String normalizedEmail = normalizeEmail(email);
@@ -40,7 +40,7 @@ public class MemberService {
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
     }
 
-    // 내 정보 수정 (UC-M05) - PATCH
+    // 내 정보 수정
     public void updateProfile(Long memberId, String name, String password, String phone) {
 
         Member member = findMember(memberId);
@@ -57,7 +57,7 @@ public class MemberService {
         memberRepository.save(member);      // 메모리 저장소니까 save를 명시 호출
     }
 
-    // 회원 탈퇴 (UC-M06) - 비활성화
+    // 회원 탈퇴
     public void deactivate(Long memberId) {
         Member member = findMember(memberId);
         member.deactivate();

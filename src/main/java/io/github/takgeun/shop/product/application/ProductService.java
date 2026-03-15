@@ -34,8 +34,14 @@ public class ProductService {
         List<Product> visible = filterVisibleProducts(admin, base);
 
 
-        log.info("base={}", base);
-        log.info("visible={}", visible);
+        log.info("base={}", base.stream()
+                .map(Product::getName)
+                .toList()
+        );
+        log.info("visible={}", visible.stream()
+                .map(Product::getName)
+                .toList()
+        );
 
         // sort 적용
         return applySort(visible, normalizeSort(sort));
