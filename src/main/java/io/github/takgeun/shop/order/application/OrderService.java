@@ -8,6 +8,7 @@ import io.github.takgeun.shop.global.error.UnauthorizedException;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberStatus;
+import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
@@ -48,23 +49,35 @@ public class OrderService {
      * 카트/바로구매 모두에서 사용하는 단일 진입점
      * 세션 모름 (서비스가 세션에 의존하는 문제점 해결)
      */
-    public Long checkout(Long memberId, List<CheckoutItem> checkoutItems, CheckoutForm form) {
+    public Long checkout(Long memberId,
+                         List<CheckoutItem> checkoutItems,
+                         CreateOrderCommand cmd
+    ) {
         requireAuthenticated(memberId);
-        validateCheckoutForm(form);
+        validateCreateOrderCommand(cmd);
+        validateCheckoutItems(checkoutItems);
 
         // member ACTIVE 검증
         Member member = memberService.findById(memberId);
         requireActiveMember(member);
 
-        validateCheckoutItems(checkoutItems);
+        // 이미 처리된 requestKey인지 먼저 확인
+        orderRepository.findByRequestKey(cmd.getRequestKey())
+                .ifPresent(existing -> {
+                    throw new ConflictException("이미 처리된 주문 요청입니다.");
+                });
 
         // product조회 + stock 감소 + OrderItem 스냅샷 생성
         List<OrderItem> orderItems = new ArrayList<>();
         int subtotal = 0;
 
         for (CheckoutItem checkoutItem : checkoutItems) {
-            if(checkoutItem == null) continue;
-            if(checkoutItem.getQuantity() <= 0) continue;
+            if(checkoutItem == null) {
+                continue;
+            }
+            if(checkoutItem.getQuantity() <= 0) {
+                continue;
+            }
 
             Product product = productService.getForOrderPublic(checkoutItem.getProductId());
             requireOnSale(product);
@@ -95,13 +108,14 @@ public class OrderService {
         Order order = Order.create(
                 memberId,
                 orderNumber,
+                cmd.getRequestKey(),
                 orderItems,
-                form.getRecipientName(),
-                form.getPhoneNumber(),
-                form.getZipCode(),
-                form.getAddress(),
-                form.getAddressDetail(),
-                form.getRequestMessage(),
+                cmd.getRecipientName(),
+                cmd.getPhoneNumber(),
+                cmd.getZipCode(),
+                cmd.getAddress(),
+                cmd.getAddressDetail(),
+                cmd.getRequestMessage(),
                 shippingFee
         );
 
@@ -110,16 +124,26 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        log.info("주문 생성 완료 : orderId={}, orderNumber={}, memberId={}, itemCount={}, subtotal={}, shippingFee={}, totalPrice={}",
+        log.info("주문 생성 완료 : orderId={}, orderNumber={}, memberId={}, requestKey={}, itemCount={}, subtotal={}, shippingFee={}, totalPrice={}",
                 savedOrder.getId(),
                 savedOrder.getOrderNumber(),
                 memberId,
+                cmd.getRequestKey(),
                 orderItems.size(),
                 subtotal,
                 shippingFee,
                 savedOrder.getTotalPrice());
 
         return savedOrder.getId();
+    }
+
+    private void validateCreateOrderCommand(CreateOrderCommand cmd) {
+        if(cmd == null) {
+            throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
+        }
+        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+            throw new IllegalArgumentException("requestKey는 필수입니다.");
+        }
     }
 
     public List<Order> getMyOrders(Long memberId) {

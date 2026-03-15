@@ -2,6 +2,7 @@ package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.view.CategorySidebarService;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -95,27 +97,34 @@ public class ProductViewController {
      * {productId} 부분에 숫자만 매칭되도록 정규식 제한할 것. (best/sale 같은 문자열 충돌 방지)
      */
     @GetMapping("/{productId:\\d+}")
-    public String detail(
-            @PathVariable @Positive Long productId,
-            Model model, HttpSession session, HttpServletRequest request) {
+    public String detail(@PathVariable @Positive Long productId,
+                         Model model,
+                         HttpSession session,
+                         HttpServletRequest request,
+                         RedirectAttributes ra) {
 
         boolean admin = isAdmin(session);
 
-        Product product = productService.getForDetail(admin, productId);
+        try {
+            Product product = productService.getForDetail(admin, productId);
 
-        ProductDetailView view = ProductDetailView.from(product);
+            ProductDetailView view = ProductDetailView.from(product);
 
-        String returnUrl = request.getRequestURI();
-        String query = request.getQueryString();
-        if(query != null) {
-            returnUrl += "?" + query;
+            String returnUrl = request.getRequestURI();
+            String query = request.getQueryString();
+            if(query != null) {
+                returnUrl += "?" + query;
+            }
+
+            model.addAttribute("product", view);
+            model.addAttribute("treeMode", admin ? "admin" : "public");
+            model.addAttribute("returnUrl", returnUrl);
+
+            return "public/products/detail";
+        } catch (NotFoundException e) {
+            ra.addFlashAttribute("error", "해당 상품은 현재 판매 중이 아니거나 찾을 수 없습니다.");
+            return "redirect:/products";
         }
-
-        model.addAttribute("product", view);
-        model.addAttribute("treeMode", admin ? "admin" : "public");
-        model.addAttribute("returnUrl", returnUrl);
-
-        return "public/products/detail";
     }
 
     private boolean isAdmin(HttpSession session) {

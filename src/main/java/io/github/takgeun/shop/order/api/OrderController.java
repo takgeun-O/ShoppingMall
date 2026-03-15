@@ -3,6 +3,7 @@ package io.github.takgeun.shop.order.api;
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.order.dto.request.OrderCreateRequest;
@@ -46,7 +47,16 @@ public class OrderController {
 
         List<CheckoutItem> items = cartService.getCheckoutItems(session);
 
-        Long orderId = orderService.checkout(memberId, items, form);
+        CreateOrderCommand cmd = new CreateOrderCommand(
+                form.getRecipientName(),
+                form.getPhoneNumber(),
+                form.getZipCode(),
+                form.getAddress(),
+                form.getAddressDetail(),
+                form.getRequestMessage(),
+                form.getRequestKey()
+        );
+        Long orderId = orderService.checkout(memberId, items, cmd);
 
         cartService.clear(session);
 

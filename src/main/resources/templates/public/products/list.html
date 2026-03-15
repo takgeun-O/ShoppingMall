@@ -46,6 +46,12 @@
             </div>
         </div>
 
+        <!-- Flash Error Message -->
+        <div th:if="${error != null}"
+             class="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <span th:text="${error}">에러 메시지</span>
+        </div>
+
         <!-- Filters and Sorting -->
         <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
 

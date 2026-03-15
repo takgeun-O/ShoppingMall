@@ -27,6 +27,21 @@
                 </div>
             </div>
 
+            <!-- Flash Message -->
+            <div class="mb-6 space-y-3">
+                <div th:if="${success != null}"
+                     class="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                    <span class="font-semibold">성공:</span>
+                    <span th:text="${success}">처리가 완료되었습니다.</span>
+                </div>
+
+                <div th:if="${error != null}"
+                     class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <span class="font-semibold">실패:</span>
+                    <span th:text="${error}">처리 중 오류가 발생했습니다.</span>
+                </div>
+            </div>
+
             <!-- Category Tree -->
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm">
                 <div class="border-b bg-gray-50 px-6 py-4">
@@ -76,6 +91,7 @@
                                     <form th:action="@{|/admin/categories/${category.id}/delete|}"
                                           method="post"
                                           class="m-0">
+                                        <input type="hidden" name="returnUrl" value="/admin/categories"/>
                                         <button type="submit"
                                                 class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-red-600 hover:bg-red-50 hover:text-red-600"
                                                 onclick="return confirm('해당 카테고리를 삭제하시겠습니까?');">
@@ -119,6 +135,7 @@
                                         <form th:action="@{|/admin/categories/${child.id}/delete|}"
                                               method="post"
                                               class="m-0">
+                                            <input type="hidden" name="returnUrl" value="/admin/categories"/>
                                             <button type="submit"
                                                     class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-red-600 hover:bg-red-50 hover:text-red-600"
                                                     onclick="return confirm('해당 하위 카테고리를 삭제하시겠습니까?');">

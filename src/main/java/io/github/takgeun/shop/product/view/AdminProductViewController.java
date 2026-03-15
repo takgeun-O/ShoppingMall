@@ -38,6 +38,33 @@ public class AdminProductViewController {
     private final CategoryService categoryService;
 
     /**
+     * 관리자 상품 관리 페이지
+     * GET /admin/products
+     */
+    @GetMapping
+    public String list(Model model, HttpSession session) {
+
+        requireAdmin(session);
+
+        log.info("관리자 상품 관리 페이지 진입");
+
+        List<Product> products = productService.findForList(true, null, "latest");
+
+        List<AdminProductListItemView> views = products.stream()
+                .map(this::toAdminListItemView)
+                .toList();
+
+        AdminProductSummaryView summary = AdminProductSummaryView.of(views);
+
+        model.addAttribute("products", views);
+        model.addAttribute("summary", summary);
+        model.addAttribute("treeMode", "admin");
+        model.addAttribute("isAdmin", true);
+
+        return "admin/products/list";
+    }
+
+    /**
      * 상품 상세 페이지 (관리자 전용)
      * GET /admin/products/{productId}
      */
@@ -63,33 +90,6 @@ public class AdminProductViewController {
         model.addAttribute("returnUrl", returnUrl);
 
         return "admin/products/detail";
-    }
-
-    /**
-     * 관리자 상품 관리 페이지
-     * GET /admin/products
-     */
-    @GetMapping
-    public String list(Model model, HttpSession session) {
-
-        requireAdmin(session);
-
-        log.info("관리자 상품 관리 페이지 진입");
-
-        List<Product> products = productService.findForList(true, null, "latest");
-
-        List<AdminProductListItemView> views = products.stream()
-                .map(this::toAdminListItemView)
-                .toList();
-
-        AdminProductSummaryView summary = AdminProductSummaryView.of(views);
-
-        model.addAttribute("products", views);
-        model.addAttribute("summary", summary);
-        model.addAttribute("treeMode", "admin");
-        model.addAttribute("isAdmin", true);
-
-        return "admin/products/list";
     }
 
     /**

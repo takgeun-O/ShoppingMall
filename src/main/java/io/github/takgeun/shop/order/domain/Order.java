@@ -18,6 +18,7 @@ public class Order {
     private String orderNumber;     // 외부 노출용 주문번호
     private Long memberId;
     private OrderStatus status;
+    private String requestKey;
 
     private List<OrderItem> orderItems;
 
@@ -41,6 +42,7 @@ public class Order {
 
     private Order(Long memberId,
                   String orderNumber,
+                  String requestKey,
                   List<OrderItem> orderItems,
                   String recipientName,
                   String recipientPhone,
@@ -62,6 +64,7 @@ public class Order {
 
         this.memberId = memberId;
         this.orderNumber = orderNumber;
+        this.requestKey = requestKey;
         this.orderItems = List.copyOf(orderItems);
 
         this.recipientName = recipientName;
@@ -84,6 +87,7 @@ public class Order {
 
     public static Order create(Long memberId,
                                String orderNumber,
+                               String requestKey,
                                List<OrderItem> orderItems,
                                String recipientName,
                                String recipientPhone,
@@ -96,6 +100,7 @@ public class Order {
         return new Order(
                 memberId,
                 orderNumber,
+                requestKey,
                 orderItems,
                 recipientName,
                 recipientPhone,

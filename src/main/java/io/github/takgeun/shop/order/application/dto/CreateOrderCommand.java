@@ -2,8 +2,10 @@ package io.github.takgeun.shop.order.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @AllArgsConstructor
 public class CreateOrderCommand {
     // 주문 생성용 Command DTO (서비스로 넘길 요청)
@@ -14,4 +16,7 @@ public class CreateOrderCommand {
     private String address;
     private String addressDetail;
     private String requestMessage;
+
+    // 중복 주문 방지용
+    private String requestKey;
 }

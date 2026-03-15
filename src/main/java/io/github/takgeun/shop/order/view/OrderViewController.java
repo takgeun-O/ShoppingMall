@@ -26,6 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 이 경로는 인터셉터측에서 로그인 체크해줌
@@ -44,11 +45,16 @@ public class OrderViewController {
      * GET /orders/checkout
      */
     @GetMapping("/checkout")
-    public String checkout(HttpServletRequest request, Model model, RedirectAttributes ra) {
+    public String checkout(HttpServletRequest request,
+                           Model model,
+                           RedirectAttributes ra
+    ) {
 
         // 인터셉터에서 이미 막아주고 있긴 하나 방어적 코딩
         // 로그인 안한 사용자가 접근하면 새 세션을 생성하게 되면 불필요한 세션이 증가하니 생성하지 않게 막기
         HttpSession session = request.getSession(false);
+
+        Long memberId = getRequiredLoginMemberId(session);
 
         CartViewResult cartView = getCartViewOrEmpty(session);
         if(cartView.getItems().isEmpty()) {
@@ -60,7 +66,9 @@ public class OrderViewController {
         attachCartModel(model, cartView);
 
         if(!model.containsAttribute("checkoutForm")) {
-            model.addAttribute("checkoutForm", new CheckoutForm());
+            CheckoutForm form = new CheckoutForm();
+            form.setRequestKey(memberId + ":" + UUID.randomUUID());
+            model.addAttribute("checkoutForm", form);
         }
 
         return "public/orders/checkout";
@@ -121,12 +129,13 @@ public class OrderViewController {
                 form.getZipCode(),
                 form.getAddress(),
                 form.getAddressDetail(),
-                form.getRequestMessage()
+                form.getRequestMessage(),
+                form.getRequestKey()
         );
 
         try {
             Long orderId = orderCheckoutService.createOrderFromCart(memberId, session, cmd);
-            return "redirect:/orders/" + orderId;       // 주문완료 페이지로 리다이렉트
+            return "redirect:/orders/" + orderId + "/complete";       // 주문완료 페이지로 리다이렉트
         } catch (ConflictException e) {
             // 사용자에게 checkout 화면에서 안내 가능한 예외만 캐치 (그 외 예외는 여기서 잡지 않음. 컨트롤러나 인터셉터 등 다른 데서 잡으니까)
             // 재고 부족
@@ -145,9 +154,9 @@ public class OrderViewController {
 
     /**
      * 주문 완료 페이지
-     * GET /orders/{orderId}
+     * GET /orders/{orderId}/complete
      */
-    @GetMapping("/{orderId:\\d+}")
+    @GetMapping("/{orderId:\\d+}/complete")
     public String complete(@PathVariable Long orderId,
                            HttpServletRequest request,
                            RedirectAttributes ra,

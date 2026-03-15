@@ -11,12 +11,20 @@ import lombok.Setter;
 public class CheckoutForm {
 
     /**
+     * 중복 주문 방지용 요청 키
+     */
+    @NotBlank(message = "잘못된 주문 요청입니다.", groups = ValidationGroups.Required.class)
+    @Size(max = 100, message = "잘못된 주문 요청입니다.")
+    private String requestKey;
+
+    /**
      * 받는 분 성함
      * 연락처
      * 우편번호
      * 주소
      * 상세주소
      * 요청사항
+     * (히든 입력) requestKey
      */
 
     @NotBlank(message = "받는 분 성함을 입력해주세요.", groups = ValidationGroups.Required.class)

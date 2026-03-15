@@ -75,6 +75,7 @@
 
             <!-- 폼: 배송지 + 결제 -->
             <form th:action="@{/orders}" method="post" th:object="${checkoutForm}">
+                <input type="hidden" th:field="*{requestKey}" />
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     <!-- Left Column -->

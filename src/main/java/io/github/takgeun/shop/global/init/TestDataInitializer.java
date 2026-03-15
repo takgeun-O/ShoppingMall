@@ -5,11 +5,11 @@ import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.dto.request.CheckoutItem;
-import io.github.takgeun.shop.order.view.form.CheckoutForm;
+import io.github.takgeun.shop.product.api.dto.request.ProductCreateRequest;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.api.dto.request.ProductCreateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @Profile("local")
@@ -357,7 +358,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(macbookId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -371,7 +373,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId2,
                 List.of(CheckoutItem.of(mouseId, 2)),
-                checkoutForm(
+                createOrderCommand(
+                        userId2,
                         "테스트2",
                         "010-1111-4444",
                         "04157",
@@ -388,7 +391,8 @@ public class TestDataInitializer implements ApplicationRunner {
                         CheckoutItem.of(qhdMonitorId, 1),
                         CheckoutItem.of(keyboardId, 1)
                 ),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -402,7 +406,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(galaxyId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -416,7 +421,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(ergoChairId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -433,7 +439,8 @@ public class TestDataInitializer implements ApplicationRunner {
                         CheckoutItem.of(tshirtId, 2),
                         CheckoutItem.of(jeansId, 1)
                 ),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -447,7 +454,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(woodenChairId, 2)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -461,7 +469,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(ultrabookId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -478,7 +487,8 @@ public class TestDataInitializer implements ApplicationRunner {
                         CheckoutItem.of(storageId, 1),
                         CheckoutItem.of(meshChairId, 1)
                 ),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -492,7 +502,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(shirtId, 2)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -506,7 +517,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(gamingDesktopId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -520,7 +532,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(storageId, 1)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -534,7 +547,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(CheckoutItem.of(tshirtId, 3)),
-                checkoutForm(
+                createOrderCommand(
+                        userId1,
                         "테스트",
                         "010-1111-2222",
                         "06236",
@@ -583,7 +597,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(CheckoutItem.of(mouseId, 1)),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "04524",
@@ -601,7 +616,8 @@ public class TestDataInitializer implements ApplicationRunner {
                                 CheckoutItem.of(tshirtId, 2),
                                 CheckoutItem.of(jeansId, 1)
                         ),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "06236",
@@ -619,7 +635,8 @@ public class TestDataInitializer implements ApplicationRunner {
                                 CheckoutItem.of(qhdMonitorId, 1),
                                 CheckoutItem.of(keyboardId, 1)
                         ),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "04157",
@@ -634,7 +651,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(CheckoutItem.of(galaxyId, 1)),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "48058",
@@ -652,7 +670,8 @@ public class TestDataInitializer implements ApplicationRunner {
                                 CheckoutItem.of(storageId, 1),
                                 CheckoutItem.of(meshChairId, 1)
                         ),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "35229",
@@ -667,7 +686,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(CheckoutItem.of(macbookId, 1)),
-                        checkoutForm(
+                        createOrderCommand(
+                                memberId,
                                 name,
                                 phone,
                                 "13529",
@@ -732,7 +752,8 @@ public class TestDataInitializer implements ApplicationRunner {
         );
     }
 
-    private CheckoutForm checkoutForm(
+    private CreateOrderCommand createOrderCommand(
+            Long memberId,
             String recipientName,
             String phoneNumber,
             String zipCode,
@@ -740,14 +761,19 @@ public class TestDataInitializer implements ApplicationRunner {
             String addressDetail,
             String requestMessage
     ) {
-        CheckoutForm form = new CheckoutForm();
-        form.setRecipientName(recipientName);
-        form.setPhoneNumber(phoneNumber);
-        form.setZipCode(zipCode);
-        form.setAddress(address);
-        form.setAddressDetail(addressDetail);
-        form.setRequestMessage(requestMessage);
-        return form;
+        return new CreateOrderCommand(
+                recipientName,
+                phoneNumber,
+                zipCode,
+                address,
+                addressDetail,
+                requestMessage,
+                generateRequestKey(memberId)
+        );
+    }
+
+    private String generateRequestKey(Long memberId) {
+        return "seed:" + memberId + ":" + UUID.randomUUID();
     }
 
     private String img(String key) {

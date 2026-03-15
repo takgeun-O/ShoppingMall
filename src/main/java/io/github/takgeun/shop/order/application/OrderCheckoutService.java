@@ -2,6 +2,7 @@ package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.infra.SessionCartRepository;
+import io.github.takgeun.shop.cart.view.dto.CartItemView;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
@@ -57,19 +58,25 @@ public class OrderCheckoutService {
      * - cmd (배송 정보들)
      * - 배송비 (주문금액에 따라 계산된 결과)
      */
-    public Long createOrderFromCart(Long memberId, HttpSession session, CreateOrderCommand cmd) {
+    public Long createOrderFromCart(Long memberId,
+                                    HttpSession session,
+                                    CreateOrderCommand cmd
+    ) {
         validateInputs(memberId, session, cmd);
 
         Member member = memberService.findById(memberId);
         requireActiveMember(member);        // 주문할 수 있는 회원 상태인지 검증
 
+        // 이미 요청한 주문이면 예외 처리 -> ConflictException
+        ensureNotProcessedRequest(cmd.getRequestKey());
+
         CartViewResult cartView = cartService.getCartView(session);
         if(cartView.getItems().isEmpty()) {
-            throw new NotFoundException("장바구니가 비어있습니다.");
+            throw new ConflictException("장바구니가 비어있습니다.");
         }
 
         // 실제 상품 기준으로 검증 + 재고 차감 + 주문 아이템 생성
-        List<OrderItem> orderItems = createOrderItemsAndDecreaseStock(cartView);
+        List<OrderItem> orderItems = createOrderItemsAndDecreaseStock(cartView.getItems());
 
         if(orderItems.isEmpty()) {
             throw new ConflictException("주문 가능한 상품이 없습니다.");
@@ -81,6 +88,7 @@ public class OrderCheckoutService {
         Order order = Order.create(
                 memberId,
                 orderNumber,
+                cmd.getRequestKey(),
                 orderItems,
                 cmd.getRecipientName(),
                 cmd.getPhoneNumber(),
@@ -99,7 +107,7 @@ public class OrderCheckoutService {
         // 주문 완료 화면은 세션에 캐시
         // 이유 : 새로고침 시 주문이 다시 생성되는 것을 방지 (가장 중요)
         // 위 현상을 방지하는 대표적인 방법이 PRG 패턴인데 문제는 redirect를 하면 POST에서 만든 데이터가 사라짐. -> GET /orders/complete 진입할 때 주문 데이터가 없음.
-        // 그래서 세션에 잠깐 저장하는 것.
+        // 그래서 중간 저장소에 값을 저장할 필요가 있는데 그 역할을 세션이 하는 걸로 결정
         OrderCompleteView completeView = buildCompleteViewFromOrder(savedOrder);
         session.setAttribute(orderViewKey(memberId, savedOrder.getId()), completeView);     // 동일회원의 각 주문을 키로 해서 주문완료정보를 세션에 저장
 
@@ -129,7 +137,7 @@ public class OrderCheckoutService {
             return view;
         }
 
-        // 세션에 없으면 DB에서 주문을 다시 조회한다. -> 세션이 날아가도 주문 데이터가 살아있으면 다시 화면을 복구할 수 있음.
+        // 세션이 만료되어 없으면 DB에서 주문을 다시 조회한다. -> 세션이 날아가도 주문 데이터가 살아있으면 다시 화면을 복구할 수 있음.
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("주문 정보를 찾을 수 없습니다."));
 
@@ -212,24 +220,24 @@ public class OrderCheckoutService {
      *
      * 장바구니에 담은 시점의 상품으로 주문을 해야 하기 때문에 스냅샷된 OrderItem 활용 필요
      */
-    private List<OrderItem> createOrderItemsAndDecreaseStock(CartViewResult cartView) {
+    private List<OrderItem> createOrderItemsAndDecreaseStock(List<CartItemView> cartItems) {
         List<OrderItem> orderItems = new ArrayList<>();
 
-        cartView.getItems().forEach(cartItem -> {
+        for (CartItemView cartItem : cartItems) {
             if(cartItem == null) {
-                return;
+                continue;
             }
-            if(cartItem.getQuantity() <= 0) {
+            if (cartItem.getQuantity() <= 0) {
                 throw new ConflictException("주문 수량은 1개 이상이어야 합니다.");
             }
 
-            Product product = productService.getForOrderPublic(cartItem.getProductId());    // 공개된 상품만 골라내기
-            requireOrderable(product);  // 판매 중인 상품만 골라내기
+            Product product = productService.getForOrderPublic(cartItem.getProductId());
+            requireOrderable(product);
 
-            product.decreaseStock(cartItem.getQuantity());      // 장바구니에 담은 수량만큼 차감시키기 (도메인 레벨에서 검증완료)
-            productService.save(product);       // 변경 상태 반영하기
+            // 상품 상태 갱신
+            product.decreaseStock(cartItem.getQuantity());
+            productService.save(product);
 
-            // 주문아이템 생성 후 리스트에 추가
             OrderItem orderItem = OrderItem.of(
                     product.getId(),
                     product.getName(),
@@ -240,7 +248,7 @@ public class OrderCheckoutService {
             );
 
             orderItems.add(orderItem);
-        });
+        }
 
         return orderItems;
     }
@@ -264,6 +272,9 @@ public class OrderCheckoutService {
         if(cmd == null) {
             throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
         }
+        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+            throw new IllegalArgumentException("requestKey는 필수입니다.");
+        }
     }
 
     private void validateKeyInputs(Long memberId, HttpSession session, Long orderId) {
@@ -285,5 +296,12 @@ public class OrderCheckoutService {
         if(member.getStatus() != MemberStatus.ACTIVE) {
             throw new ForbiddenException("비활성 회원은 주문할 수 없습니다.");
         }
+    }
+
+    private void ensureNotProcessedRequest(String requestKey) {
+        orderRepository.findByRequestKey(requestKey)
+                .ifPresent(order -> {
+                    throw new ConflictException("이미 처리된 주문 요청입니다.");
+                });
     }
 }

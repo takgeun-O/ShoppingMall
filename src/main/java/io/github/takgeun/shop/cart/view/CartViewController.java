@@ -49,7 +49,7 @@ public class CartViewController {
         int resolvedQty = Math.max(quantity, 1);
 
         try {
-            cartService.add(session, productId, resolvedQty);       // ConflictException 잡아야함.
+            cartService.add(session, productId, resolvedQty);       // ConflictException, NotFoundException
 
             ra.addFlashAttribute("success", "장바구니에 담았습니다.");
             ra.addFlashAttribute("added", true);
@@ -60,7 +60,8 @@ public class CartViewController {
             ra.addFlashAttribute("error", e.getMessage());
             ra.addFlashAttribute("errorProductId", productId);
         } catch (NotFoundException e) {
-            ra.addFlashAttribute("error", e.getMessage());
+            // 장바구니에 담기 직전 상품이 삭제되었을 경우 그 자리에서 NotFoundException 메시지 보여주는 게 좋을 듯
+            ra.addFlashAttribute("error", "해당 상품은 현재 판매 중이 아니거나 찾을 수 없습니다.");
             ra.addFlashAttribute("errorProductId", productId);
         }
 
@@ -82,6 +83,7 @@ public class CartViewController {
             return "redirect:/cart";
         }
 
+        // 수량 변경은 장바구니 화면에서 사용자가 즉시 시도하는 동작이라서 예외는 해당 페이지로 다시 보내면서 표시해주는 게 자연스러움.
         try {
             cartService.changeQuantity(session, id, delta);     // ConflictException 잡아야함.
         } catch (ConflictException e) {

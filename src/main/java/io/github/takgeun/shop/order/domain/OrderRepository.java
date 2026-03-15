@@ -16,4 +16,6 @@ public interface OrderRepository {
     int countByMemberId(Long memberId);
 
     List<Order> findAll();
+
+    Optional<Order> findByRequestKey(String requestKey);
 }

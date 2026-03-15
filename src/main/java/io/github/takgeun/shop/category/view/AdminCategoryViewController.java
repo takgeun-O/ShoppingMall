@@ -85,7 +85,8 @@ public class AdminCategoryViewController {
 
     // 카테고리 수정 폼
     @GetMapping("/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable Long id,
+                           Model model) {
         AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
         CategoryEditForm form = CategoryEditForm.of(category.getName(), category.getParentId());
 
@@ -131,18 +132,35 @@ public class AdminCategoryViewController {
 
     // 카테고리 삭제
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes ra) {
+    public String delete(@PathVariable Long id,
+                         @RequestParam(required = false) String returnUrl,
+                         RedirectAttributes ra) {
+
+        // delete()에 returnUrl 파라미터 받고 성공/실패 시 모두 그 위치로 돌려보내기
+        String redirectUrl = resolveDeleteRedirectUrl(id, returnUrl);
+
         try {
             categoryService.delete(id);
             ra.addFlashAttribute("success", "카테고리가 삭제되었습니다.");
-            return "redirect:/admin/categories";
+            return "redirect:" + redirectUrl;
         } catch (ConflictException e) {
             ra.addFlashAttribute("error", e.getMessage());
-            return "redirect:/admin/categories/{id}/edit";
+            return "redirect:" + redirectUrl;
         }
     }
 
+    private String resolveDeleteRedirectUrl(Long id, String returnUrl) {
+        if(returnUrl == null || returnUrl.trim().isBlank()) {
+            return "/admin/categories";
+        }
 
+        // 아주 최소한의 오픈 리다이렉트 방지
+        if(!returnUrl.startsWith("/")) {
+            return "/admin/categories";
+        }
+
+        return returnUrl;
+    }
 
     private void requireAdmin(HttpSession session) {
         if(session == null) {
