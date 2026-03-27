@@ -17,7 +17,7 @@ public class Product {
 
     private String imageUrl;
     private double rating;          // double 이니 기본값 0.0 (추후 리뷰 구현 시 값 넣기)
-    private Integer originalPrice;  // Integer 니까 기본값 null (추후 할인 구현 시 값 넣기)
+    private Integer originalPrice;
 
     protected Product() {
     }

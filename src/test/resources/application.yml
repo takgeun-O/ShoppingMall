@@ -1,0 +1,27 @@
+spring:
+    application:
+        name: shop-service
+
+    datasource:
+        url: jdbc:h2:mem:${random.uuid};DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        driver-class-name: org.h2.Driver
+        username: sa
+        password:
+    sql:
+        init:
+            mode: always
+
+mybatis:
+    mapper-locations: classpath:mapper/**/*.xml
+    type-aliases-package: io.github.takgeun.shop
+    configuration:
+        map-underscore-to-camel-case: true
+        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+    level:
+        org.mybatis: DEBUG
+        org.mybatis.spring: DEBUG
+        org.springframework.jdbc: DEBUG
+        jdbc.sqlonly: DEBUG
+        com.zaxxer.hikari: DEBUG

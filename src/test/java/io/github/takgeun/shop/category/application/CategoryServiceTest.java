@@ -2,13 +2,13 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
-import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
+import io.github.takgeun.shop.category.infra.memory.MemoryCategoryRepository;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.infra.MemoryProductRepository;
+import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

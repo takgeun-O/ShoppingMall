@@ -28,5 +28,5 @@ public interface CategoryRepository {
     // 수정 시 내 자신 제외 중복 체크
     boolean existsByNameKeyExceptId(String nameKey, Long excludeId);
 
-    boolean existsBySlugExceptId(String slug, Long categoryId);
+    boolean existsBySlugExceptId(String slug, Long excludeId);
 }

@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: shop-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/shoppingmall?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: io.github.takgeun.shop
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    org.mybatis: DEBUG
+    org.mybatis.spring: DEBUG
+    com.zaxxer.hikari: DEBUG

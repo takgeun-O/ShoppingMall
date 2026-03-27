@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -168,16 +169,16 @@ public class ProductService {
 
     private List<Product> findBaseProducts(boolean admin, Long categoryId) {
         if(categoryId == null) {
-            return productRepository.findAll();
+            return productRepository.findAllAdmin();
         }
 
         // 자손 포함 카테고리 id 구하기
-        List<Long> categoryIds = admin
+        Set<Long> categoryIds = admin
                 ? categoryService.findAdminDescendantIdsIncludingSelf(categoryId)
                 : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
 
         // IN 조회
-        return productRepository.findAllByCategoryIdIn(categoryIds);
+        return productRepository.findAllAdminByCategoryIds(categoryIds);
     }
 
     private List<Product> filterVisibleProducts(boolean admin, List<Product> products) {

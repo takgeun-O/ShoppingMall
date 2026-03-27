@@ -51,7 +51,7 @@ public class AdminCategoryQueryService {
                             category.getId(),
                             category.getName(),
                             toSlug(category.getName()),
-                            productRepository.countByCategoryId(category.getId()),
+                            productRepository.countAdminByCategoryId(category.getId()),
                             category.getParentId()
                     )
             );

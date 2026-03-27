@@ -34,7 +34,7 @@ class MemberServiceTest {
 
         // when
         Long memberId = memberService.signup(email, password, name, phone);
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
 
         // then
         assertNotNull(memberId);
@@ -75,7 +75,7 @@ class MemberServiceTest {
         Long memberId = memberService.signup(email, password, name, phone);
 
         // when
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
 
         // then
         assertEquals(memberId, member.getId());
@@ -91,7 +91,7 @@ class MemberServiceTest {
 
         // then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> memberService.get(999L));
+                () -> memberService.findById(999L));
         assertEquals("회원이 존재하지 않습니다.", e.getMessage());
     }
 
@@ -150,7 +150,7 @@ class MemberServiceTest {
         );
 
         // then
-        Member updated = memberService.get(memberId);
+        Member updated = memberService.findById(memberId);
         assertEquals("테스트2", updated.getName());
         assertEquals("010-2222-3333", updated.getPhone());
         assertEquals("123123123", updated.getPassword());   // 비번 변경 X
@@ -187,7 +187,7 @@ class MemberServiceTest {
         String name = "테스트";
         String phone = "010-1111-2222";
         Long memberId = memberService.signup(email, password, name, phone);
-        Member member = memberService.get(memberId);
+        Member member = memberService.findById(memberId);
 
         // when
         memberService.deactivate(memberId);

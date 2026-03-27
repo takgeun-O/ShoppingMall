@@ -10,7 +10,7 @@ public class Category {
     private Long id;
     private String name;    // 화면 표시용 : 앞뒤 공백 trim만 사용
     private String nameKey; // 중복/검색용 키 : case-insensitive 비교용, trim + lowerCase (DB 사용 시 이 컬럼에 UNIQUE 걸기)
-    private String slug;    // URL 식별자
+    private String slug;    // URL 식별자 (/categories/electronics 등등 사람이 URL만 보고 의미 파악 가능)
     private Long parentId;
     private CategoryStatus status;
 
@@ -138,11 +138,6 @@ public class Category {
         // 이건 상품이 고객에게 보여질 것인지 여부로 쓸 것
         // active 상태의 상품인데 아직 비공개로 할 지 등등 나중에 정하기
         return this.status == CategoryStatus.ACTIVE;
-    }
-
-    public void activate() {
-        if (this.status == CategoryStatus.ACTIVE) return;
-        this.status = CategoryStatus.ACTIVE;
     }
 
     public void deactivate() {
