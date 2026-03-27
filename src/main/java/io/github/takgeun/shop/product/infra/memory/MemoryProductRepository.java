@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.product.infra;
+package io.github.takgeun.shop.product.infra.memory;
 
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
@@ -6,12 +6,11 @@ import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Repository
 public class MemoryProductRepository implements ProductRepository {
 
-    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAllAdmin 안정적)
+    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAll 안정적)
     private final Map<Long, Product> store = new LinkedHashMap<>();
     private long sequence = 0L;     // 동시성 문제는 추후 해결할 것.
 
@@ -32,33 +31,20 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
+    public Optional<Product> findPublicById(Long id) {
+        return store.values().stream()
+                .filter(p -> p.getId().equals(id))
+                .filter(Product::isPublicVisible)
+                .findFirst();
+    }
+
+    @Override
     public Optional<Product> findById(Long id) {
         return Optional.ofNullable(store.get(id));      // 값이 있으면 Optional<Category> 없으면 Optional.empty()
     }
 
     @Override
-    public List<Product> findAll() {
-        return new ArrayList<>(store.values());
-    }
-
-    @Override
-    public List<Product> findAllByCategoryId(Long categoryId) {
-        return store.values().stream()
-                .filter(p -> Objects.equals(p.getCategoryId(), categoryId))
-                .toList();
-    }
-
-    @Override
-    public List<Product> findAllByCategoryIdIn(List<Long> categoryIds) {
-        Set<Long> set = new HashSet<>(categoryIds);
-
-        return store.values().stream()
-                .filter(p -> set.contains(p.getCategoryId()))
-                .toList();
-    }
-
-    @Override
-    public boolean existsByCategoryId(Long categoryId) {
+    public boolean existsAdminByCategoryId(Long categoryId) {
         return store.values().stream()
                 .anyMatch(p -> Objects.equals(p.getCategoryId(), categoryId));
     }
@@ -110,7 +96,7 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
-    public int countByCategoryId(Long categoryId) {
+    public int countAdminByCategoryId(Long categoryId) {
         // 카테고리별 상품 개수 (상품 개수가 int 범위를 벗어날 일 없으니 캐스팅해도 괜찮)
         return (int) store.values().stream()
                 .filter(p -> Objects.equals(p.getCategoryId(), categoryId)) // p.getCategoryId()가 NULL일 때 NPE 방지

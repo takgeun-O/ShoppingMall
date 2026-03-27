@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.takgeun.shop.product.infra.mybatis.ProductMapper">
+
+    <resultMap id="productResultMap" type="Product">
+        <id property="id" column="id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="name" column="name"/>
+        <result property="price" column="price"/>
+        <result property="stock" column="stock"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="rating" column="rating"/>
+        <result property="originalPrice" column="original_price"/>
+    </resultMap>
+
+    <sql id="productColumns">
+        id,
+        category_id,
+        name,
+        price,
+        stock,
+        description,
+        status,
+        image_url,
+        rating,
+        original_price
+    </sql>
+
+    <sql id="publicStatusCondition">
+        status in ('ON_SALE', 'SOLD_OUT')
+    </sql>
+
+    <insert id="insert"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into product (
+                             category_id,
+                             name,
+                             price,
+                             stock,
+                             description,
+                             status,
+                             image_url,
+                             rating,
+                             original_price
+        ) values (
+                  #{categoryId},
+                  #{name},
+                  #{price},
+                  #{stock},
+                  #{description},
+                  #{status},
+                  #{imageUrl},
+                  #{rating},
+                  #{originalPrice}
+        )
+    </insert>
+
+    <update id="update">
+        update product
+        set
+            category_id = #{categoryId},
+            name = #{name},
+            price = #{price},
+            stock = #{stock},
+            description = #{description},
+            status = #{status},
+            image_url = #{imageUrl},
+            rating = #{rating},
+            originalPrice = #{originalPrice}
+        where id = #{id}
+    </update>
+
+    <!-- Public -->
+    <select id="findPublicById" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        where id = #{id}
+            and <include refid="publicStatusCondition"></include>
+    </select>
+
+    <select id="findAllPublic" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        where <include refid="publicStatusCondition"></include>
+        order by id desc
+    </select>
+
+    <select id="findAllPublicByCategoryId" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        where category_id = #{categoryId}
+            and <include refid="publicStatusCondition"></include>
+        order by id desc
+    </select>
+
+    <select id="findAllPublicByCategoryIds" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        <where>
+            <include refid="publicStatusCondition"></include>
+            <if test="categoryIds != null and categoryIds.size() > 0">
+                and category_id in
+                <foreach collection="categoryIds" item="categoryId" open="(" separator="," close=")">
+                    #{categoryId}
+                </foreach>
+            </if>
+            <if test="categoryIds == null or categoryIds.size() == 0">
+                and 1 = 0
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <!-- Admin -->
+    <select id="findById" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        where id = #{id}
+    </select>
+
+    <select id="findAllAdmin" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        order by id desc
+    </select>
+
+    <select id="findAllAdminByCategoryId" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        where category_id = #{categoryId}
+        order by id desc
+    </select>
+
+    <select id="findAllAdminByCategoryIds" resultMap="productResultMap">
+        select
+            <include refid="productColumns"></include>
+        from product
+        <where>
+            <if test="categoryIds != null and categoryIds.size() > 0">
+                category_id in
+                <foreach collection="categoryIds" item="categoryId" open="(" separator="," close=")">
+                    #{categoryId}
+                </foreach>
+            </if>
+            <if test="categoryIds == null or categoryIds.size() == 0">
+                1 = 0
+            </if>
+        </where>
+        order by id desc
+    </select>
+
+    <!-- 기타 -->
+    <select id="existsAdminByCategoryId" resultType="boolean">
+        select exists(
+            select 1
+            from product
+            where category_id = #{categoryId}
+        )
+    </select>
+
+    <select id="countAdminByCategoryId" resultType="int">
+        select count(*)
+        from product
+        where category_id = #{categoryId}
+    </select>
+
+</mapper>

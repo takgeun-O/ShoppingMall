@@ -1,15 +1,17 @@
-package io.github.takgeun.shop.category.infra;
+package io.github.takgeun.shop.category.infra.memory;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
+@Profile("memory")
 public class MemoryCategoryRepository implements CategoryRepository {
 
-    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAllAdmin 안정적)
+    // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAll 안정적)
     private final Map<Long, Category> store = new LinkedHashMap<>();
     private long sequence = 0L;     // 추후 동시성 문제 해결할 것.
 
@@ -145,9 +147,9 @@ public class MemoryCategoryRepository implements CategoryRepository {
     }
 
     @Override
-    public boolean existsBySlugExceptId(String slug, Long categoryId) {
+    public boolean existsBySlugExceptId(String slug, Long excludeId) {
         return store.values().stream()
                 .anyMatch(c -> c.getSlug().equals(slug) &&
-                        !c.getId().equals(categoryId));
+                        !c.getId().equals(excludeId));
     }
 }

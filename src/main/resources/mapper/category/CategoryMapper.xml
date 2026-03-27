@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.takgeun.shop.category.infra.mybatis.CategoryMapper">
+
+    <resultMap id="categoryResultMap" type="io.github.takgeun.shop.category.domain.Category">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="nameKey" column="name_key"/>
+        <result property="slug" column="slug"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="status" column="status"
+                javaType="io.github.takgeun.shop.category.domain.CategoryStatus"
+                jdbcType="VARCHAR"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+    </resultMap>
+
+    <sql id="categoryColumns">
+        id,
+        name,
+        name_key,
+        slug,
+        parent_id,
+        status
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into category (name,
+                              name_key,
+                              slug,
+                              parent_id,
+                              status)
+        values (#{name},
+                #{nameKey},
+                #{slug},
+                #{parentId},
+                #{status})
+    </insert>
+
+    <update id="update">
+        update category
+        set
+            name = #{name},
+            name_key = #{nameKey},
+            slug = #{slug},
+            parent_id = #{parentId},
+            status = #{status}
+        where id = #{id}
+    </update>
+
+    <select id="findById" resultMap="categoryResultMap">
+        select
+            <include refid="categoryColumns"/>
+        from category
+        where id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="categoryResultMap">
+        select
+            <include refid="categoryColumns"/>
+        from category
+        order by
+            case when parent_id is null then 0 else 1 end,
+            parent_id asc,
+            id asc
+    </select>
+
+    <delete id="deleteById">
+        delete from category
+        where id = #{id}
+    </delete>
+
+    <select id="existsByParentId" resultType="boolean">
+        select case when count(*) > 0 then true else false end
+        from category
+        where parent_id = #{parentId}
+    </select>
+
+    <select id="existsByNameKey" resultType="boolean">
+        select case when count(*) > 0 then true else false end
+        from category
+        where name_key = #{nameKey}
+    </select>
+
+    <select id="existsBySlug" resultType="boolean">
+        select case when count(*) > 0 then true else false end
+        from category
+        where slug = #{slug}
+    </select>
+
+    <select id="existsByNameKeyExceptId" resultType="boolean">
+        select case when count(*) > 0 then true else false end
+        from category
+        where name_key = #{nameKey}
+            and id != #{excludeId}
+    </select>
+
+    <select id="existsBySlugExceptId" resultType="boolean">
+        select case when count(*) > 0 then true else false end
+        from category
+        where slug = #{slug}
+            and id != #{categoryId}
+    </select>
+</mapper>

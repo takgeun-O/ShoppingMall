@@ -48,7 +48,7 @@ public abstract class IntegrationTestSupport {
 
     protected Long givenOnSaleProduct(int price, int stock) {
         Long categoryId = categoryService.create("전자" + System.nanoTime(), null);
-        Long productId = productService.create(categoryId, "노트북", price, stock, "튼튼한 노트북");
+        Long productId = productService.create(categoryId, "노트북", price, stock, "튼튼한 노트북", ProductStatus.ON_SALE, null, null);
         productService.changeStatus(productId, ProductStatus.ON_SALE);
         return productId;
     }

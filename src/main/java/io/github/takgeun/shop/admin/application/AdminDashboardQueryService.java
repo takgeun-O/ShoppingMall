@@ -37,7 +37,7 @@ public class AdminDashboardQueryService {
     public AdminDashboardView getDashboard() {
         List<Order> orders = orderRepository.findAll();
         List<Member> members = memberRepository.findAll();
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findAllAdmin();
 
         int totalOrderCount = orders.size();
         int totalMemberCount = members.size();

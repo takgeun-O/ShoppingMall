@@ -11,6 +11,7 @@ import io.github.takgeun.shop.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -27,12 +28,19 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)     // 조회가 많은 서비스는 이걸로. (대신 쓰기 메서드는 @Transactional로 열기)
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
 
-    // 카테고리 생성
+    /**
+     * 카테고리 생성
+     * 부모 존재 여부 확인
+     * 2단계까지만!
+     * 이름/slug 중복 금지
+     */
+    @Transactional
     public Long create(String name, Long parentId) {
         Category parent = validateCreatableParent(parentId);    // 카테고리 생성 시 2단까지 허용하기
 
@@ -54,9 +62,10 @@ public class CategoryService {
      * - 순환 참조 금지
      * - depth 2 초과 금지
      */
+    @Transactional
     public void update(Long categoryId, String name, Long parentId) {
 
-        Category category = findCategory(categoryId);
+        Category category = getCategoryOrThrow(categoryId);
         Category parent = validateUpdatableParent(categoryId, parentId);        // 부모 카테고리 존재 여부 확인 + 자기 자신 부모 설정 금지 + 2단 금지
 
         validateNoCircularReference(categoryId, parentId);      // 순환 참조 여부 "A면 B이고 B가 C이면 A는 C이다." 금지
@@ -65,16 +74,24 @@ public class CategoryService {
         validateDuplicateNameForUpdate(normalizedKey, categoryId);  // 카테고리 수정할 때 나 자신을 제외한 카테고리명 중복이 있는지 체크
 
         String newSlug = Category.createSlug(name);
-        validateDuplicateSlug(newSlug);
+//        validateDuplicateSlug(newSlug);
+        validateDuplicateSlugForUpdate(newSlug, categoryId);
 
         category.changeName(name);
         category.changeSlug(newSlug);
-        category.changeParent(parentId);
+        category.changeParent(parentId != null ? parent.getId() : null);
+
+        categoryRepository.save(category);
     }
 
-    // 카테고리 삭제
+    /**
+     * 카테고리 삭제
+     * 하위 카테고리 존재 시 삭제 불가
+     * 연결된 상품 존재 시 삭제 불가
+     */
+    @Transactional
     public void delete(Long categoryId) {
-
+        getCategoryOrThrow(categoryId);
         validateNoChildren(categoryId);
         validateNoProducts(categoryId);
 
@@ -107,9 +124,7 @@ public class CategoryService {
 
     // 단건 조회 (유저)
     public Category getPublic(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
-
+        Category category = getCategoryOrThrow(id);
         if (!category.isActive()) {
             throw new NotFoundException("카테고리가 존재하지 않습니다.");
         }
@@ -119,14 +134,13 @@ public class CategoryService {
 
     // 단건 조회 (관리자)
     public Category getAdmin(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
+        return getCategoryOrThrow(id);
     }
 
     // 목록 조회 (유저)
     public List<Category> getAllPublic() {
         return categoryRepository.findAllPublic().stream()
-                .filter(Category::isActive)
+                .filter(Category::isPublicVisible)
                 .toList();
     }
 
@@ -143,74 +157,20 @@ public class CategoryService {
                 .toList();
     }
 
-    public List<Long> findPublicDescendantIdsIncludingSelf(Long rootId) {
+    public Set<Long> findPublicDescendantIdsIncludingSelf(Long rootId) {
         // 공개 카테고리 전체 가져오기
         List<CategoryResponse> all = getAllPublicCategories();
         log.info("allPublic.size={}", all.size());
 
-        // parentId -> children 리스트 맵 만들기
-        Map<Long, List<Long>> childrenByParent = new HashMap<>();
-        for (CategoryResponse c : all) {
-            childrenByParent
-                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
-                    .add(c.getId());
-        }
-
-        // BFS로 root 포함 자손 id 수집
-        List<Long> result = new ArrayList<>();
-        Deque<Long> q = new ArrayDeque<>();
-        Set<Long> visited = new HashSet<>();
-
-        q.add(rootId);
-        visited.add(rootId);
-
-        while (!q.isEmpty()) {
-            Long cur = q.poll();
-            result.add(cur);
-
-            for (Long childId : childrenByParent.getOrDefault(cur, List.of())) {
-                if (visited.add(childId)) {
-                    q.add(childId);
-                }
-            }
-        }
-
-        return result;
+        return findDescendantIdsIncludingSelf(all, rootId);
     }
 
-    public List<Long> findAdminDescendantIdsIncludingSelf(Long rootId) {
+    public Set<Long> findAdminDescendantIdsIncludingSelf(Long rootId) {
         // 모든 카테고리 정보 가져오기
         List<CategoryResponse> all = getAllAdminCategories();
         log.info("allAdmin.size={}", all.size());
 
-        // parentId -> children 리스트 맵 만들기
-        Map<Long, List<Long>> childrenByParent = new HashMap<>();
-        for (CategoryResponse c : all) {
-            childrenByParent
-                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
-                    .add(c.getId());
-        }
-
-        // BFS로 root 포함 자손 id 수집
-        List<Long> result = new ArrayList<>();
-        Deque<Long> q = new ArrayDeque<>();
-        Set<Long> visited = new HashSet<>();
-
-        q.add(rootId);
-        visited.add(rootId);
-
-        while (!q.isEmpty()) {
-            Long cur = q.poll();
-            result.add(cur);
-
-            for (Long childId : childrenByParent.getOrDefault(cur, List.of())) {
-                if (visited.add(childId)) {
-                    q.add(childId);
-                }
-            }
-        }
-
-        return result;
+        return findDescendantIdsIncludingSelf(all, rootId);
     }
 
     public String findAdminNameOrNull(Long categoryId) {
@@ -252,12 +212,9 @@ public class CategoryService {
     }
 
 
-    private void validateParentExists(Long parentId) {
-        if (parentId == null) {
-            return;
-        }
-        categoryRepository.findById(parentId)
-                .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다. id=" + parentId));
+    private Category getCategoryOrThrow(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다. id=" + categoryId));
     }
 
     private void validateDuplicateName(String normalizedKey) {
@@ -288,14 +245,12 @@ public class CategoryService {
         }
     }
 
-    private Category findCategory(Long categoryId) {
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("카테고리를 찾을 수 없습니다."));
-    }
-
-    private void validateSelfParent(Long categoryId, Long parentId) {
-        if (parentId != null && parentId.equals(categoryId)) {
-            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
+    private void validateDuplicateSlugForUpdate(String slug, Long categoryId) {
+        if(slug == null) {
+            throw new IllegalArgumentException("slug는 필수입니다.");
+        }
+        if(categoryRepository.existsBySlugExceptId(slug, categoryId)) {
+            throw new ConflictException("이미 존재하는 카테고리 slug입니다.");
         }
     }
 
@@ -331,7 +286,7 @@ public class CategoryService {
     }
 
     private void validateNoProducts(Long categoryId) {
-        if(productRepository.existsByCategoryId(categoryId)) {
+        if(productRepository.existsAdminByCategoryId(categoryId)) {
             throw new ConflictException("상품이 연결된 카테고리는 삭제할 수 없습니다.");
         }
     }
@@ -369,5 +324,35 @@ public class CategoryService {
         }
 
         return parent;
+    }
+
+    private Set<Long> findDescendantIdsIncludingSelf(List<CategoryResponse> all, Long rootId) {
+
+        // parentId -> children 맵
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (CategoryResponse c : all) {
+            childrenByParent
+                    .computeIfAbsent(c.getParentId(), k -> new ArrayList<>())
+                    .add(c.getId());
+        }
+
+        // BFS (부모 -> 자식으로 가는 순서가 자연스러움)
+        Set<Long> result = new LinkedHashSet<>();   // 순서 유지 + 중복 제거
+        Deque<Long> q = new ArrayDeque<>();
+
+        q.add(rootId);
+        result.add(rootId);     // visited 역할도 겸함.
+
+        while(!q.isEmpty()) {
+            Long cur = q.poll();
+
+            for (Long childId : childrenByParent.getOrDefault(cur, List.of())) {
+                if(result.add(childId)) {
+                    q.add(childId);
+                }
+            }
+        }
+
+        return result;
     }
 }

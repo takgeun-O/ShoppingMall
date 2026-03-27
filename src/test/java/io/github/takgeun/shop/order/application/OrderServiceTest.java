@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.infra.MemoryCategoryRepository;
+import io.github.takgeun.shop.category.infra.memory.MemoryCategoryRepository;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.error.NotFoundException;
@@ -19,7 +19,7 @@ import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.order.infra.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import io.github.takgeun.shop.product.infra.MemoryProductRepository;
+import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
