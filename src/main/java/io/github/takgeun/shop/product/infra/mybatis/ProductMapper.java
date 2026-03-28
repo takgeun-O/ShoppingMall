@@ -25,7 +25,7 @@ public interface ProductMapper {
     List<Product> findAllPublicByCategoryIds(@Param("categoryIds") Set<Long> categoryIds);
 
     // Admin
-    Product findById(@Param("id") Long id);
+    Optional<Product> findById(@Param("id") Long id);
 
     List<Product> findAllAdmin();
 

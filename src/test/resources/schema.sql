@@ -15,8 +15,8 @@ create table category (
     constraint ck_category_name_not_blank check (trim(name) <> ''),
     constraint ck_category_name_key_not_blank check (trim(name_key) <> ''),
     constraint ck_category_slug_not_blank check (trim(slug) <> ''),
-    constraint ck_category_parent_id_positive check (parent_id is null or parent_id > 0),
-    constraint ck_category_status check (status in ('ACTIVE', 'INACTIVE'))
+    constraint ck_category_parent_id_positive check (parent_id is null or parent_id > 0)
+--     constraint ck_category_status check (status in ('ACTIVE', 'INACTIVE'))
 );
 
 create table product (
@@ -40,8 +40,8 @@ create table product (
     constraint ck_product_name_not_blank check (trim(name) <> ''),
     constraint ck_product_price_not_negative check (price >= 0),
     constraint ck_product_stock_not_negative check (stock >= 0),
-    constraint ck_product_status check (
-        status in ('READY', 'ON_SALE', 'SOLD_OUT','HIDDEN', 'DISCONTINUED')),
+--     constraint ck_product_status check (
+--         status in ('READY', 'ON_SALE', 'SOLD_OUT','HIDDEN', 'DISCONTINUED')),
     constraint ck_product_original_price_positive check
         (original_price is null or original_price >= 0)
 );

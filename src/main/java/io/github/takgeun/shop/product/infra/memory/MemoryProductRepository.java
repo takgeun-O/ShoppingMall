@@ -3,11 +3,13 @@ package io.github.takgeun.shop.product.infra.memory;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
+@Profile("memory")
 public class MemoryProductRepository implements ProductRepository {
 
     // 저장 순서 유지하기 위해 LinkedHashMap 사용 (findAll 안정적)

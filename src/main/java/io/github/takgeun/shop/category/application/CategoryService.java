@@ -314,7 +314,7 @@ public class CategoryService {
         }
 
         Category parent = categoryRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다. id=" + categoryId));
+                .orElseThrow(() -> new IllegalArgumentException("부모 카테고리를 찾을 수 없습니다. id=" + parentId));
 
         if(parent.getId().equals(categoryId)) {
             throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
