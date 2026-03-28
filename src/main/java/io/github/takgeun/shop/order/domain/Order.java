@@ -9,6 +9,15 @@ import java.util.List;
 @Getter
 public class Order {
 
+    private static final int MAX_ORDER_NUMBER_LENGTH = 50;
+    private static final int MAX_REQUEST_KEY_LENGTH = 100;
+    private static final int MAX_RECIPIENT_NAME_LENGTH = 50;
+    private static final int MAX_RECIPIENT_PHONE_LENGTH = 30;
+    private static final int MAX_SHIPPING_ZIP_CODE_LENGTH = 20;
+    private static final int MAX_SHIPPING_ADDRESS_LENGTH = 200;
+    private static final int MAX_SHIPPING_ADDRESS_DETAIL_LENGTH = 200;
+    private static final int MAX_REQUEST_MESSAGE_LENGTH = 200;
+
     /**
      * Order : 여러 상품을 담는 Aggregate Root
      * OrderItem : 각 내부 구성요소
@@ -18,7 +27,7 @@ public class Order {
     private String orderNumber;     // 외부 노출용 주문번호
     private Long memberId;
     private OrderStatus status;
-    private String requestKey;
+    private String requestKey;      // 이미 처리된 요청인지 판별
 
     private List<OrderItem> orderItems;
 
@@ -54,13 +63,15 @@ public class Order {
 
         validateMemberId(memberId);
         validateOrderNumber(orderNumber);
+        validateRequestKey(requestKey);
         validateOrderItems(orderItems);
-        requireText(recipientName, "recipientName은 필수입니다.");
-        requireText(recipientPhone, "recipientPhone은 필수입니다.");
-        requireText(shippingZipCode, "shippingZipCode는 필수입니다.");
-        requireText(shippingAddress, "shippingAddress는 필수입니다.");
-        requireText(shippingAddressDetail, "shippingAddressDetail은 필수입니다.");
+        validateRecipientName(recipientName);
+        validateRecipientPhone(recipientPhone);
+        validateShippingZipCode(shippingZipCode);
+        validateShippingAddress(shippingAddress);
+        validateShippingAddressDetail(shippingAddressDetail);
         validateRequestMessage(requestMessage);
+        validateShippingFee(shippingFee);
 
         this.memberId = memberId;
         this.orderNumber = orderNumber;
@@ -180,26 +191,93 @@ public class Order {
         return this.status == OrderStatus.CANCELED;
     }
 
-
-    private void requireText(String value, String message) {
-        if(value == null || value.trim().isEmpty()) throw new IllegalArgumentException(message);
-    }
-
-    private void validateRequestMessage(String requestMessage) {
-        if(requestMessage != null && requestMessage.trim().length() > 200) {
-            throw new IllegalArgumentException("requestMessage는 200자 이하입니다.");
+    public void replaceOrderItems(List<OrderItem> orderItems) {
+        if(orderItems == null || orderItems.isEmpty()) {
+            throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
         }
+        this.orderItems = List.copyOf(orderItems);
     }
 
     private void validateOrderItems(List<OrderItem> orderItems) {
-        if(orderItems == null || orderItems.isEmpty()) throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+        if(orderItems == null || orderItems.isEmpty()) {
+            throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+        }
     }
 
     private void validateOrderNumber(String orderNumber) {
-        if(orderNumber == null || orderNumber.isEmpty()) throw new IllegalArgumentException("orderNumber는 필수입니다.");
+        requireText(orderNumber, "orderNumber는 필수입니다.");
+        if(orderNumber.length() > MAX_ORDER_NUMBER_LENGTH) {
+            throw new IllegalArgumentException("orderNumber는 최대 " + MAX_ORDER_NUMBER_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateRequestKey(String requestKey) {
+        requireText(requestKey, "requestKey는 필수입니다.");
+        if(requestKey.length() > MAX_REQUEST_KEY_LENGTH) {
+            throw new IllegalArgumentException("requestKey는 최대 " + MAX_REQUEST_KEY_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateRecipientName(String recipientName) {
+        requireText(recipientName, "recipientName은 필수입니다.");
+        if(recipientName.length() > MAX_RECIPIENT_NAME_LENGTH) {
+            throw new IllegalArgumentException("recipientName은 최대 " + MAX_RECIPIENT_NAME_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateRecipientPhone(String recipientPhone) {
+        requireText(recipientPhone, "recipientPhone은 필수입니다.");
+        if(recipientPhone.length() > MAX_RECIPIENT_PHONE_LENGTH) {
+            throw new IllegalArgumentException("recipientPhone은 최대 " + MAX_RECIPIENT_PHONE_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateShippingZipCode(String shippingZipCode) {
+        requireText(shippingZipCode, "shippingZipCode는 필수입니다.");
+        if(shippingZipCode.length() > MAX_SHIPPING_ZIP_CODE_LENGTH) {
+            throw new IllegalArgumentException("shippingZipCode는 최대 " + MAX_SHIPPING_ZIP_CODE_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateShippingAddress(String shippingAddress) {
+        requireText(shippingAddress, "shippingAddress는 필수입니다.");
+        if(shippingAddress.length() > MAX_SHIPPING_ADDRESS_LENGTH) {
+            throw new IllegalArgumentException("shippingAddress는 최대 " + MAX_SHIPPING_ADDRESS_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateShippingAddressDetail(String shippingAddressDetail) {
+        requireText(shippingAddressDetail, "shippingAddressDetail은 필수입니다.");
+        if(shippingAddressDetail.length() > MAX_SHIPPING_ADDRESS_DETAIL_LENGTH) {
+            throw new IllegalArgumentException("shippingAddressDetail은 최대 " + MAX_SHIPPING_ADDRESS_DETAIL_LENGTH + "자까지 가능합니다.");
+        }
+    }
+
+    private void validateRequestMessage(String requestMessage) {
+        requireText(requestMessage, "requestMessage는 필수입니다.");
+        if(requestMessage.length() > MAX_REQUEST_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException("requestMessage는 최대 " + MAX_REQUEST_MESSAGE_LENGTH + "자까지 가능합니다.");
+        }
     }
 
     private void validateMemberId(Long memberId) {
-        if(memberId == null) throw new IllegalArgumentException("memberId는 필수입니다.");
+        if(memberId == null) {
+            throw new IllegalArgumentException("memberId는 필수입니다.");
+        }
+        if(memberId <= 0) {
+            throw new IllegalArgumentException("memberId는 양수여야 합니다.");
+        }
+    }
+
+    private void validateShippingFee(int shippingFee) {
+        if(shippingFee < 0) {
+            throw new IllegalArgumentException("shippingFee는 0원 이상이어야 합니다.");
+        }
+    }
+
+    private void requireText(String value, String message) {
+        if(value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
     }
 }
