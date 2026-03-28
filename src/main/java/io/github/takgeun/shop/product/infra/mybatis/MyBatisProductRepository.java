@@ -63,7 +63,7 @@ public class MyBatisProductRepository implements ProductRepository {
 
     @Override
     public Optional<Product> findById(Long id) {
-        return Optional.ofNullable(productMapper.findById(id));
+        return productMapper.findById(id);
     }
 
     @Override
