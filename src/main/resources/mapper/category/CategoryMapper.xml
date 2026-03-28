@@ -103,4 +103,8 @@
         where slug = #{slug}
             and id != #{categoryId}
     </select>
+
+    <delete id="deleteAll">
+        delete from category
+    </delete>
 </mapper>

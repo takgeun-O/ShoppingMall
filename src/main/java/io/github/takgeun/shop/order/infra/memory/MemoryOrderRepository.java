@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.order.infra;
+package io.github.takgeun.shop.order.infra.memory;
 
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.order.domain.Order;

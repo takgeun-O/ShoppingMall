@@ -1,15 +1,16 @@
 spring:
     application:
         name: shop-service
-
-    datasource:
-        url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
-        driver-class-name: org.h2.Driver
-        username: sa
-        password:
     sql:
         init:
             mode: always
+            schema-locations: classpath:schema.sql
+
+    datasource:
+        url: jdbc:mysql://localhost:3306/shoppingmall_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        username: root
+        password: 1234
+        driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis:
     mapper-locations: classpath:mapper/**/*.xml
@@ -21,7 +22,6 @@ mybatis:
 logging:
     level:
         org.mybatis: DEBUG
-        org.apache.ibatis: TRACE
         org.mybatis.spring: DEBUG
         org.springframework.jdbc: DEBUG
         jdbc.sqlonly: DEBUG

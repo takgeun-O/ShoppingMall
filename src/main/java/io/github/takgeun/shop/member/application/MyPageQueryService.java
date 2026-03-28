@@ -7,11 +7,13 @@ import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)     // 조회 서비스라는 걸 명시하기 위함. (없어도 됨)
 @RequiredArgsConstructor
 public class MyPageQueryService {
 

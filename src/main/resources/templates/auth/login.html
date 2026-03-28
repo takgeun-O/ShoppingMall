@@ -19,18 +19,24 @@
             <p class="text-gray-600">Omniora에 오신 것을 환영합니다</p>
         </div>
 
-        <!-- Info message from reason -->
+        <!-- 안내 메시지 -->
         <div th:if="${infoMessage != null}"
              class="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
              th:text="${infoMessage}">
             안내 메시지
         </div>
 
-        <!-- Flash success -->
+        <!-- 성공 메시지 -->
         <div th:if="${success != null}"
              class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
              th:text="${success}">
             성공 메시지
+        </div>
+
+        <div th:if="${errorMessage != null}"
+             class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+             th:text="${errorMessage}">
+            오류 메시지
         </div>
 
         <!-- Form -->
@@ -39,7 +45,7 @@
               th:object="${form}"
               method="post">
 
-            <!-- Global errors (login fail etc.) -->
+            <!-- 글로벌 에러(로그인 실패 등등) -->
             <div th:if="${#fields.hasGlobalErrors()}"
                  class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                 <ul class="list-disc pl-5 space-y-1">

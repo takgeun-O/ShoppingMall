@@ -1,12 +1,14 @@
-package io.github.takgeun.shop.member.infra;
+package io.github.takgeun.shop.member.infra.memory;
 
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
+@Profile("memory")
 public class MemoryMemberRepository implements MemberRepository {
 
     // 저장 순서는 필요하지 않을 것 같음. HashMap<> 사용

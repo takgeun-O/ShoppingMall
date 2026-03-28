@@ -2,6 +2,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM product;
 DELETE FROM category;
+DELETE FROM member;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -349,3 +350,38 @@ INSERT INTO product (
           NULL,
           'READY'
       );
+
+
+-- Member
+INSERT INTO member (
+                    id,
+                    email,
+                    password,
+                    name,
+                    phone,
+                    role,
+                    status,
+                    created_at,
+                    last_login_at
+) VALUES (
+             1,
+             'user1@test.com',
+             'pw12341234!',
+             '일반회원',
+             '010-1111-1111',
+             'USER',
+             'ACTIVE',
+             '2026-03-29 10:00:00',
+             '2026-03-29 18:30:00'
+         ),
+         (
+             2,
+             'admin1@test.com',
+             'admin1234!',
+             '관리자',
+             '010-9999-9999',
+             'ADMIN',
+             'ACTIVE',
+             '2026-03-29 09:00:00',
+             '2026-03-29 19:00:00'
+         );

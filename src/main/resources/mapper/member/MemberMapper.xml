@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.takgeun.shop.member.infra.mybatis.MemberMapper">
+
+    <resultMap id="memberResultMap" type="io.github.takgeun.shop.member.domain.Member">
+        <id property="id" column="id"/>
+        <result property="email" column="email"/>
+        <result property="password" column="password"/>
+        <result property="name" column="name"/>
+        <result property="phone" column="phone"/>
+        <result property="role"
+                column="role"
+                javaType="io.github.takgeun.shop.member.domain.MemberRole"
+                jdbcType="VARCHAR"/>
+        <result property="status"
+                column="status"
+                javaType="io.github.takgeun.shop.member.domain.MemberStatus"
+                jdbcType="VARCHAR"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+    </resultMap>
+
+    <sql id="memberColumns">
+        id,
+        email,
+        password,
+        name,
+        phone,
+        role,
+        status,
+        created_at,
+        last_login_at
+    </sql>
+
+    <insert id="insert"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into member (
+                            email,
+                            password,
+                            name,
+                            phone,
+                            role,
+                            status,
+                            created_at,
+                            last_login_at
+        ) values (
+                  #{email},
+                  #{password},
+                  #{name},
+                  #{phone},
+                  #{role},
+                  #{status},
+                  #{createdAt},
+                  #{lastLoginAt}
+        )
+    </insert>
+
+    <update id="update">
+        update member
+        set
+            email = #{email},
+            name = #{name},
+            phone = #{phone},
+            role = #{role},
+            status = #{status},
+            last_login_at = #{lastLoginAt}
+        where id = #{id}
+    </update>
+
+    <select id="findById" resultMap="memberResultMap">
+        select
+            <include refid="memberColumns"></include>
+        from member
+        where id = #{id}
+    </select>
+
+    <select id="findByEmail" resultMap="memberResultMap">
+        select
+            <include refid="memberColumns"></include>
+        from member
+        where email = #{email}
+    </select>
+
+    <select id="existsByEmail" resultType="boolean">
+        select exists(
+            select 1
+            from member
+            where email = #{email}
+        )
+    </select>
+
+    <select id="findAll" resultMap="memberResultMap">
+        select
+            <include refid="memberColumns"></include>
+        from member
+        order by id desc
+    </select>
+
+    <delete id="deleteAll">
+        delete from member;
+    </delete>
+</mapper>

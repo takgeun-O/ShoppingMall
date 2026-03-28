@@ -83,12 +83,14 @@ public class AuthViewController {
         model.addAttribute("next", next);   // 로그인 후 직전 페이지로 이동할 next 저장
 
         if(reason != null) {
-            String message = switch (reason) {
-                case "LOGIN_REQUIRED" -> "로그인이 필요한 서비스입니다. 로그인 후 계속 진행해주세요.";
-                case "ADMIN_REQUIRED" -> "관리자만 접근할 수 있는 페이지입니다.";
-                default -> null;
-            };
-            model.addAttribute("infoMessage", message);
+            switch (reason) {
+                case "LOGIN_REQUIRED" ->
+                    model.addAttribute("infoMessage", "로그인이 필요한 서비스입니다.");
+                case "ADMIN_REQUIRED" ->
+                    model.addAttribute("infoMessage", "관리자만 접근할 수 있습니다.");
+                case "INACTIVE_ACCOUNT" ->
+                    model.addAttribute("errorMessage", "비활성 상태이거나 탈퇴한 계정이라 로그아웃되었습니다.");
+            }
         }
 
         return "auth/login";
@@ -106,7 +108,7 @@ public class AuthViewController {
         String safeNext = sanitizeNext(next);
 
         if(bindingResult.hasErrors()) {
-            model.addAttribute("next", next);
+            model.addAttribute("next", safeNext);
             return "auth/login";
         }
 
@@ -126,12 +128,12 @@ public class AuthViewController {
         } catch (UnauthorizedException e) {
             // 이메일/비밀번호 불일치
             bindingResult.reject("login.unauthorized", "이메일 또는 비밀번호가 올바르지 않습니다.");    // 폼 상단에 전체 에러로 띄우기
-            model.addAttribute("next", next);
+            model.addAttribute("next", safeNext);
             return "auth/login";
         } catch (ForbiddenException e) {
             // 비활성 회원 로그인 시도
             bindingResult.reject("login.forbidden", "비활성화된 계정입니다. 관리자에게 문의하세요.");
-            model.addAttribute("next", next);
+            model.addAttribute("next", safeNext);
             return "auth/login";
         }
     }
@@ -150,17 +152,23 @@ public class AuthViewController {
 
     // 로그인 후 next가 POST전용 URL일 경우 안전한 페이지로 바꾸기 위해
     private String sanitizeNext(String next) {
-        if(next == null) return null;
+        if(next == null) {
+            return null;
+        }
         String n = next.trim();
-        if(n.isEmpty()) return null;
+        if(n.isEmpty()) {
+            return null;
+        }
 
         // 반드시 앱 내부 상대경로만 허용
-        if(!n.startsWith("/")) return null;
+        if(!n.startsWith("/")) {
+            return null;
+        }
 
         // 민감/POST 전용/상태변경 URL 차단
         if( n.equals("/logout") ||
             n.equals("/orders") || n.startsWith("/orders?") ||
-            n.equals("/cart/clear") || n.startsWith("/admin")) {
+            n.equals("/cart/clear")) {
             return null;
         }
         return n;

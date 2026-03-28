@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 @Repository
-@Profile("mybatis")
 @RequiredArgsConstructor
 public class MyBatisCategoryRepository implements CategoryRepository {
 

@@ -16,7 +16,7 @@ public interface ProductMapper {
     int update(Product product);
 
     // Public
-    Optional<Product> findPublicById(@Param("id") Long id);
+    Product findPublicById(@Param("id") Long id);
 
     List<Product> findAllPublic();
 
@@ -38,4 +38,5 @@ public interface ProductMapper {
 
     int countAdminByCategoryId(@Param("categoryId") Long categoryId);
 
+    int deleteAll();    // 테스트용
 }

@@ -30,4 +30,6 @@ public interface CategoryMapper {
 
     boolean existsBySlugExceptId(@Param("slug") String slug,
                                  @Param("categoryId") Long categoryId);
+
+    int deleteAll();    // 테스트용
 }

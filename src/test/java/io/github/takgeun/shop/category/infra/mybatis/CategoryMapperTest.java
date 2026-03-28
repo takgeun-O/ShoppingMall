@@ -2,20 +2,34 @@ package io.github.takgeun.shop.category.infra.mybatis;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryStatus;
+import io.github.takgeun.shop.product.infra.mybatis.ProductMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
 @MybatisTest
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CategoryMapperTest {
 
     @Autowired
     private CategoryMapper categoryMapper;
+    @Autowired
+    private ProductMapper productMapper;
+
+    @BeforeEach
+    void clear() {
+        productMapper.deleteAll();
+        categoryMapper.deleteAll();
+    }
 
     @Test
     @DisplayName("카테고리 저장 후 ID가 생성되고 다시 조회된다")
