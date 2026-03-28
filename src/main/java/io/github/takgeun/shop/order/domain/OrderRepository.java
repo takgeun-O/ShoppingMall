@@ -9,7 +9,9 @@ public interface OrderRepository {
 
     Optional<Order> findById(Long id);
 
-    boolean existsById(Long id);        // 주문이 존재하는지 체크
+    Optional<Order> findByOrderNumber(String orderNumber);
+
+    Optional<Order> findByRequestKey(String requestKey);
 
     List<Order> findAllByMemberId(Long memberId);
 
@@ -17,5 +19,5 @@ public interface OrderRepository {
 
     List<Order> findAll();
 
-    Optional<Order> findByRequestKey(String requestKey);
+    boolean existsByRequestKey(String requestKey);
 }
