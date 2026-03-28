@@ -5,9 +5,12 @@ import io.github.takgeun.shop.category.infra.mybatis.CategoryMapper;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +19,8 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.*;
 
 @MybatisTest
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ProductMapperTest {
 
     @Autowired
@@ -23,6 +28,12 @@ class ProductMapperTest {
 
     @Autowired
     private CategoryMapper categoryMapper;
+
+    @BeforeEach
+    void clear() {
+        productMapper.deleteAll();
+        categoryMapper.deleteAll();
+    }
 
     @Test
     void insert() {
@@ -70,7 +81,7 @@ class ProductMapperTest {
         productMapper.insert(product);
 
         // when
-        Optional<Product> found = productMapper.findPublicById(product.getId());
+        Optional<Product> found = Optional.ofNullable(productMapper.findPublicById(product.getId()));
 
         // then
         assertThat(found).isPresent();
@@ -88,7 +99,7 @@ class ProductMapperTest {
         productMapper.insert(product);
 
         // when
-        Optional<Product> found = productMapper.findPublicById(product.getId());
+        Optional<Product> found = Optional.ofNullable(productMapper.findPublicById(product.getId()));
 
         // then
         assertThat(found).isEmpty();

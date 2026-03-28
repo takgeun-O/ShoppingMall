@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-@Profile("mybatis")
 @RequiredArgsConstructor
 public class MyBatisProductRepository implements ProductRepository {
 
@@ -38,7 +37,7 @@ public class MyBatisProductRepository implements ProductRepository {
 
     @Override
     public Optional<Product> findPublicById(Long id) {
-        return productMapper.findPublicById(id);
+        return Optional.ofNullable(productMapper.findPublicById(id));
     }
 
     @Override

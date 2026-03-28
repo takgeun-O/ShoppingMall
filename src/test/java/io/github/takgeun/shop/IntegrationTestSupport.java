@@ -5,7 +5,7 @@ import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.order.domain.OrderRepository;
-import io.github.takgeun.shop.order.infra.MemoryOrderRepository;
+import io.github.takgeun.shop.order.infra.memory.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.junit.jupiter.api.BeforeEach;

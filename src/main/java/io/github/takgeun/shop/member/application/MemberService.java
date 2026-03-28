@@ -8,16 +8,19 @@ import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MemberService {
 
     private final MemberRepository memberRepository;
 
     // 회원가입
+    @Transactional
     public Long signup(String email, String password, String name, String phone) {
 
         String normalizedEmail = normalizeEmail(email);
@@ -40,7 +43,8 @@ public class MemberService {
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
     }
 
-    // 내 정보 수정
+    // 내 정보 수정 (패스워드 변경은 다른 곳에서 할 예정)
+    @Transactional
     public void updateProfile(Long memberId, String name, String password, String phone) {
 
         Member member = findMember(memberId);
@@ -54,16 +58,18 @@ public class MemberService {
         if(phone != null) {
             member.changePhone(phone);
         }
-        memberRepository.save(member);      // 메모리 저장소니까 save를 명시 호출
+        memberRepository.save(member);
     }
 
     // 회원 탈퇴
+    @Transactional
     public void deactivate(Long memberId) {
         Member member = findMember(memberId);
         member.deactivate();
         memberRepository.save(member);
     }
 
+    @Transactional
     public void changeRole(Long memberId, MemberRole newRole) {
         if(memberId == null) {
             throw new IllegalArgumentException("회원 ID는 필수입니다.");
@@ -81,6 +87,7 @@ public class MemberService {
         memberRepository.save(member);
     }
 
+    @Transactional
     public void changeStatus(Long memberId, MemberStatus newStatus) {
         if(memberId == null || memberId <= 0) {
             throw new IllegalArgumentException("memberId는 양수여야 합니다.");

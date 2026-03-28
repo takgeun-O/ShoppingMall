@@ -2,18 +2,15 @@ package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
-import io.github.takgeun.shop.member.infra.MemoryMemberRepository;
+import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.dto.response.AdminOrderDetailResponse;
 import io.github.takgeun.shop.order.dto.response.AdminOrderListResponse;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderDetailView;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderItemView;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderSummaryView;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +23,7 @@ public class AdminOrderService {
 
     private static final DateTimeFormatter ORDER_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private final OrderRepository orderRepository;
-    private final MemoryMemberRepository memoryMemberRepository;
+    private final MemberRepository memberRepository;
 
     /**
      * 관리자 주문 목록 조회
@@ -73,7 +70,7 @@ public class AdminOrderService {
     public AdminOrderDetailView getDetailForAdmin(Long orderId) {
         Order order = findOrder(orderId);
 
-        Member member = memoryMemberRepository.findById(order.getMemberId())
+        Member member = memberRepository.findById(order.getMemberId())
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
 
         return AdminOrderDetailView.from(order, member);
@@ -100,7 +97,7 @@ public class AdminOrderService {
 
         return orders.stream()
                 .map(order -> {
-                    Member buyer = memoryMemberRepository.findById(order.getMemberId())
+                    Member buyer = memberRepository.findById(order.getMemberId())
                             .orElseThrow(() -> new NotFoundException("주문자의 회원 정보를 찾을 수 없습니다. memberId=" + order.getMemberId()));
                     return AdminOrderListResponse.from(order, buyer);
                 })
@@ -163,14 +160,14 @@ public class AdminOrderService {
     }
 
     private String getCustomerName(Order order) {
-        Member member = memoryMemberRepository.findById(order.getMemberId())
+        Member member = memberRepository.findById(order.getMemberId())
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
 
         return member.getName();
     }
 
     private String getCustomerEmail(Order order) {
-        Member member = memoryMemberRepository.findById(order.getMemberId())
+        Member member = memberRepository.findById(order.getMemberId())
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
 
         return member.getEmail();

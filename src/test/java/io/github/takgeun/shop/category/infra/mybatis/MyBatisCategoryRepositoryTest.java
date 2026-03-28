@@ -2,10 +2,13 @@ package io.github.takgeun.shop.category.infra.mybatis;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.product.infra.mybatis.ProductMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -13,14 +16,24 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
-//@SpringBootTest
-@ActiveProfiles("mybatis")              // 없어도 되긴 한데 그래도 명시적으로 하는 게 좋음
 @MybatisTest        // Mapper만 로딩
-@Import(MyBatisCategoryRepository.class)    // Repository 수동 등록
+@Import(MyBatisCategoryRepository.class)
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MyBatisCategoryRepositoryTest {
 
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private CategoryMapper categoryMapper;
+    @Autowired
+    private ProductMapper productMapper;
+
+    @BeforeEach
+    void clear() {
+        productMapper.deleteAll();
+        categoryMapper.deleteAll();
+    }
 
     @Test
     @DisplayName("save 후 findById 가능")

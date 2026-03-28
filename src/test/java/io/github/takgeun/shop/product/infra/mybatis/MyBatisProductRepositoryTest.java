@@ -5,10 +5,12 @@ import io.github.takgeun.shop.category.infra.mybatis.CategoryMapper;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -18,10 +20,10 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 
-
-@ActiveProfiles("mybatis")
 @MybatisTest
 @Import(MyBatisProductRepository.class)
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MyBatisProductRepositoryTest {
 
     @Autowired
@@ -30,6 +32,12 @@ class MyBatisProductRepositoryTest {
     private CategoryMapper categoryMapper;
     @Autowired
     private ProductMapper productMapper;
+
+    @BeforeEach
+    void clear() {
+        productMapper.deleteAll();
+        categoryMapper.deleteAll();
+    }
 
     @Test
     void saveAndFindById() {
