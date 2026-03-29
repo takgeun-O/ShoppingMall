@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @MybatisTest        // Mapper만 로딩
 @Import(MyBatisCategoryRepository.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MyBatisCategoryRepositoryTest {
 

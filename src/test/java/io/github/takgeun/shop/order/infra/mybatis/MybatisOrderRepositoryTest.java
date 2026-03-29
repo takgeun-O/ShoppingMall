@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @MybatisTest
 @Import(MybatisOrderRepository.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MybatisOrderRepositoryTest {
 
@@ -61,12 +61,13 @@ class MybatisOrderRepositoryTest {
         memberMapper.deleteAll();
 
         // 회원 생성
-        Member member = new Member(
+        Member member = Member.create(
                 "test@test.com",
                 "test1234!",
                 "테스트유저",
                 "010-1234-5555"
         );
+
         memberMapper.insert(member);
         memberId = member.getId();
 
@@ -161,6 +162,91 @@ class MybatisOrderRepositoryTest {
         assertThat(result).isPresent();
         assertThat(result.get().getOrderNumber()).isEqualTo("ORDER-20260329-0001");
         assertThat(result.get().getOrderItems()).hasSize(2);
+    }
+
+    @Test
+    void findByRequestKey() {
+
+        // given
+        Order order = createOrder("ORDER-20260329-0001", "req-key-1");
+        orderRepository.save(order);
+
+        // when
+        Optional<Order> result = orderRepository.findByRequestKey(order.getRequestKey());
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get().getRequestKey()).isEqualTo("req-key-1");
+        assertThat(result.get().getOrderItems()).hasSize(2);
+    }
+
+    @Test
+    void findAllByMemberId() {
+
+        // given
+        Order order1 = createOrder("ORDER-20260329-0001", "req-key-1");
+        orderRepository.save(order1);
+        Order order2 = createOrder("ORDER-20260329-0002", "req-key-2");
+        orderRepository.save(order2);
+
+        // when
+        List<Order> orders = orderRepository.findAllByMemberId(memberId);
+
+        // then
+        assertThat(orders).hasSize(2);      // 주문이 2개
+        assertThat(orders).allSatisfy(
+                order ->
+                        assertThat(order.getOrderItems()).hasSize(2));
+    }
+
+    @Test
+    void countByMemberId() {
+
+        // given
+        Order order1 = createOrder("ORDER-20260329-0001", "req-key-1");
+        orderRepository.save(order1);
+        Order order2 = createOrder("ORDER-20260329-0002", "req-key-2");
+        orderRepository.save(order2);
+
+        // when
+        int count = orderRepository.countByMemberId(memberId);
+
+        // then
+        assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    void findAll() {
+
+        // given
+        Order order1 = createOrder("ORDER-20260329-0001", "req-key-1");
+        orderRepository.save(order1);
+        Order order2 = createOrder("ORDER-20260329-0002", "req-key-2");
+        orderRepository.save(order2);
+
+        // when
+        List<Order> orders = orderRepository.findAll();
+
+        // then
+        assertThat(orders).hasSize(2);
+        assertThat(orders).allSatisfy(order ->
+                assertThat(order.getOrderItems()).hasSize(2));
+    }
+
+    @Test
+    void existsByRequestKey() {
+
+        // given
+        Order order = createOrder("ORDER-20260329-0001", "req-key-1");
+        orderRepository.save(order);
+
+        // when
+        boolean exists = orderRepository.existsByRequestKey("req-key-1");
+        boolean notExists = orderRepository.existsByRequestKey("ddddd");
+
+        // then
+        assertThat(exists).isTrue();
+        assertThat(notExists).isFalse();
     }
 
 

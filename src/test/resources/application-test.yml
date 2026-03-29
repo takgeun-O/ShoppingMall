@@ -5,6 +5,7 @@ spring:
         init:
             mode: always
             schema-locations: classpath:schema.sql
+            data-locations: []
 
     datasource:
         url: jdbc:mysql://localhost:3306/shoppingmall_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8

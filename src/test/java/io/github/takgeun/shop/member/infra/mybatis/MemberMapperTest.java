@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MybatisTest
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MemberMapperTest {
 

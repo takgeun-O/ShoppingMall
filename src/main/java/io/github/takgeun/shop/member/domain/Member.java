@@ -20,7 +20,7 @@ public class Member {
     protected Member() {
     }
 
-    public Member(String email, String password, String name, String phone) {
+    private Member(String email, String password, String name, String phone) {
         // 생성자 생성 시점에서 검증 로직 넣기
         changeEmail(email);
         changePassword(password);

@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @MybatisTest
 @Import(MyBatisProductRepository.class)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class MyBatisProductRepositoryTest {
 
