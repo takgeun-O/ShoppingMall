@@ -53,8 +53,8 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 
 ```bash
 git clone https://github.com/takgeun-O/ShoppingMall.git
-cd <project-directory>
 ```
+
 ## 2. 데이터베이스 준비
 MySQL에서 프로젝트용 데이터베이스를 생성합니다.
 
@@ -78,7 +78,14 @@ spring:
 ## 3. 애플리케이션 실행
 
 아래와 같이 MyBatis 프로필로 실행합니다.
+
 (demo 프로필은 더미데이터 추가용)
+
+```bash
+cd <project-directory>
+```
+
+
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
