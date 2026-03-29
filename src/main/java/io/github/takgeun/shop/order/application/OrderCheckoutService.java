@@ -102,6 +102,7 @@ public class OrderCheckoutService {
         // MVP : 결제 연동 구현하기 전이므로 주문 생성 직후엔 결제완료 처리하기
         order.markPaymentCompleted();
 
+        // DB insert 후 id가 채워짐
         Order savedOrder = orderRepository.save(order);
 
         // 주문 완료 화면은 세션에 캐시

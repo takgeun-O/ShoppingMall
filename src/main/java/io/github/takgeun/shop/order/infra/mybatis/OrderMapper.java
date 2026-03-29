@@ -26,4 +26,6 @@ public interface OrderMapper {
     List<Order> findAll();
 
     boolean existsByRequestKey(@Param("requestKey") String requestKey);
+
+    int deleteAll();        // 테스트용
 }

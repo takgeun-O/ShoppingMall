@@ -4,6 +4,7 @@ import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import org.jspecify.annotations.NonNull;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
+@Profile("memory")
 public class MemoryOrderRepository implements OrderRepository {
 
     private final ConcurrentHashMap<Long, Order> store = new ConcurrentHashMap<>();
