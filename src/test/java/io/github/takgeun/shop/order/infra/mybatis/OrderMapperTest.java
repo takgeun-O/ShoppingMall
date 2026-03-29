@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MybatisTest
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class OrderMapperTest {
 
@@ -33,12 +33,13 @@ class OrderMapperTest {
     @BeforeEach
     void setUp() {
 
-        Member member = new Member(
+        Member member = Member.create(
                 "test@test.com",
                 "test1234!",
                 "테스트유저",
                 "010-1234-5555"
         );
+
 
         memberMapper.insert(member);
         memberId = member.getId();

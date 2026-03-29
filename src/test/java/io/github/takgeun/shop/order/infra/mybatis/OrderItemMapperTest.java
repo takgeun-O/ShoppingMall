@@ -34,7 +34,7 @@ class OrderItemMapperTest {
     @BeforeEach
     void setUp() {
 
-        Member member = new Member(
+        Member member = Member.create(
                 "test@test.com",
                 "test1234!",
                 "테스트유저",

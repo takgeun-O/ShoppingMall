@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
+@Profile("mybatis")
 @RequiredArgsConstructor
 public class MyBatisProductRepository implements ProductRepository {
 

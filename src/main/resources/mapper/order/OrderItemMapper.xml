@@ -9,7 +9,7 @@
         <id property="id" column="id"/>
         <result property="orderId" column="order_id"/>
         <result property="productId" column="product_id"/>
-        <result property="productNameSnapshot" column="product_name_shot"/>
+        <result property="productNameSnapshot" column="product_name_snapshot"/>
         <result property="unitPriceSnapshot" column="unit_price_snapshot"/>
         <result property="originalPriceSnapshot" column="original_price_snapshot"/>
         <result property="quantity" column="quantity"/>

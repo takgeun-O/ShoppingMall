@@ -16,7 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 
 @MybatisTest
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "mybatis"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CategoryMapperTest {
 

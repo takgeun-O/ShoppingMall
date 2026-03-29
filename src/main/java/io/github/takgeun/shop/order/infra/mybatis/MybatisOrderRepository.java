@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@Profile("mybatis")
 @RequiredArgsConstructor
 public class MybatisOrderRepository implements OrderRepository {
 
