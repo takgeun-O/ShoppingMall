@@ -3,6 +3,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM product;
 DELETE FROM category;
 DELETE FROM member;
+DELETE FROM order_items;
+DELETE FROM orders;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -385,3 +387,146 @@ INSERT INTO member (
              '2026-03-29 09:00:00',
              '2026-03-29 19:00:00'
          );
+
+
+-- Orders
+INSERT INTO orders (
+    id,
+    order_number,
+    member_id,
+    status,
+    request_key,
+    recipient_name,
+    recipient_phone,
+    shipping_zip_code,
+    shipping_address,
+    shipping_address_detail,
+    request_message,
+    subtotal,
+    shipping_fee,
+    total_price,
+    ordered_at,
+    updated_at
+) VALUES
+      (
+          1,
+          'ORDER-20260329-0001',
+          1,
+          'ORDERED',
+          'req-key-1',
+          '일반회원',
+          '010-1111-1111',
+          '06236',
+          '서울 강남구 테헤란로',
+          '101호',
+          '문 앞에 놔주세요',
+          3059000,
+          0,
+          3059000,
+          '2026-03-29 12:00:00',
+          '2026-03-29 12:00:00'
+      ),
+      (
+          2,
+          'ORDER-20260329-0002',
+          1,
+          'PAYMENT_COMPLETED',
+          'req-key-2',
+          '일반회원',
+          '010-1111-1111',
+          '06236',
+          '서울 강남구 테헤란로',
+          '101호',
+          NULL,
+          1490000,
+          0,
+          1490000,
+          '2026-03-29 13:00:00',
+          '2026-03-29 13:00:00'
+      ),
+      (
+          3,
+          'ORDER-20260329-0003',
+          2,
+          'ORDERED',
+          'req-key-3',
+          '관리자',
+          '010-9999-9999',
+          '04524',
+          '서울 중구 세종대로',
+          '202호',
+          '경비실에 맡겨주세요',
+          188900,
+          3000,
+          191900,
+          '2026-03-29 14:00:00',
+          '2026-03-29 14:00:00'
+      );
+
+
+-- Order Items
+INSERT INTO order_items (
+    id,
+    order_id,
+    product_id,
+    product_name_snapshot,
+    unit_price_snapshot,
+    original_price_snapshot,
+    quantity,
+    image_url_snapshot
+) VALUES
+      -- 주문 1 (맥북 + 마우스)
+      (
+          1,
+          1,
+          2,
+          '맥북 프로 14',
+          3000000,
+          3500000,
+          1,
+          'https://images.unsplash.com/photo-1517336714731-489689fd1ca8'
+      ),
+      (
+          2,
+          1,
+          13,
+          '무선 마우스',
+          59000,
+          NULL,
+          1,
+          'https://images.unsplash.com/photo-1527814050087-3793815479db'
+      ),
+
+      -- 주문 2 (갤럭시)
+      (
+          3,
+          2,
+          10,
+          '갤럭시 S24',
+          1400000,
+          1550000,
+          1,
+          'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf'
+      ),
+
+      -- 주문 3 (의류 + 헤드셋)
+      (
+          4,
+          3,
+          21,
+          '베이직 티셔츠',
+          19900,
+          29900,
+          2,
+          'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab'
+      ),
+      (
+          5,
+          3,
+          14,
+          '게이밍 헤드셋',
+          89000,
+          NULL,
+          1,
+          'https://images.unsplash.com/photo-1546435770-a3e426bf472b'
+      );

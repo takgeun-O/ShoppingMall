@@ -5,7 +5,7 @@ spring:
     name: shop-service
   sql:
     init:
-      mode: always
+      mode: never
 
   datasource:
     url: jdbc:mysql://localhost:3306/shoppingmall?serverTimezone=Asia/Seoul&characterEncoding=UTF-8

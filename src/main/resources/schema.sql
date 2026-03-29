@@ -89,7 +89,7 @@ create table orders
     shipping_zip_code       varchar(20)  not null,
     shipping_address        varchar(200) not null,
     shipping_address_detail varchar(200) not null,
-    request_message         varchar(200) not null,
+    request_message         varchar(200) null,
 
     subtotal                int          not null,
     shipping_fee            int          not null,

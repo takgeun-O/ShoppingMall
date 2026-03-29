@@ -3,10 +3,17 @@
 Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트.
 상품 조회, 장바구니, 주문, 회원가입 및 로그인, 관리자 기능 등 쇼핑몰의 핵심 도메인을 직접 설계하고 구현한다.
 
-현재는 도메인 설계와 서비스 로직 검증에 집중하기 위해 메모리 기반 저장소를 사용하고 있으며,
-다음 단계로 JPA 기반 DB 연동을 진행할 예정임.
+현재는 Mybatis + MySQL 기반으로 데이터 저장소를 구현했으며,
+추후 JPA 기반 구현으로 확장하거나 REST API 중심 구조로 발전시키는 것을 목표로 하고 있음.
 
 ---
+# 프로젝트 특징
+
+- MyBatis 기반 데이터 접근 구현 (추후 JPA 교체 예정)
+- 서비스 계층 트랜잭션 분리 (readOnly / write)
+- 주문/재고 처리의 원자성 보장
+- requestKey 기반 멱등성 처리
+- 도메인 중심 패키지 구조 설계
 
 # 프로젝트 목적
 
@@ -17,6 +24,7 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 - 비즈니스 로직 중심 서비스 구현
 - 사용자 / 관리자 기능 분리
 - UI와 백엔드 흐름 연결 경험
+- 저장소 기술 전환을 고려한 구조 설계
 
 ---
 
@@ -26,7 +34,8 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 - **Spring Boot**: 4.0.1
 - **Build Tool**: Gradle
 - **Template Engine**: Thymeleaf
-- **Database**: 없음 (In-Memory Repository 사용)
+- **Database**: MySQL
+- **Persistence**: MyBatis
 - **IDE**: IntelliJ IDEA 권장
 - **OS**: macOS / Windows / Linux
 
@@ -34,9 +43,11 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 
 # 실행 방법
 
-본 프로젝트는 별도의 데이터베이스 설정 없이 실행할 수 있도록
-In-Memory Repository 기반으로 구성되어 있으며,
-애플리케이션 실행 시 테스트용 더미 데이터가 자동으로 생성
+본 프로젝트는 MyBatis + MySQL 기반으로 동작합니다.
+실행 전 MySQL 데이터베이스를 생성하고, `schema.sql`을 통해 테이블을 준비해야 합니다.
+
+개발 환경에서는 프로필 설정에 따라 MyBatis Repository가 활성화되며,
+필요 시 테스트용 더미 데이터는 별도로 직접 입력하거나 초기화 스크립트를 통해 구성할 수 있습니다.
 
 ## 1. 프로젝트 클론
 
@@ -44,43 +55,63 @@ In-Memory Repository 기반으로 구성되어 있으며,
 git clone https://github.com/takgeun-O/ShoppingMall.git
 cd <project-directory>
 ```
+## 2. 데이터베이스 준비
+MySQL에서 프로젝트용 데이터베이스를 생성합니다.
 
-## 2. 애플리케이션 실행
-
-아래와 같이 스프링 실행 시 local 프로필 지정
 ```bash
-./gradlew bootRun --args='--spring.profiles.active=local'
+create database shoppingmall;
+```
+
+필요한 테이블은 `schema.sql`을 통해 생성하거나, 프로젝트 설정에 맞게 초기화합니다.
+
+※ application.yml에서 DB 연결 정보 (url, username, password)를 환경에 맞게 수정해야 합니다.
+
+예시)
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/shoppingmall
+    username: root
+    password: 1234
+```
+
+## 3. 애플리케이션 실행
+
+아래와 같이 MyBatis 프로필로 실행합니다.
+(demo 프로필은 더미데이터 추가용)
+```bash
+./gradlew bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
 
 윈도우 환경에서는 다음 명령어를 사용
 ```bash
-gradlew.bat bootRun --args="--spring.profiles.active=local"
+gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
 
 
-## 3. 접속
+## 4. 접속
 
 애플리케이션 실행 후 아래 주소로 접속할 수 있습니다.
 ```bash
 http://localhost:8080
 ```
 
-## 4. 테스트 계정
+## 5. 테스트 계정
 
 관리자 계정
-- 이메일 : testAdmin1@test.com
-- 패스워드 : pw12341234!
+- 이메일 : admin1@test.com
+- 패스워드 : admin1234!
 
 일반 사용자 계정
-- 이메일 : test1@test.com
+- 이메일 : user1@test.com
 - 패스워드 : pw12341234!
 
 ---
 
 # 더미데이터 설명
-경로 : shop/global/init/TestDataInitializer.java
+경로 : src/main/resources/data.sql
 
-`local` 프로필에서 애플리케이션 실행 시 테스트용 데이터가 자동으로 생성됩니다.
+`demo` 프로필에서 애플리케이션 실행 시 테스트용 데이터가 자동으로 생성됩니다.
 
 생성 데이터
 - 관리자 계정
@@ -113,20 +144,21 @@ http://localhost:8080
 - Java 21
 - Spring Boot
 - Spring MVC
-- Thymeleaf
+- MyBatis
 - Lombok
 
 ## Frontend
 
-- Thymeleaf
-- Tailwind CSS
+- Thymeleaf (SSR 기반 View)
+- HTML / CSS
 
 ## Architecture
 
 - Controller
 - Service
-- Repository (메모리 기반)
 - Domain
+- Repository Interface
+- MyBatis Repository Implementation
 - DTO / ViewModel
 
 ---
@@ -264,7 +296,7 @@ category, member, order, product 등 도메인별로 코드를 분리하고 각 
 - interceptor (일반 사용자 / 관리자 로그인 검증)
 - session (세션에 저장하는 키 이름을 한 곳에서 관리)
 - validation (검증 순서 설정용)
-- view
+- view (전역 View 데이터 구성용)
 
 ---
 
@@ -281,7 +313,9 @@ category, member, order, product 등 도메인별로 코드를 분리하고 각 
 
 ## Repository 인터페이스 분리
 
-현재 MemoryRepository 로 구현되었으나 추후 JPARepository로 구현체 교체가 용이하도록 설계
+Repository 인터페이스와 MyBatis 구현체를 분리하여 설계했습니다.
+현재는 MyBatis 기반으로 데이터 접근을 처리하고 있으며,
+추후 JPA 기반 구현체로 확장하거나 교체할 수 있도록 구조를 분리했습니다.
 
 ## View DTO 분리
 엔티티를 직접 뷰에 전달하지 않고 엔티티를 View DTO로 변환하여 사용
@@ -293,9 +327,10 @@ category, member, order, product 등 도메인별로 코드를 분리하고 각 
 
 라는 장점을 누리게 하였습니다.
 
-## 도메인 중심 설계 (DDD)
+## 도메인 중심 패키지 구조
 
-주요 비즈니스 로직은 Service 계층에서 처리
+category, member, order, product 등 도메인 기준으로 패키지를 분리하고,
+각 도메인의 응집도를 높이도록 설계했습니다.
 
 ---
 
@@ -315,5 +350,4 @@ category, member, order, product 등 도메인별로 코드를 분리하고 각 
 
 - (1순위) JPA 기반 DB 연동
 - REST API 구현
-- 트랜잭션 처리 개선
 
