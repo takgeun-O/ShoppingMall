@@ -14,4 +14,6 @@ public interface OrderItemMapper {
     List<OrderItem> findAllByOrderId(@Param("orderId") Long orderId);
 
     int deleteByOrderId(@Param("orderId") Long orderId);
+
+    int deleteAll();        // 테스트용
 }

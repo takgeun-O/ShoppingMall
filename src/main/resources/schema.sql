@@ -1,3 +1,5 @@
+drop table if exists order_items;
+drop table if exists orders;
 drop table if exists product;
 drop table if exists category;
 drop table if exists member;
@@ -77,10 +79,10 @@ create table member
 create table orders
 (
     id                      bigint auto_increment primary key,
-    orderNumber             varchar(50)  not null,
+    order_number             varchar(50)  not null,
     member_id               bigint       not null,
     status                  varchar(30)  not null,
-    request_key             varchar(100),
+    request_key             varchar(100) not null,
 
     recipient_name          varchar(50)  not null,
     recipient_phone         varchar(30)  not null,
@@ -110,6 +112,7 @@ create table orders
                           'CANCELED'
             )),
 
+    constraint ck_orders_member_id_positive check (member_id > 0),
     constraint ck_orders_subtotal_non_negative check (subtotal >= 0),
     constraint ck_orders_shipping_fee_non_negative check (shipping_fee >= 0),
     constraint ck_orders_total_price_non_negative check (total_price >= 0),
@@ -131,13 +134,15 @@ create table order_items
     image_url_snapshot      varchar(500) not null,
 
     constraint fk_order_items_order
-        foreign key (order_id) references order (id) on delete cascade,
+        foreign key (order_id) references orders (id) on delete cascade,
     constraint fk_order_items_product
         foreign key (product_id) references product (id),
 
     constraint ck_order_items_product_name_not_blank
         check (trim(product_name_snapshot) <> '' ),
 
+    constraint ck_order_items_order_id_positive check (order_id > 0),
+    constraint ck_order_items_product_id_positive check (product_id > 0),
     constraint ck_order_items_price_non_negative
         check (unit_price_snapshot >= 0 ),
     constraint ck_order_items_original_price_positive

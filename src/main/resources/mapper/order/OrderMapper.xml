@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.takgeun.shop.order.infra.mybatis.OrderMapper">
+
+    <resultMap id="orderResultMap" type="io.github.takgeun.shop.order.domain.Order">
+        <id property="id" column="id"/>
+        <result property="orderNumber" column="order_number"/>
+        <result property="memberId" column="member_id"/>
+        <result property="status" column="status"
+                javaType="io.github.takgeun.shop.order.domain.OrderStatus"
+                jdbcType="VARCHAR"/>
+        <result property="requestKey" column="request_key"/>
+
+        <result property="recipientName" column="recipient_name"/>
+        <result property="recipientPhone" column="recipient_phone"/>
+        <result property="shippingZipCode" column="shipping_zip_code"/>
+        <result property="shippingAddress" column="shipping_address"/>
+        <result property="shippingAddressDetail" column="shipping_address_detail"/>
+        <result property="requestMessage" column="request_message"/>
+
+        <result property="subtotal" column="subtotal"/>
+        <result property="shippingFee" column="shipping_fee"/>
+        <result property="totalPrice" column="total_price"/>
+
+        <result property="orderedAt" column="ordered_at"/>
+        <result property="canceledAt" column="canceled_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="ordersColumns">
+        id,
+        order_number,
+        member_id,
+        status,
+        request_key,
+        recipient_name,
+        recipient_phone,
+        shipping_zip_code,
+        shipping_address,
+        shipping_address_detail,
+        request_message,
+        subtotal,
+        shipping_fee,
+        total_price,
+        ordered_at,
+        canceled_at,
+        updated_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into orders (order_number,
+                           member_id,
+                           status,
+                           request_key,
+                           recipient_name,
+                           recipient_phone,
+                           shipping_zip_code,
+                           shipping_address,
+                           shipping_address_detail,
+                           request_message,
+                           subtotal,
+                           shipping_fee,
+                           total_price,
+                           ordered_at,
+                           canceled_at,
+                           updated_at)
+        values (
+                #{orderNumber},
+                #{memberId},
+                #{status},
+                #{requestKey},
+                #{recipientName},
+                #{recipientPhone},
+                #{shippingZipCode},
+                #{shippingAddress},
+                #{shippingAddressDetail},
+                #{requestMessage},
+                #{subtotal},
+                #{shippingFee},
+                #{totalPrice},
+                #{orderedAt},
+                #{canceledAt},
+                #{updatedAt}
+        )
+    </insert>
+
+    <update id="update">
+        update orders
+        set
+            status = #{status},
+            canceled_at = #{canceledAt},
+            updated_at = #{updatedAt}
+        where id = #{id}
+    </update>
+
+    <select id="findById" resultMap="orderResultMap">
+        select
+            <include refid="ordersColumns"></include>
+        from orders
+        where id = #{id}
+    </select>
+
+    <select id="findByOrderNumber" resultMap="orderResultMap">
+        select
+            <include refid="ordersColumns"></include>
+        from orders
+        where order_number = #{orderNumber}
+    </select>
+
+    <select id="findByRequestKey" resultMap="orderResultMap">
+        select
+            <include refid="ordersColumns"></include>
+        from orders
+        where request_key = #{requestKey}
+    </select>
+
+    <select id="findAllByMemberId" resultMap="orderResultMap">
+        select
+            <include refid="ordersColumns"/>
+        from orders
+        where member_id = #{memberId}
+        order by id desc
+    </select>
+
+    <select id="countByMemberId" resultType="int">
+        select count(*)
+        from orders
+        where member_id = #{memberId}
+    </select>
+
+    <select id="findAll" resultMap="orderResultMap">
+        select
+            <include refid="ordersColumns"></include>
+        from orders
+        order by id desc
+    </select>
+
+    <select id="existsByRequestKey" resultType="boolean">
+        select exists(
+            select 1
+            from orders
+            where request_key = #{requestKey}
+        )
+    </select>
+
+    <delete id="deleteAll">
+        delete from orders
+    </delete>
+</mapper>
