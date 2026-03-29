@@ -13,12 +13,14 @@ import io.github.takgeun.shop.order.view.dto.admin.AdminOrderItemView;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AdminOrderService {
 
     private static final DateTimeFormatter ORDER_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
@@ -79,6 +81,7 @@ public class AdminOrderService {
     /**
      * 관리자 주문 상태 변경
      */
+    @Transactional
     public void changeStatus(Long orderId, OrderStatus newStatus) {
         if(newStatus == null) {
             throw new IllegalArgumentException("변경할 주문 상태는 필수입니다.");

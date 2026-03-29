@@ -170,6 +170,7 @@ public class CategoryService {
         List<CategoryResponse> all = getAllAdminCategories();
         log.info("allAdmin.size={}", all.size());
 
+        // rootId와 그 자식 집합 반환
         return findDescendantIdsIncludingSelf(all, rootId);
     }
 

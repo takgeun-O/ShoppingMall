@@ -9,6 +9,7 @@ import io.github.takgeun.shop.product.domain.ProductStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,6 +19,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor        // 필수 인자를 가진 생성자 자동 생성
+@Transactional(readOnly = true)
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -32,20 +34,15 @@ public class ProductService {
 
         // base 조회
         List<Product> base = findBaseProducts(admin, categoryId);
-        List<Product> visible = filterVisibleProducts(admin, base);
 
 
         log.info("base={}", base.stream()
                 .map(Product::getName)
                 .toList()
         );
-        log.info("visible={}", visible.stream()
-                .map(Product::getName)
-                .toList()
-        );
 
         // sort 적용
-        return applySort(visible, normalizeSort(sort));
+        return applySort(base, normalizeSort(sort));
     }
 
     /**
@@ -54,7 +51,7 @@ public class ProductService {
     public Product getForDetail(boolean admin, Long productId) {
         Product product = findById(productId);
 
-        if(!admin && !product.isPublicVisible()) {
+        if (!admin && !product.isPublicVisible()) {
             // 관리자가 아닌 계정이 공개상품을 보는 케이스면 아래와 같이 예외 처리
             throw new NotFoundException("존재하지 않는 상품입니다.");
         }
@@ -72,6 +69,7 @@ public class ProductService {
     /**
      * 상품 생성 (관리자)
      */
+    @Transactional
     public Long create(
             Long categoryId,
             String name,
@@ -104,6 +102,7 @@ public class ProductService {
     /**
      * 상품 수정 (관리자)
      */
+    @Transactional
     public void update(Long productId,
                        Long categoryId,
                        String name,
@@ -117,21 +116,22 @@ public class ProductService {
         Product product = findById(productId);
 
         // 값이 들어온 것만 변경
-        if(categoryId != null) product.changeCategory(categoryId);
-        if(name != null) product.changeName(name);
-        if(price != null) product.changePrice(price);
-        if(description != null) product.changeDescription(description);
-        if(originalPrice != null) product.changeOriginalPrice(originalPrice);
-        if(imageUrl != null) product.changeImageUrl(imageUrl);
-        if(stock != null) product.changeStock(stock);
-        if(status != null) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
+        if (categoryId != null) product.changeCategory(categoryId);
+        if (name != null) product.changeName(name);
+        if (price != null) product.changePrice(price);
+        if (description != null) product.changeDescription(description);
+        if (originalPrice != null) product.changeOriginalPrice(originalPrice);
+        if (imageUrl != null) product.changeImageUrl(imageUrl);
+        if (stock != null) product.changeStock(stock);
+        if (status != null) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
 
         productRepository.save(product);
     }
 
     // 상태 변경(관리자)
+    @Transactional
     public void changeStatus(Long productId, ProductStatus status) {
-        if(status == null) {
+        if (status == null) {
             throw new IllegalArgumentException("status는 필수입니다.");
         }
 
@@ -142,10 +142,12 @@ public class ProductService {
         productRepository.save(product);
     }
 
+    @Transactional
     public void save(Product product) {
         productRepository.save(product);
     }
 
+    @Transactional
     public void increaseStock(Long productId, int quantity) {
         Product product = findById(productId);
         product.increaseStock(quantity);
@@ -157,6 +159,7 @@ public class ProductService {
      * originalPrice == null : 정가 제거(할인 없음)
      * originalPrice != null : price 이상이어야 함
      */
+    @Transactional
     public void changeOriginalPrice(Long productId, Integer originalPrice) {
         Product product = findById(productId);
 
@@ -166,10 +169,11 @@ public class ProductService {
     }
 
 
-
     private List<Product> findBaseProducts(boolean admin, Long categoryId) {
-        if(categoryId == null) {
-            return productRepository.findAllAdmin();
+        if (categoryId == null) {
+            return admin
+                    ? productRepository.findAllAdmin()
+                    : productRepository.findAllPublic();
         }
 
         // 자손 포함 카테고리 id 구하기
@@ -178,7 +182,9 @@ public class ProductService {
                 : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
 
         // IN 조회
-        return productRepository.findAllAdminByCategoryIds(categoryIds);
+        return admin
+                ? productRepository.findAllAdminByCategoryIds(categoryIds)
+                : productRepository.findAllPublicByCategoryIds(categoryIds);
     }
 
     private List<Product> filterVisibleProducts(boolean admin, List<Product> products) {
@@ -191,7 +197,7 @@ public class ProductService {
 
 
     private String normalizeSort(String sort) {
-        if(sort == null || sort.isBlank()) return "latest";
+        if (sort == null || sort.isBlank()) return "latest";
         return sort.trim();
     }
 
@@ -199,7 +205,8 @@ public class ProductService {
         List<Product> result = new ArrayList<>(products);
 
         Comparator<Product> cmp = switch (sort) {
-            case "latest" -> Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();       // 상품id가 높으면 최근에 만들어진 것.
+            case "latest" ->
+                    Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();       // 상품id가 높으면 최근에 만들어진 것.
             case "price-low" -> Comparator.comparingInt(Product::getPrice)
                     .thenComparingLong((Product p) -> safeLong(p.getId()));     // 1순위 : 가격 오름차순, 2순위 : id 오름차순
             case "price-high" -> Comparator.comparingInt(Product::getPrice).reversed()
@@ -226,25 +233,25 @@ public class ProductService {
     }
 
     private void validateCreateArgs(Integer price, Integer stock) {
-        if(price == null) {
+        if (price == null) {
             throw new IllegalArgumentException("price는 필수입니다.");
         }
-        if(stock == null) {
+        if (stock == null) {
             throw new IllegalArgumentException("stock은 필수입니다.");
         }
     }
 
     private void validateOriginalPrice(Integer price, Integer originalPrice) {
 
-        if(originalPrice == null) {
+        if (originalPrice == null) {
             return;
         }
 
-        if(originalPrice <= 0) {
+        if (originalPrice <= 0) {
             throw new IllegalArgumentException("정가는 0보다 커야 합니다.");
         }
 
-        if(price != null && originalPrice < price) {
+        if (price != null && originalPrice < price) {
             throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
         }
     }

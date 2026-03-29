@@ -1,6 +1,5 @@
 package io.github.takgeun.shop.order.application;
 
-import io.github.takgeun.shop.cart.infra.SessionCartRepository;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.error.NotFoundException;
@@ -19,23 +18,21 @@ import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor    // 필수 인자를 가진 생성자 자동 생성
+@Transactional(readOnly = true)
 public class OrderService {
 
     private static final int FREE_SHIPPING_THRESHOLD = 30_000;
@@ -50,6 +47,7 @@ public class OrderService {
      * 카트/바로구매 모두에서 사용하는 단일 진입점
      * 세션 모름 (서비스가 세션에 의존하는 문제점 해결)
      */
+    @Transactional
     public Long checkout(Long memberId,
                          List<CheckoutItem> checkoutItems,
                          CreateOrderCommand cmd
@@ -83,7 +81,9 @@ public class OrderService {
             Product product = productService.getForOrderPublic(checkoutItem.getProductId());
             requireOnSale(product);
 
-            product.decreaseStock(checkoutItem.getQuantity());
+            // 트랜잭션 주의
+            // 재고를 먼저 줄이고 주문 저장
+            product.decreaseStock(checkoutItem.getQuantity());  // 여기서 예외 발생 시 롤백
             productService.save(product);
 
             OrderItem orderItem = OrderItem.of(
@@ -138,15 +138,6 @@ public class OrderService {
         return savedOrder.getId();
     }
 
-    private void validateCreateOrderCommand(CreateOrderCommand cmd) {
-        if(cmd == null) {
-            throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
-        }
-        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
-            throw new IllegalArgumentException("requestKey는 필수입니다.");
-        }
-    }
-
     public List<Order> getMyOrders(Long memberId) {
         requireAuthenticated(memberId);
         return orderRepository.findAllByMemberId(memberId);
@@ -161,6 +152,7 @@ public class OrderService {
         return OrderResponse.from(order);
     }
 
+    @Transactional
     public void cancel(Long memberId, Long orderId) {
         requireAuthenticated(memberId);
 
@@ -235,5 +227,14 @@ public class OrderService {
                 .substring(0, 6)
                 .toUpperCase();
         return "ORD-" + timestamp + "-" + suffix;
+    }
+
+    private void validateCreateOrderCommand(CreateOrderCommand cmd) {
+        if(cmd == null) {
+            throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
+        }
+        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+            throw new IllegalArgumentException("requestKey는 필수입니다.");
+        }
     }
 }

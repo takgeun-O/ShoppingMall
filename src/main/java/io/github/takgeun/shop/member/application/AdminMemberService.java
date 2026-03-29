@@ -13,6 +13,7 @@ import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AdminMemberService {
 
     private final MemberRepository memberRepository;
@@ -119,6 +121,7 @@ public class AdminMemberService {
     /**
      * 관리자 회원 수정 처리 (회원 수정 페이지에서 수정 처리)
      */
+    @Transactional
     public void updateMember(Long memberId, AdminMemberUpdateRequest request) {
 
         Member member = findMember(memberId);
@@ -142,6 +145,7 @@ public class AdminMemberService {
     /**
      * 관리자 회원 상태 수정 처리 (회원 상세정보 페이지에서 수정 처리)
      */
+    @Transactional
     public void changeMemberStatus(Long memberId, AdminMemberStatusUpdateRequest request) {
 
         Member member = findMember(memberId);
@@ -156,6 +160,7 @@ public class AdminMemberService {
     /**
      * 관리자 회원 탈퇴 (회원 상세정보 페이지에서 탈퇴 처리)
      */
+    @Transactional
     public void withdrawMember(Long memberId) {
 
         Member member = findMember(memberId);

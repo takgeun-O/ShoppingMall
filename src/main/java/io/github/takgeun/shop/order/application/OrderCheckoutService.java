@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,6 +35,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderCheckoutService {
 
     private static final String LAST_ORDER_VIEW_KEY_PREFIX = "LAST_ORDER_VIEW";
@@ -58,6 +60,7 @@ public class OrderCheckoutService {
      * - cmd (배송 정보들)
      * - 배송비 (주문금액에 따라 계산된 결과)
      */
+    @Transactional
     public Long createOrderFromCart(Long memberId,
                                     HttpSession session,
                                     CreateOrderCommand cmd

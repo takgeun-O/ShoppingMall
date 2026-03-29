@@ -6,6 +6,7 @@ import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 // 로그인 정책 담당
 @Service
@@ -14,6 +15,13 @@ public class AuthService {
 
     private final MemberRepository memberRepository;
 
+    /**
+     * 이메일로 회원 조회
+     * 비밀번호 검증
+     * 할성 회원 검증
+     * lastLoginAt 갱신
+     */
+    @Transactional
     public Long login(String email, String password) {
 
         String normalizedEmail = normalizeEmail(email);
@@ -33,6 +41,7 @@ public class AuthService {
         }
 
         member.updateLastLoginAt();
+        memberRepository.save(member);
         return member.getId();
     }
 
