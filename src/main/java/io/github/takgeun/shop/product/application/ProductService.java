@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
+import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
@@ -127,6 +128,20 @@ public class ProductService {
 
         productRepository.save(product);
     }
+
+    /**
+     * 상품 삭제 (관리자)
+     */
+    @Transactional
+    public void delete(Long productId) {
+        Product product = findById(productId);
+
+        // 삭제 가능 여부 검증
+        validateDeletable(product);
+
+        productRepository.deleteById(productId);
+    }
+
 
     // 상태 변경(관리자)
     @Transactional
@@ -262,6 +277,13 @@ public class ProductService {
             case HIDDEN -> product.hide();
             case DISCONTINUED -> product.discontinue();
             case SOLD_OUT -> throw new IllegalArgumentException("SOLD_OUT은 직접 변경할 수 없습니다. 재고를 통해 자동 반영됩니다.");
+        }
+    }
+
+    private void validateDeletable(Product product) {
+        // 판매 중 상품은 삭제 금지
+        if(product.getStatus() == ProductStatus.ON_SALE) {
+            throw new ConflictException("판매 중인 상품은 삭제할 수 없습니다. 먼저 숨김 또는 판매종료 처리해주세요.");
         }
     }
 }

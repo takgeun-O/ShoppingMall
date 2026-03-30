@@ -46,8 +46,55 @@
                 <span th:text="${error}">에러 메시지</span>
             </div>
 
+            <!-- Summary Stats -->
+            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">전체 상품</p>
+                    <p class="text-2xl font-bold text-gray-900"
+                       th:text="${summary.totalCount}">0</p>
+                </div>
+
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">판매중</p>
+                    <p class="text-2xl font-bold text-green-600"
+                       th:text="${summary.onSaleCount}">0</p>
+                </div>
+
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">판매 준비</p>
+                    <p class="text-2xl font-bold text-blue-600"
+                       th:text="${summary.readyCount}">0</p>
+                </div>
+
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">숨김</p>
+                    <p class="text-2xl font-bold text-gray-600"
+                       th:text="${summary.hiddenCount}">0</p>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">품절</p>
+                    <p class="text-2xl font-bold text-orange-600"
+                       th:text="${summary.soldOutCount}">0</p>
+                </div>
+
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">판매 종료</p>
+                    <p class="text-2xl font-bold text-red-600"
+                       th:text="${summary.discontinuedCount}">0</p>
+                </div>
+
+                <div class="rounded-xl bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-sm text-gray-600">재고 부족</p>
+                    <p class="text-2xl font-bold text-amber-600"
+                       th:text="${summary.lowStockCount}">0</p>
+                </div>
+            </div>
+
             <!-- Product List Table -->
-            <div class="overflow-hidden rounded-xl bg-white shadow-sm">
+            <div class="mt-6 overflow-hidden rounded-xl bg-white shadow-sm">
                 <div class="overflow-x-auto">
                     <div class="min-w-[1100px]">
 
@@ -192,6 +239,26 @@
                                                 공개
                                             </button>
                                         </form>
+
+                                        <button type="button"
+                                                class="inline-flex items-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:border-red-600 hover:bg-red-50 hover:text-red-700"
+                                                th:attr="data-product-id=${product.id},
+                                                         data-product-name=${product.name},
+                                                         data-product-category=${product.categoryName},
+                                                         data-product-price=${#numbers.formatInteger(product.price, 0, 'COMMA')},
+                                                         data-product-image=${product.imageUrl}"
+                                                onclick="openDeleteModal(this)">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="mr-1 h-4 w-4"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke="currentColor"
+                                                 stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
+                                            </svg>
+                                            삭제
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -218,60 +285,139 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Summary Stats -->
-            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">전체 상품</p>
-                    <p class="text-2xl font-bold text-gray-900"
-                       th:text="${summary.totalCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">판매중</p>
-                    <p class="text-2xl font-bold text-green-600"
-                       th:text="${summary.onSaleCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">판매 준비</p>
-                    <p class="text-2xl font-bold text-blue-600"
-                       th:text="${summary.readyCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">숨김</p>
-                    <p class="text-2xl font-bold text-gray-600"
-                       th:text="${summary.hiddenCount}">0</p>
-                </div>
-
-            </div>
-
-            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">품절</p>
-                    <p class="text-2xl font-bold text-orange-600"
-                       th:text="${summary.soldOutCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">판매 종료</p>
-                    <p class="text-2xl font-bold text-red-600"
-                       th:text="${summary.discontinuedCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">재고 부족</p>
-                    <p class="text-2xl font-bold text-amber-600"
-                       th:text="${summary.lowStockCount}">0</p>
-                </div>
-
-            </div>
-
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+
+            <!-- Modal Header -->
+            <div class="mb-6 text-center">
+                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-6 w-6 text-red-600"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
+                    </svg>
+                </div>
+                <h3 class="mb-2 text-xl font-bold text-gray-900">상품 삭제</h3>
+                <p class="text-sm text-gray-600">정말 이 상품을 삭제하시겠습니까?</p>
+            </div>
+
+            <!-- Product Info -->
+            <div class="mb-6 rounded-lg bg-gray-50 p-4">
+                <div class="flex items-center gap-4">
+                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200">
+                        <img id="deleteModalImage"
+                             src="/images/no-image.png"
+                             alt="상품 이미지"
+                             class="h-full w-full object-cover"
+                             onerror="this.src='/images/no-image.png'"/>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p id="deleteModalName"
+                           class="truncate font-semibold text-gray-900">상품명</p>
+                        <p id="deleteModalCategory"
+                           class="text-sm text-gray-500">카테고리</p>
+                        <p id="deleteModalPrice"
+                           class="mt-1 text-sm font-semibold text-gray-900">₩0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+                <div class="flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 9v2m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z"/>
+                    </svg>
+                    <div>
+                        <p class="mb-1 text-sm font-semibold text-red-900">
+                            주의: 이 작업은 되돌릴 수 없습니다
+                        </p>
+                        <p class="text-xs text-red-700">
+                            상품이 데이터베이스에서 영구 삭제됩니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button type="button"
+                        onclick="closeDeleteModal()"
+                        class="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                    취소
+                </button>
+
+                <form id="deleteForm" method="post" class="flex-1">
+                    <button type="submit"
+                            class="flex w-full items-center justify-center rounded-lg bg-red-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="mr-2 h-4 w-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"/>
+                        </svg>
+                        상품 삭제
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function openDeleteModal(button) {
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productCategory = button.dataset.productCategory;
+            const productPrice = button.dataset.productPrice;
+            const productImage = button.dataset.productImage;
+
+            document.getElementById('deleteModalName').textContent = productName || '상품명';
+            document.getElementById('deleteModalCategory').textContent = productCategory || '카테고리';
+            document.getElementById('deleteModalPrice').textContent = '₩' + (productPrice || '0');
+            document.getElementById('deleteModalImage').src = productImage || '/images/no-image.png';
+            document.getElementById('deleteForm').action = '/admin/products/' + productId + '/delete';
+
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
+
+        document.getElementById('deleteModal').addEventListener('click', function (event) {
+            if (event.target === this) {
+                closeDeleteModal();
+            }
+        });
+    </script>
 
 </th:block>
 

@@ -234,6 +234,31 @@ public class AdminProductViewController {
     }
 
     /**
+     * 상품 삭제 처리
+     * POST /admin/{id}/delete
+     */
+    @PostMapping("/{id}/delete")
+    public String delete(
+            @PathVariable("id") Long productId,
+            HttpSession session,
+            RedirectAttributes ra
+    ) {
+        requireAdmin(session);
+
+        try {
+            productService.delete(productId);   // NotFound, IllegalState (이건 ControllerAdvice로 전역 처리), Conflict
+            log.info("상품 삭제 완료. productId={}", productId);
+            ra.addFlashAttribute("success", "상품이 삭제되었습니다.");
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (ConflictException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/products";
+    }
+
+    /**
      * 상품 숨김 처리
      * POST /admin/products/{id}/hide
      */

@@ -177,6 +177,11 @@
         where category_id = #{categoryId}
     </select>
 
+    <delete id="deleteById">
+        delete from product
+        where id = #{id}
+    </delete>
+
     <delete id="deleteAll">
         delete from product
     </delete>

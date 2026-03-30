@@ -85,6 +85,14 @@ public class MemoryProductRepository implements ProductRepository {
     }
 
     @Override
+    public void deleteById(Long productId) {
+        if(productId == null) {
+            return;
+        }
+        store.remove(productId);
+    }
+
+    @Override
     public List<Product> findAllPublic() {
         return store.values().stream()
                 .filter(Product::isPublicVisible)

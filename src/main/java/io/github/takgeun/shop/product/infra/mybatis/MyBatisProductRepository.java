@@ -85,6 +85,14 @@ public class MyBatisProductRepository implements ProductRepository {
     }
 
     @Override
+    public void deleteById(Long productId) {
+        int affectedRows = productMapper.deleteById(productId);
+        if(affectedRows != 1) {
+            throw new IllegalStateException("상품 삭제에 실패했습니다.");
+        }
+    }
+
+    @Override
     public boolean existsAdminByCategoryId(Long categoryId) {
         if(categoryId == null) {
             return false;

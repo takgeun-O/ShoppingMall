@@ -38,7 +38,7 @@ public interface ProductMapper {
 
     int countAdminByCategoryId(@Param("categoryId") Long categoryId);
 
-//    int deleteById(@Param("id") Long id);
+    int deleteById(@Param("id") Long id);
 
     int deleteAll();    // 테스트용
 }

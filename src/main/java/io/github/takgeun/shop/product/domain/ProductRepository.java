@@ -26,6 +26,8 @@ public interface ProductRepository {
 
     List<Product> findAllAdminByCategoryIds(Set<Long> categoryIds);
 
+    void deleteById(Long productId);
+
     // 기타
     boolean existsAdminByCategoryId(Long categoryId);
 

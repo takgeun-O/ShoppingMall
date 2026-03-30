@@ -17,6 +17,51 @@
                 <p class="text-gray-600">고객 주문을 조회하고 배송 상태를 관리합니다</p>
             </div>
 
+            <!-- Summary Stats -->
+            <div class="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">전체 주문</p>
+                    <p class="text-xl font-bold text-gray-900"
+                       th:text="${summary.totalCount}">8</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">주문완료</p>
+                    <p class="text-xl font-bold text-blue-600"
+                       th:text="${summary.orderedCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">결제완료</p>
+                    <p class="text-xl font-bold text-purple-600"
+                       th:text="${summary.paymentCompletedCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송준비</p>
+                    <p class="text-xl font-bold text-orange-600"
+                       th:text="${summary.preparingCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송중</p>
+                    <p class="text-xl font-bold text-cyan-600"
+                       th:text="${summary.shippingCount}">1</p>
+                </div>
+
+                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-gray-600">배송완료</p>
+                    <p class="text-xl font-bold text-green-600"
+                       th:text="${summary.deliveredCount}">3</p>
+                </div>
+
+                <div class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                    <p class="mb-1 text-xs text-red-700">주문취소</p>
+                    <p class="text-xl font-bold text-red-600"
+                       th:text="${summary.canceledCount}">1</p>
+                </div>
+            </div>
+
             <!-- Filters -->
             <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <form th:action="@{/admin/orders}" method="get" class="flex flex-col gap-4 md:flex-row">
@@ -136,51 +181,6 @@
                 <div th:if="${orders == null or #lists.isEmpty(orders)}"
                      class="px-6 py-16 text-center text-gray-500">
                     조회된 주문이 없습니다.
-                </div>
-            </div>
-
-            <!-- Summary Stats -->
-            <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">전체 주문</p>
-                    <p class="text-xl font-bold text-gray-900"
-                       th:text="${summary.totalCount}">8</p>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">주문완료</p>
-                    <p class="text-xl font-bold text-blue-600"
-                       th:text="${summary.orderedCount}">1</p>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">결제완료</p>
-                    <p class="text-xl font-bold text-purple-600"
-                       th:text="${summary.paymentCompletedCount}">1</p>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">배송준비</p>
-                    <p class="text-xl font-bold text-orange-600"
-                       th:text="${summary.preparingCount}">1</p>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">배송중</p>
-                    <p class="text-xl font-bold text-cyan-600"
-                       th:text="${summary.shippingCount}">1</p>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-gray-600">배송완료</p>
-                    <p class="text-xl font-bold text-green-600"
-                       th:text="${summary.deliveredCount}">3</p>
-                </div>
-
-                <div class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
-                    <p class="mb-1 text-xs text-red-700">주문취소</p>
-                    <p class="text-xl font-bold text-red-600"
-                       th:text="${summary.canceledCount}">1</p>
                 </div>
             </div>
 
