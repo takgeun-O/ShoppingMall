@@ -269,23 +269,10 @@ public class Product {
 
     // 재고에 따른 상태 변경 (SOLD_OUT vs ON_SALE)
     private void adjustStatusByStock() {
-        // SOLD_OUT, ON_SALE 외 모두 무시
-        if(this.status == ProductStatus.DISCONTINUED) {
+        if(this.status != ProductStatus.ON_SALE && this.status != ProductStatus.SOLD_OUT) {
             return;
         }
-        if(this.status == ProductStatus.HIDDEN) {
-            return;
-        }
-        if(this.status == ProductStatus.READY) {
-            return;
-        }
-
-        if(this.stock == 0 && this.status == ProductStatus.ON_SALE) {
-            this.status = ProductStatus.SOLD_OUT;
-        }
-        if(this.stock > 0 && this.status == ProductStatus.SOLD_OUT) {
-            this.status = ProductStatus.ON_SALE;
-        }
+        this.status = (this.stock == 0) ? ProductStatus.SOLD_OUT : ProductStatus.ON_SALE;
     }
 
     private String normalizeRequiredText(String value, String message) {

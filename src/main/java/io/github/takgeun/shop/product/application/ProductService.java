@@ -187,15 +187,6 @@ public class ProductService {
                 : productRepository.findAllPublicByCategoryIds(categoryIds);
     }
 
-    private List<Product> filterVisibleProducts(boolean admin, List<Product> products) {
-        return admin
-                ? products
-                : products.stream()
-                .filter(Product::isPublicVisible)
-                .toList();
-    }
-
-
     private String normalizeSort(String sort) {
         if (sort == null || sort.isBlank()) return "latest";
         return sort.trim();

@@ -188,7 +188,8 @@ public class AdminProductViewController {
             @Valid @ModelAttribute("form") ProductUpdateForm form,
             BindingResult bindingResult,
             Model model,
-            HttpSession session
+            HttpSession session,
+            RedirectAttributes ra
     ) {
         requireAdmin(session);
 
@@ -214,6 +215,7 @@ public class AdminProductViewController {
             );
 
             log.info("상품 수정 완료. productId={}", productId);
+            ra.addFlashAttribute("success", "상품 수정이 완료되었습니다.");
             return "redirect:/admin/products";
         } catch (NotFoundException e) {
             throw e;

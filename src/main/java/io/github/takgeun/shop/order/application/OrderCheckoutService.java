@@ -229,7 +229,7 @@ public class OrderCheckoutService {
 
         for (CartItemView cartItem : cartItems) {
             if(cartItem == null) {
-                continue;
+                throw new IllegalStateException("장바구니 데이터가 유효하지 않습니다.");
             }
             if (cartItem.getQuantity() <= 0) {
                 throw new ConflictException("주문 수량은 1개 이상이어야 합니다.");

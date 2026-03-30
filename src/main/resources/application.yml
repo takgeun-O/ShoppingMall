@@ -21,6 +21,6 @@ mybatis:
 
 logging:
   level:
-    org.mybatis: DEBUG
-    org.mybatis.spring: DEBUG
+    org.mybatis: debug
+    org.mybatis.spring: debug
     com.zaxxer.hikari: INFO

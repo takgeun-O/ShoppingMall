@@ -3,6 +3,7 @@ package io.github.takgeun.shop.order.view;
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
 import io.github.takgeun.shop.order.application.OrderCheckoutService;
@@ -107,8 +108,8 @@ public class OrderViewController {
                               Model model,
                               RedirectAttributes ra) {
 
-        HttpSession session = request.getSession(false);    // 방어적 코딩
-        Long memberId = getRequiredLoginMemberId(session);
+        HttpSession session = request.getSession(false);    // 이미 인터셉터에서 "/orders" 경로는 세션이 있음을 보장하므로 null 체크 안해도 됨.
+        Long memberId = getRequiredLoginMemberId(session);          // 그럼에도 불구하고 방어적 코드로 작성하고 memberId 추출
 
         CartViewResult cartView = getCartViewOrEmpty(session);
         if(cartView.getItems().isEmpty()) {
@@ -122,7 +123,7 @@ public class OrderViewController {
             return "public/orders/checkout";        // 같은 요청 안에서 model 넘겨주기 (같은 요청은 model 유지됨) -> 리다이렉트해버리면 model 사라짐 + BindingResult 사라짐 -> 폼 에러 표시 불가
         }
 
-        // 주문 생성용 DTO (서비스로 넘길 때 쓰기)
+        // 주문 생성용 DTO (서비스로 넘길 때 쓰기, 이 때 주문 중복 방지용 requestKey도 포함)
         CreateOrderCommand cmd = new CreateOrderCommand(
                 form.getRecipientName(),
                 form.getPhoneNumber(),

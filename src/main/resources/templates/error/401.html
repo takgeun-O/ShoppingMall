@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '401 - 로그인이 필요합니다',
+          ~{error/error :: content(
+              401,
+              '로그인이 필요합니다',
+              '해당 페이지에 접근하려면 로그인 후 이용해주세요.<br/>로그인 페이지로 이동합니다.'
+          )},
+          null,
+          null
+      )}">
+</html>

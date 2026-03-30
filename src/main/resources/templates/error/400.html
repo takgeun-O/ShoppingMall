@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '400 - 잘못된 요청입니다',
+          ~{error/error :: content(
+              400,
+              '잘못된 요청입니다',
+              '요청 값이 올바르지 않거나 처리할 수 없는 요청입니다.<br/>입력값을 다시 확인해주세요.'
+          )},
+          null,
+          null
+      )}">
+</html>
