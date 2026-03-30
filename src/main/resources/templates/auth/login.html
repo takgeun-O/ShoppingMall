@@ -43,7 +43,7 @@
         <form class="space-y-6"
               th:action="@{/login(next=${next})}"
               th:object="${form}"
-              method="post">
+              method="post" novalidate>
 
             <!-- 글로벌 에러(로그인 실패 등등) -->
             <div th:if="${#fields.hasGlobalErrors()}"

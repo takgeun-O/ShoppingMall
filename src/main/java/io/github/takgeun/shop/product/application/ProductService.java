@@ -202,7 +202,15 @@ public class ProductService {
     }
 
     private List<Product> applySort(List<Product> products, String sort) {
-        List<Product> result = new ArrayList<>(products);
+        List<Product> base = new ArrayList<>(products);
+
+        if("sale".equals(sort)) {
+            base = new ArrayList<>(
+                    base.stream()
+                    .filter(p -> p.discountPercent() > 0)
+                    .toList()
+            );
+        }
 
         Comparator<Product> cmp = switch (sort) {
             case "latest" ->
@@ -218,8 +226,8 @@ public class ProductService {
             default -> Comparator.comparingLong((Product p) -> safeLong(p.getId())).reversed();
         };
 
-        result.sort(cmp);
-        return result;
+        base.sort(cmp);
+        return base;
     }
 
     private long safeLong(Long v) {
