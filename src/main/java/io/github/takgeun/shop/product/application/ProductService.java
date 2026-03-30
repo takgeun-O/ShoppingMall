@@ -47,14 +47,14 @@ public class ProductService {
     }
 
     /**
-     * 상품 상세보기
+     * 상품 상세보기 (조회용) - 주문 로직에서 쓰지 말기..
+     * productService.getForDetail(true, productId) 로 잘못 쓸 수 있음.
      */
     public Product getForDetail(boolean admin, Long productId) {
         Product product = findById(productId);
 
-        if (!admin && !product.isPublicVisible()) {
-            // 관리자가 아닌 계정이 비공개상품을 보는 케이스면 예외 던짐
-            throw new NotFoundException();  // 이 때 에러 메시지는 컨트롤러에서 직접 캐치해서 사용할 것
+        if(!product.isPublicVisible()) {
+            throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
         }
 
         return product;
@@ -65,6 +65,19 @@ public class ProductService {
      */
     public Product getForOrderPublic(Long productId) {
         return getForDetail(false, productId);
+    }
+
+    /**
+     * 주문 가능한 상품만 반환
+     */
+    public Product getForOrder(Long productId) {
+        Product product = findById(productId);
+
+        if(!product.isOrderable()) {
+            throw new ConflictException("주문할 수 없는 상품입니다.");
+        }
+
+        return product;
     }
 
     /**

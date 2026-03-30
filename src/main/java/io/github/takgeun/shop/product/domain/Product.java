@@ -250,6 +250,10 @@ public class Product {
         return rating;
     }
 
+    public boolean isOrderable() {
+        return status == ProductStatus.ON_SALE;
+    }
+
     private void applyInitialStatus(ProductStatus status) {
         ProductStatus target = (status == null) ? ProductStatus.READY : status;
 

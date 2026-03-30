@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.global.interceptor;
 
+import io.github.takgeun.shop.global.error.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -21,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 public class AdminAuthInterceptor implements HandlerInterceptor {
 
     private static final String LOGIN_PATH = "/login";
-    private static final String FORBIDDEN_PATH = "/forbidden";
 
     private final MemberService memberService;
 
@@ -46,11 +46,10 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 관리자 권한 체크 (role을 세션에 따로 저장)
+        // 관리자 권한 체크
         Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
         if(!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
-            redirectToForbidden(response);
-            return false;
+            throw new ForbiddenException("관리자 권한이 필요합니다.");
         }
 
         // DB 기준 현재 회원 상태 재확인
@@ -81,9 +80,5 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
                 .toUriString(); // 최종 -> /login?next=%2Forders%2F3%3Fsort%3Dprice%20desc
 
         response.sendRedirect(loginUrl);
-    }
-
-    private void redirectToForbidden(HttpServletResponse response) throws IOException {
-        response.sendRedirect(FORBIDDEN_PATH);
     }
 }

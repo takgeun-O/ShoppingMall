@@ -108,7 +108,7 @@ public class OrderCheckoutService {
         // DB insert 후 id가 채워짐
         Order savedOrder = orderRepository.save(order);
 
-        // 주문 완료 화면은 세션에 캐시
+        // 주문 완료 화면에 필요한 정보는 세션에 캐시
         // 이유 : 새로고침 시 주문이 다시 생성되는 것을 방지 (가장 중요)
         // 위 현상을 방지하는 대표적인 방법이 PRG 패턴인데 문제는 redirect를 하면 POST에서 만든 데이터가 사라짐. -> GET /orders/complete 진입할 때 주문 데이터가 없음.
         // 그래서 중간 저장소에 값을 저장할 필요가 있는데 그 역할을 세션이 하는 걸로 결정
@@ -211,7 +211,7 @@ public class OrderCheckoutService {
         String suffix = UUID.randomUUID()
                 .toString()
                 .replace("-", "")
-                .substring(0, 6)
+                .substring(0, 6)        // UUID.randomUUID() 는 36자리 문자열
                 .toUpperCase();
         return "ORD-" + timestamp + "-" + suffix;
     }
@@ -235,8 +235,7 @@ public class OrderCheckoutService {
                 throw new ConflictException("주문 수량은 1개 이상이어야 합니다.");
             }
 
-            Product product = productService.getForOrderPublic(cartItem.getProductId());
-            requireOrderable(product);
+            Product product = productService.getForOrder(cartItem.getProductId());
 
             // 상품 상태 갱신
             product.decreaseStock(cartItem.getQuantity());
