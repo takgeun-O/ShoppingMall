@@ -50,14 +50,16 @@ public class SessionCartRepository implements CartRepository {
     private Map<Long, Integer> getOrCreateCart(HttpSession session) {
         // session.getAttribute의 반환타입은 무조건 Object 임
         // 해당 세션에 이미 장바구니(Map)가 저장되어 있으면 그걸 그대로 사용한다.
+        // 아예 처음 비어있는 장바구니에 넣는 시점에는 세션에 CART_KEY가 없음.
         Object obj = session.getAttribute(CART_KEY);
 
         // 그냥 obj가 Map인지만 확인하는 방법.
         // <?, ?> : 제네릭 타입은 런타임에 사라지기 때문에 ? 을 사용해서 Map인지까지만 확인하고 넘어가기
         if(obj instanceof Map<?, ?>) {
-            //
             return (Map<Long, Integer>) obj;        // 세션에 기존 존재하는 장바구니(obj)는 그대로 반환
         }
+
+        // 새 장바구니 생성 후 세션에 저장
         Map<Long, Integer> cart = new LinkedHashMap<>();
         session.setAttribute(CART_KEY, cart);
         return cart;

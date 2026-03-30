@@ -55,7 +55,7 @@ public class CartViewController {
             ra.addFlashAttribute("added", true);
             ra.addFlashAttribute("addedProductId", productId);
             ra.addFlashAttribute("addedQty", resolvedQty);
-        } catch (ConflictException e) {
+        } catch (ConflictException | IllegalArgumentException e) {
             // 에러 터지면 뷰에다가 그냥 에러 정보만 보내주고 끝.
             ra.addFlashAttribute("error", e.getMessage());
             ra.addFlashAttribute("errorProductId", productId);
@@ -86,8 +86,11 @@ public class CartViewController {
         // 수량 변경은 장바구니 화면에서 사용자가 즉시 시도하는 동작이라서 예외는 해당 페이지로 다시 보내면서 표시해주는 게 자연스러움.
         try {
             cartService.changeQuantity(session, id, delta);     // ConflictException 잡아야함.
-        } catch (ConflictException e) {
+        } catch (IllegalArgumentException | ConflictException e) {
             ra.addFlashAttribute("error", e.getMessage());
+            ra.addFlashAttribute("errorProductId", id);
+        } catch (NotFoundException e) {
+            ra.addFlashAttribute("error", "해당 상품은 현재 판매 중이 아니거나 찾을 수 없습니다.");
             ra.addFlashAttribute("errorProductId", id);
         }
 
@@ -122,10 +125,14 @@ public class CartViewController {
      * 비어있거나 외부 URL이면 fallback
      */
     private String resolveReturnUrl(String returnUrl, String fallback) {
-        if(returnUrl == null) return fallback;
+        if(returnUrl == null) {
+            return fallback;
+        }
 
         String trimmed = returnUrl.trim();
-        if(trimmed.isEmpty()) return fallback;
+        if(trimmed.isEmpty()) {
+            return fallback;
+        }
 
         // 내부 경로만 허용 ("/products/1", "/cart" 등등)
         if(trimmed.startsWith("/")) {

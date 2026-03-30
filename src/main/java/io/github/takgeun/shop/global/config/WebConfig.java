@@ -34,9 +34,13 @@ public class WebConfig implements WebMvcConfigurer {
                         "/favicon.ico"
                 );
 
-        // 유저 전용 : 주문은 로그인 필요
+        // 유저 전용 : 로그인 필요
         registry.addInterceptor(userAuthInterceptor)
-                .addPathPatterns("/orders/**")
+                .addPathPatterns(
+                        "/orders/**",
+                        "/members/me",
+                        "/members/me/**"
+                )
                 .excludePathPatterns(
                         "/login",
                         "/css/**",

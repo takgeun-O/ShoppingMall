@@ -39,10 +39,7 @@ public class MemberViewController {
     @GetMapping()
     public String me(HttpServletRequest request, Model model) {
 
-        Long memberId = getLoginMemberId(request);
-        if(memberId == null) {
-            return redirectToLoginWithNext(request);    // 로그인 실패 시 로그인폼 이동
-        }
+        Long memberId = getLoginMemberId(request);  // 여기서 null 안 나옴이 보장됨. (인터셉터로 거르는 중)
 
         Member member = memberService.findById(memberId);
 
@@ -161,10 +158,8 @@ public class MemberViewController {
     // 헬퍼 메소드
     private Long getLoginMemberId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        if(session == null) return null;
 
-        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        return (idObj instanceof Long id) ? id : null;
+        return (Long) session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
     }
 
     private String redirectToLoginWithNext(HttpServletRequest request) {

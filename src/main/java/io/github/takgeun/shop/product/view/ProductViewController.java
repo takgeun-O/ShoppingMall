@@ -107,7 +107,7 @@ public class ProductViewController {
             Product product = productService.getForDetail(admin, productId);
             ProductDetailView view = ProductDetailView.from(product);
 
-            String query = request.getQueryString();
+            String query = request.getQueryString();    // 사용자가 상품 목록 페이지를 어떻게 보고 있었는지 저장
 
             // 목록으로 돌아가기용 리턴경로
             String returnUrl = "/products";

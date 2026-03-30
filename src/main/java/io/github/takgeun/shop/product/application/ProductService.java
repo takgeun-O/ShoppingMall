@@ -53,7 +53,7 @@ public class ProductService {
 
         if (!admin && !product.isPublicVisible()) {
             // 관리자가 아닌 계정이 비공개상품을 보는 케이스면 예외 던짐
-            throw new NotFoundException();
+            throw new NotFoundException();  // 이 때 에러 메시지는 컨트롤러에서 직접 캐치해서 사용할 것
         }
 
         return product;

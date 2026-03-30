@@ -71,7 +71,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         // next 경로 조립하기. (uri + query 활용)
         String uri = request.getRequestURI();
         String query = request.getQueryString();
-        String next = (query == null) ? uri : (uri + "?" + query);
+        String next = (query == null) ? uri : (uri + "?" + query);  // query가 null이면 문자열에 그냥 null이 붙어버림..
 
         String loginUrl = UriComponentsBuilder.fromPath(LOGIN_PATH)       // 기본 경로를 /login 으로 시작 (이 때 loginUrl은 '/login')
                 .queryParam("next", next)                        // 쿼리 파라미터 추가 ("orders/3" 이면 '/login?orders/3')

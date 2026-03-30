@@ -130,7 +130,7 @@
 
                         <div class="flex justify-between text-gray-600">
                             <span>할인 금액</span>
-                            <span th:text="${#numbers.formatInteger(summary.discountTotal, 3, 'COMMA')} + '원'">
+                            <span th:text="${#numbers.formatInteger(summary.discountTotal, 1, 'COMMA')} + '원'">
                                 0원
                             </span>
                         </div>
