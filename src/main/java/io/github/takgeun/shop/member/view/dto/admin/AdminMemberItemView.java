@@ -11,9 +11,6 @@ import java.time.format.DateTimeFormatter;
 @Getter
 public class AdminMemberItemView {
 
-    private static final DateTimeFormatter JOIN_DATE_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy.MM.dd");
-
     private final Long id;
     private final String memberCode;
     private final String name;
@@ -44,32 +41,8 @@ public class AdminMemberItemView {
         this.joinedAt = joinedAt;
     }
 
-    public static AdminMemberItemView of(
-            Long id,
-            String memberCode,
-            String name,
-            String email,
-            String phone,
-            MemberRole role,
-            MemberStatus status,
-            int totalOrders,
-            LocalDateTime joinedAt
-    ) {
+    public static AdminMemberItemView from(Member member, int totalOrders) {
         return new AdminMemberItemView(
-                id,
-                memberCode,
-                name,
-                email,
-                phone,
-                role,
-                status,
-                totalOrders,
-                joinedAt
-        );
-    }
-
-    public static AdminMemberItemView from(Member member) {
-        return AdminMemberItemView.of(
                 member.getId(),
                 generateMemberCode(member.getId()),
                 member.getName(),
@@ -77,13 +50,9 @@ public class AdminMemberItemView {
                 member.getPhone(),
                 member.getRole(),
                 member.getStatus(),
-                0,  // TODO : 주문 도메인 연결 후 실제 주문 수 반영
+                totalOrders,
                 member.getCreatedAt()
         );
-    }
-
-    public String getJoinedAtText() {
-        return joinedAt.format(JOIN_DATE_FORMAT);
     }
 
 

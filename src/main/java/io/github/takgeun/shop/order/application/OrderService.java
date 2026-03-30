@@ -140,7 +140,7 @@ public class OrderService {
 
     public List<Order> getMyOrders(Long memberId) {
         requireAuthenticated(memberId);
-        return orderRepository.findAllByMemberId(memberId);
+        return orderRepository.findAllByMemberId(memberId);     // 각 주문에 orderItems를 붙인 주문을 반환
     }
 
     public OrderResponse getDetail(Long memberId, Long orderId) {

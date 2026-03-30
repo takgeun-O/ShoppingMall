@@ -37,6 +37,7 @@ public class MyPageOrderViewController {
             return "redirect:" + redirectToLogin("/members/me/orders");
         }
 
+        // 화면에 필요한 정보와 페이징 정보 넘어옴
         OrderHistoryPageView view = orderHistoryViewService.getOrderHistoryPage(memberId, page);
 
         model.addAttribute("orders", view.getOrders());

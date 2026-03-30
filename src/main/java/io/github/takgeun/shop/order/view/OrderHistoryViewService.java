@@ -27,13 +27,14 @@ public class OrderHistoryViewService {
             throw new IllegalArgumentException("memberId는 양수여야 합니다.");
         }
 
-        List<Order> orders = orderService.getMyOrders(memberId);
+        List<Order> orders = orderService.getMyOrders(memberId);    // 주문상품까지 채워진 orders 반환
 
+        // orders를 최근 주문일자순으로 정렬하고 화면에 필요한 정보로 매핑
         List<OrderHistoryItemView> views = orders.stream()
                 .sorted(Comparator.comparing(Order::getOrderedAt).reversed())
                 .map(OrderHistoryItemView::from)
                 .toList();
 
-        return OrderHistoryPageView.of(views, page, PAGE_SIZE);
+        return OrderHistoryPageView.of(views, page, PAGE_SIZE); // 화면에 필요한 정보와 페이지 정보로 OrderHistoryPageView 완성
     }
 }

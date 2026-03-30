@@ -42,14 +42,15 @@ public class OrderHistoryPageView {
     public static OrderHistoryPageView of(List<OrderHistoryItemView> allOrders, int requestedPage, int pageSize) {
 
         List<OrderHistoryItemView> safeOrders =
-                (allOrders == null) ? List.of() : List.copyOf(allOrders);   // copyOf()는 불변리스트로 복사함.
+                (allOrders == null) ? List.of() : List.copyOf(allOrders);   // copyOf()는 불변리스트로 복사함. DTO는 읽기 전용 데이터이기 때문에 불변성 유지하는 것이 좋을듯함.
 
         int totalOrders = safeOrders.size();    // 전체 주문 수 (42)
         int totalPages = Math.max((int) Math.ceil((double) totalOrders / pageSize), 1);
         // 전체 페이지 계산
         // (42 / 10 = 4.2 -> ceil -> 5) -> Math.max(5, 1) : 주문이 0개여도 페이지는 최소 1페이지임을 보장
 
-        // requestedPage < 1 -> 1 , requestedPage > totalPages -> totalPages (현재 페이지 보정)
+        // requestedPage < 1 --> 1
+        // requestedPage > totalPages --> totalPages (현재 페이지 보정)
         int currentPage = Math.min(Math.max(requestedPage, 1), totalPages);
 
         // pageSize = 10, currentPage = 2
@@ -57,12 +58,12 @@ public class OrderHistoryPageView {
         int startIndex = (currentPage - 1) * pageSize;  // (2-1) * 10 = 10
         int endIndex = Math.min(startIndex + pageSize, totalOrders);    // 20
 
-        // 현재 페이지의 주문만 따로 추출
+        // 현재 페이지에 들어갈 주문만 따로 추출
         List<OrderHistoryItemView> currentOrders =
                 (totalOrders == 0) ? List.of() : safeOrders.subList(startIndex, endIndex);
 
         // 페이지 번호 생성
-        // 현재 페이지 = 7, 전체 페이지 = 20 -> [5, 6, 7, 8, 9] 생성
+        // 현재 페이지 = 7, 전체 페이지 = 20 --> [5, 6, 7, 8, 9] 생성
         List<Integer> pageNumbers = buildPageNumbers(currentPage, totalPages);
 
         // 현재 페이지의 주문, 전체 주문, 현재 페이지 번호, 전체 페이지 개수, 뷰에 보여질 페이지 번호 리스트

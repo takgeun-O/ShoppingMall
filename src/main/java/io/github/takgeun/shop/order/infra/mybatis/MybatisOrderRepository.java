@@ -92,6 +92,7 @@ public class MybatisOrderRepository implements OrderRepository {
         }
 
         List<Order> orders = orderMapper.findAllByMemberId(memberId);
+        // Order 조회 -> 각 OrderItems 조회 -> Order 도메인에 OrderItems 붙이기
         attachOrderItems(orders);
         return orders;
     }

@@ -29,7 +29,7 @@ public class Order {
     private OrderStatus status;
     private String requestKey;      // 이미 처리된 요청인지 판별
 
-    private List<OrderItem> orderItems;
+    private List<OrderItem> orderItems;     // 이건 마이페이지 주문목록 조회 시점에 OrderItem을 별도로 조회해서 Order에 붙이는 방식으로 aggregate를 완성한다....
 
     // 배송정보
     private String recipientName;

@@ -49,12 +49,12 @@ public class OrderHistoryItemView {
 
     public static OrderHistoryItemView from(Order order) {
         if (order == null) {
-            throw new IllegalArgumentException("order는 필수입니다.");
+            throw new IllegalStateException("주문 데이터가 존재하지 않습니다.");
         }
 
         List<OrderItem> items = order.getOrderItems();
         if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("주문 상품이 없습니다.");
+            throw new IllegalStateException("주문 상품 데이터가 존재하지 않습니다.");
         }
 
         OrderItem firstItem = items.get(0);
@@ -65,7 +65,7 @@ public class OrderHistoryItemView {
         int extraItemCount = Math.max(items.size() - 1, 0);
 
         OrderStatus status = order.getStatus();
-        OrderStatusView statusView = OrderStatusView.from(status);
+        OrderStatusView statusView = OrderStatusView.from(status);  // 상태 정보를 토대로 상태, 라벨, 색상 확정
 
         return new OrderHistoryItemView(
                 order.getId(),

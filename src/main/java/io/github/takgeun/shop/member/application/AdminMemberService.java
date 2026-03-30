@@ -49,20 +49,9 @@ public class AdminMemberService {
                 .toList();
 
         List<AdminMemberItemView> allItems = filteredMembers.stream()
-                .map(member -> {
-                    int totalOrderCount = orderRepository.countByMemberId(member.getId());  // orderRepository.findAllByMemberId() 써도 되긴 한데 불필요한 정렬 연산이 있어서 따로 만듦
-                    return AdminMemberItemView.of(
-                            member.getId(),
-                            generateMemberCode(member.getId()),
-                            member.getName(),
-                            member.getEmail(),
-                            member.getPhone(),
-                            member.getRole(),
-                            member.getStatus(),
-                            totalOrderCount,
-                            member.getCreatedAt()
-                    );
-                })
+                .map(member -> AdminMemberItemView.from(
+                        member, orderRepository.countByMemberId(member.getId())
+                        ))
                 .toList();
 
         AdminMemberSummaryView summary = createSummary(allMembers);
@@ -231,12 +220,5 @@ public class AdminMemberService {
             return false;
         }
         return member.getCreatedAt().toLocalDate().isEqual(LocalDate.now());
-    }
-
-    private static String generateMemberCode(Long id) {
-        if(id == null) {
-            return "M000";
-        }
-        return String.format("M%03d", id);
     }
 }
