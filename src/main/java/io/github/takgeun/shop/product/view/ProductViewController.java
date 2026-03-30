@@ -1,7 +1,6 @@
 package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.view.CategorySidebarService;
 import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
@@ -34,7 +33,6 @@ public class ProductViewController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
-    private final CategorySidebarService categorySidebarService;
 
     /**
      * 상품 목록 페이지
@@ -85,7 +83,7 @@ public class ProductViewController {
                     : categoryService.findPublicNameOrNull(categoryId);
         }
         model.addAttribute("selectedCategoryName", selectedCategoryName);
-        model.addAttribute("treeMode", admin ? "admin" : "public");
+//        model.addAttribute("treeMode", admin ? "admin" : "public");
 
         return "public/products/list";
     }
@@ -107,18 +105,26 @@ public class ProductViewController {
 
         try {
             Product product = productService.getForDetail(admin, productId);
-
             ProductDetailView view = ProductDetailView.from(product);
 
-            String returnUrl = request.getRequestURI();
             String query = request.getQueryString();
-            if(query != null) {
+
+            // 목록으로 돌아가기용 리턴경로
+            String returnUrl = "/products";
+            if(query != null && !query.isBlank()) {
                 returnUrl += "?" + query;
             }
 
+            // 현재 상세 페이지 제자리 복귀용 리턴경로
+            String currentUrl = request.getRequestURI();
+            if(query != null && !query.isBlank()) {
+                currentUrl += "?" + query;
+            }
+
             model.addAttribute("product", view);
-            model.addAttribute("treeMode", admin ? "admin" : "public");
+//            model.addAttribute("treeMode", admin ? "admin" : "public");
             model.addAttribute("returnUrl", returnUrl);
+            model.addAttribute("currentUrl", currentUrl);
 
             return "public/products/detail";
         } catch (NotFoundException e) {

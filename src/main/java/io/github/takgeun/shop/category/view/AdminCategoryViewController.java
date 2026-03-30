@@ -10,6 +10,7 @@ import io.github.takgeun.shop.category.view.form.CategoryCreateForm;
 import io.github.takgeun.shop.category.view.form.CategoryEditForm;
 import io.github.takgeun.shop.global.error.ConflictException;
 import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.error.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import jakarta.servlet.http.HttpSession;
@@ -69,42 +70,63 @@ public class AdminCategoryViewController {
     public String create(@ModelAttribute("form") @Validated CategoryCreateForm form,
                          BindingResult bindingResult,
                          RedirectAttributes ra,
-                         Model model) {
+                         Model model,
+                         HttpSession session) {
+
+        requireAdmin(session);
 
         if(bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.getTopCategories());   // 상위 카테고리 목록
             return "admin/categories/new";
         }
 
-        Long createdId = categoryService.create(form.getName(), form.getParentId());
+        try {
+            Long createdId = categoryService.create(form.getName(), form.getParentId());
 
-        ra.addFlashAttribute("success", "카테고리가 생성되었습니다.");
-        ra.addAttribute("id", createdId);
-        return "redirect:/admin/categories/{id}/edit";
+            ra.addFlashAttribute("success", "카테고리가 생성되었습니다.");
+            ra.addAttribute("id", createdId);
+            return "redirect:/admin/categories/{id}/edit";
+        } catch (ConflictException | IllegalArgumentException e) {
+            model.addAttribute("categories", categoryService.getTopCategories());
+            model.addAttribute("error", e.getMessage());
+            return "admin/categories/new";
+        }
+
     }
 
     // 카테고리 수정 폼
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id,
-                           Model model) {
-        AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
-        CategoryEditForm form = CategoryEditForm.of(category.getName(), category.getParentId());
+                           Model model,
+                           RedirectAttributes ra,
+                           HttpSession session) {
 
-        String parentName = null;
-        if(category.getParentId() != null) {
-            Category parent = categoryService.getAdmin(category.getParentId());
-            parentName = parent.getName();
+        requireAdmin(session);
+
+        try {
+            AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
+            CategoryEditForm form = CategoryEditForm.of(category.getName(), category.getParentId());
+
+            String parentName = null;
+            if(category.getParentId() != null) {
+                Category parent = categoryService.getAdmin(category.getParentId());
+                parentName = parent.getName();
+            }
+
+            model.addAttribute("categoryId", category.getId());
+            model.addAttribute("categoryName", category.getName());
+            model.addAttribute("categorySlug", category.getSlug());
+            model.addAttribute("currentParentName", parentName);
+
+            model.addAttribute("form", form);
+            model.addAttribute("categories", categoryService.getTopCategories());
+
+            return "admin/categories/edit";
+        } catch (NotFoundException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/categories";
         }
 
-        model.addAttribute("categoryId", category.getId());
-        model.addAttribute("categoryName", category.getName());
-        model.addAttribute("categorySlug", category.getSlug());
-        model.addAttribute("currentParentName", parentName);
-
-        model.addAttribute("form", form);
-        model.addAttribute("categories", categoryService.getTopCategories());
-
-        return "admin/categories/edit";
     }
 
     // 카테고리 수정 처리
@@ -113,43 +135,63 @@ public class AdminCategoryViewController {
                          @Valid @ModelAttribute("form") CategoryEditForm form,
                          BindingResult bindingResult,
                          RedirectAttributes ra,
-                         Model model) {
+                         Model model,
+                         HttpSession session) {
+
+        requireAdmin(session);
 
         if(bindingResult.hasErrors()) {
             AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
 
-            model.addAttribute("category", category);
+//            model.addAttribute("category", category);
             model.addAttribute("categoryId", category.getId());
             model.addAttribute("categories", categoryService.getTopCategories());
             return "admin/categories/edit";
         }
 
-        categoryService.update(id, form.getName(), form.getParentId());
+        try {
+            categoryService.update(id, form.getName(), form.getParentId());
 
-        ra.addFlashAttribute("success", "카테고리가 수정되었습니다.");
-        return "redirect:/admin/categories/{id}/edit";
+            ra.addFlashAttribute("success", "카테고리가 수정되었습니다.");
+            return "redirect:/admin/categories/{id}/edit";
+        } catch (ConflictException | IllegalArgumentException e) {
+            AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
+
+//            model.addAttribute("category", category);
+            model.addAttribute("categoryId", category.getId());
+            model.addAttribute("categories", categoryService.getTopCategories());
+            model.addAttribute("error", e.getMessage());
+            return "admin/categories/edit";
+        } catch (NotFoundException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/categories";
+        }
+
     }
 
     // 카테고리 삭제
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id,
                          @RequestParam(required = false) String returnUrl,
-                         RedirectAttributes ra) {
+                         RedirectAttributes ra,
+                         HttpSession session) {
+
+        requireAdmin(session);
 
         // delete()에 returnUrl 파라미터 받고 성공/실패 시 모두 그 위치로 돌려보내기
-        String redirectUrl = resolveDeleteRedirectUrl(id, returnUrl);
+        String redirectUrl = resolveDeleteRedirectUrl(returnUrl);
 
         try {
             categoryService.delete(id);
             ra.addFlashAttribute("success", "카테고리가 삭제되었습니다.");
-            return "redirect:" + redirectUrl;
-        } catch (ConflictException e) {
+            return "redirect:/admin/categories";    // 삭제 성공 시 목록으로 이동
+        } catch (ConflictException | NotFoundException e) {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:" + redirectUrl;
         }
     }
 
-    private String resolveDeleteRedirectUrl(Long id, String returnUrl) {
+    private String resolveDeleteRedirectUrl(String returnUrl) {
         if(returnUrl == null || returnUrl.trim().isBlank()) {
             return "/admin/categories";
         }

@@ -52,8 +52,8 @@ public class ProductService {
         Product product = findById(productId);
 
         if (!admin && !product.isPublicVisible()) {
-            // 관리자가 아닌 계정이 공개상품을 보는 케이스면 아래와 같이 예외 처리
-            throw new NotFoundException("존재하지 않는 상품입니다.");
+            // 관리자가 아닌 계정이 비공개상품을 보는 케이스면 예외 던짐
+            throw new NotFoundException();
         }
 
         return product;

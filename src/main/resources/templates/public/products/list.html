@@ -89,7 +89,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
             <a th:each="p : ${products}"
-               th:href="@{/products/{id}(id=${p.id})}"
+               th:href="@{/products/{id}(id=${p.id}, categoryId=${selectedCategoryId}, sort=${sort})}"
                th:with="isSoldOut=${p.status.name() == 'SOLD_OUT'}"
                class="group block">
 

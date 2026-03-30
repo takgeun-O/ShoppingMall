@@ -41,9 +41,11 @@ public class AdminCategoryQueryService {
     private List<AdminCategoryItemView> getCategoryTree() {
         List<Category> all = categoryRepository.findAllAdmin();
 
+        // 카테고리 id로 View 객체를 빠르게 찾기 위한 맵
         Map<Long, AdminCategoryItemView> viewMap = new LinkedHashMap<>();
         List<AdminCategoryItemView> roots = new ArrayList<>();
 
+        // viewMap 완성
         for (Category category : all) {
             viewMap.put(
                     category.getId(),

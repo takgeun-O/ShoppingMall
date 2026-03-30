@@ -95,35 +95,12 @@
             <!-- TODO: model.addAttribute("featuredProducts", ...) 붙이면 th:each로 교체 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="rounded-xl border bg-white p-6 text-gray-600">
-                    추천 상품 데이터를 연결하면 여기에 카드가 출력됩니다.
-                </div>
-                <div class="rounded-xl border bg-white p-6 text-gray-600">
-                    (예: HomeViewController에서 featuredProducts 주입)
+                    (추천 상품 구현 시 HomeViewController 통해서 데이터 연결할 예정)
                 </div>
                 <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
                 <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
+                <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
             </div>
-
-            <!-- TODO: 교체 예시
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" th:if="${featuredProducts != null}">
-                    <a th:each="p : ${featuredProducts}"
-                        th:href="@{/products/{id}(id=${p.id})}"
-                        class="group">
-        <div class="overflow-hidden rounded-xl bg-white border hover:shadow-xl transition-shadow duration-300">
-          <div class="aspect-square bg-gray-100 overflow-hidden">
-            <img th:if="${p.imageUrl != null}" th:src="${p.imageUrl}" th:alt="${p.name}"
-                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
-          </div>
-          <div class="p-4">
-            <h3 class="font-semibold text-gray-900 mb-2" th:text="${p.name}">상품명</h3>
-            <div class="text-xl font-bold text-gray-900" th:text="${#numbers.formatInteger(p.price, 3, 'COMMA')} + '원'">
-              0원
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
-            -->
         </div>
     </section>
 

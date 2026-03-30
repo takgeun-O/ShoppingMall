@@ -25,6 +25,25 @@
             <span class="text-gray-900" th:text="${product.name}">상품명</span>
         </div>
 
+        <div class="mb-8">
+            <a th:href="${returnUrl != null ? returnUrl : '/products'}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow group">
+
+                <!-- 아이콘 -->
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-200"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M15 19l-7-7 7-7"/>
+                </svg>
+
+                <span>목록으로 돌아가기</span>
+            </a>
+        </div>
+
         <!-- Product Details -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
 
@@ -118,14 +137,14 @@
 
                         <span th:if="${!isSoldOut}"
                               class="text-sm text-gray-500"
-                              th:text="'재고 ' + ${product.stock} + '개'">
+                              th:text="${'재고 ' + product.stock + '개'}">
                             재고 10개
                         </span>
                     </div>
                 </div>
 
                 <!-- Add to cart error feedback -->
-                <div th:if="${error} and (${errorProductId} == null or ${errorProductId} == ${product.id})"
+                <div th:if="${error != null and (errorProductId == null or errorProductId == product.id)}"
                      class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                     <span th:text="${error}">장바구니 처리 중 오류가 발생했습니다.</span>
                 </div>
@@ -173,8 +192,7 @@
                     <!-- Cart Add Form -->
                     <form th:action="@{/cart/items}" method="post" id="addToCartForm" class="space-y-4">
                         <input type="hidden" name="productId" th:value="${product.id}"/>
-                        <input type="hidden" name="returnUrl"
-                               th:value="${returnUrl != null ? returnUrl : #request.requestURI}"/>
+                        <input type="hidden" name="returnUrl" th:value="${currentUrl}"/>
 
                         <!-- Row 1: Quantity Selector -->
                         <div class="flex items-center justify-center sm:justify-start">
