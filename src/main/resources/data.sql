@@ -23,6 +23,22 @@ INSERT INTO category (
       (2, '가구', '가구', 'furniture', NULL, 'ACTIVE'),
       (3, '의류', '의류', 'clothing', NULL, 'ACTIVE');
 
+-- ROOT 추가
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (13, '뷰티', '뷰티', 'beauty', NULL, 'ACTIVE'),
+      (14, '스포츠', '스포츠', 'sports', NULL, 'ACTIVE'),
+      (15, '도서', '도서', 'books', NULL, 'ACTIVE'),
+      (16, '식품', '식품', 'food', NULL, 'ACTIVE'),
+      (17, '생활용품', '생활용품', 'home-living', NULL, 'ACTIVE');
+
+
 -- 전자 하위
 INSERT INTO category (
     id,
@@ -62,6 +78,70 @@ INSERT INTO category (
       (11, '하의', '하의', 'bottoms', 3, 'ACTIVE'),
       (12, '아우터', '아우터', 'outerwear', 3, 'ACTIVE');
 
+-- 뷰티 하위
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (18, '스킨케어', '스킨케어', 'skincare', 13, 'ACTIVE'),
+      (19, '메이크업', '메이크업', 'makeup', 13, 'ACTIVE'),
+      (20, '헤어케어', '헤어케어', 'haircare', 13, 'ACTIVE');
+
+-- 스포츠 하위
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (21, '헬스용품', '헬스용품', 'fitness', 14, 'ACTIVE'),
+      (22, '캠핑', '캠핑', 'camping', 14, 'ACTIVE'),
+      (23, '러닝', '러닝', 'running', 14, 'ACTIVE');
+
+-- 도서 하위
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (24, '소설', '소설', 'novel', 15, 'ACTIVE'),
+      (25, '개발서', '개발서', 'programming-books', 15, 'ACTIVE'),
+      (26, '자기계발', '자기계발', 'self-improvement', 15, 'ACTIVE');
+
+-- 식품 하위
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (27, '간편식', '간편식', 'meal-kit', 16, 'ACTIVE'),
+      (28, '음료', '음료', 'beverage', 16, 'ACTIVE'),
+      (29, '건강식품', '건강식품', 'health-food', 16, 'ACTIVE');
+
+-- 생활용품 하위
+INSERT INTO category (
+    id,
+    name,
+    name_key,
+    slug,
+    parent_id,
+    status
+) VALUES
+      (30, '주방용품', '주방용품', 'kitchen', 17, 'ACTIVE'),
+      (31, '욕실용품', '욕실용품', 'bathroom', 17, 'ACTIVE'),
+      (32, '청소용품', '청소용품', 'cleaning', 17, 'ACTIVE');
 
 -- Product
 INSERT INTO product (
@@ -353,6 +433,324 @@ INSERT INTO product (
           'READY'
       );
 
+-- =========================================================
+-- 추가 상품
+-- =========================================================
+INSERT INTO product (
+    id,
+    category_id,
+    name,
+    price,
+    stock,
+    description,
+    image_url,
+    original_price,
+    status
+) VALUES
+      -- 뷰티 > 스킨케어
+      (
+          25,
+          18,
+          '수분 진정 토너',
+          22000,
+          40,
+          '민감 피부용 저자극 토너',
+          'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80',
+          28000,
+          'ON_SALE'
+      ),
+      (
+          26,
+          18,
+          '데일리 보습 크림',
+          32000,
+          28,
+          '사계절 사용 가능한 보습 크림',
+          'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 뷰티 > 메이크업
+      (
+          27,
+          19,
+          '쿠션 파운데이션',
+          29000,
+          18,
+          '자연스러운 커버 메이크업',
+          'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
+          35000,
+          'ON_SALE'
+      ),
+      (
+          28,
+          19,
+          '립 틴트 세트',
+          19000,
+          0,
+          '품절 테스트용 립 틴트',
+          'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'SOLD_OUT'
+      ),
+
+      -- 뷰티 > 헤어케어
+      (
+          29,
+          20,
+          '단백질 샴푸',
+          17000,
+          35,
+          '손상모 케어용 샴푸',
+          'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 스포츠 > 헬스용품
+      (
+          30,
+          21,
+          '덤벨 5kg 세트',
+          45000,
+          12,
+          '홈트 입문용 덤벨',
+          'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80',
+          52000,
+          'ON_SALE'
+      ),
+      (
+          31,
+          21,
+          '요가 매트',
+          25000,
+          22,
+          '미끄럼 방지 매트',
+          'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 스포츠 > 캠핑
+      (
+          32,
+          22,
+          '2인용 캠핑 텐트',
+          129000,
+          7,
+          '간편 설치형 텐트',
+          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
+          149000,
+          'ON_SALE'
+      ),
+      (
+          33,
+          22,
+          '캠핑 랜턴',
+          39000,
+          16,
+          '충전식 LED 랜턴',
+          'https://images.unsplash.com/photo-1504280390368-397dc5f11232?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 스포츠 > 러닝
+      (
+          34,
+          23,
+          '러닝화',
+          99000,
+          20,
+          '쿠셔닝 좋은 입문용 러닝화',
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+          119000,
+          'ON_SALE'
+      ),
+      (
+          35,
+          23,
+          '러닝 캡',
+          22000,
+          14,
+          '통기성 좋은 기능성 모자',
+          'https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'READY'
+      ),
+
+      -- 도서 > 소설
+      (
+          36,
+          24,
+          '추리 장편 소설',
+          16800,
+          50,
+          '몰입감 있는 미스터리 소설',
+          'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 도서 > 개발서
+      (
+          37,
+          25,
+          '자바 백엔드 실전 입문',
+          32000,
+          25,
+          'Spring 기반 백엔드 개발 입문서',
+          'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80',
+          38000,
+          'ON_SALE'
+      ),
+      (
+          38,
+          25,
+          'SQL 핵심 가이드',
+          28000,
+          17,
+          '실무 중심 SQL 학습서',
+          'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 도서 > 자기계발
+      (
+          39,
+          26,
+          '업무 습관 개선법',
+          18500,
+          31,
+          '생산성을 높이는 습관 정리',
+          'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 식품 > 간편식
+      (
+          40,
+          27,
+          '매콤 닭가슴살 볶음밥',
+          5900,
+          80,
+          '전자레인지 간편조리',
+          'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+      (
+          41,
+          27,
+          '소고기 미역국 밀키트',
+          8900,
+          26,
+          '1~2인분 간편식',
+          'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+          9900,
+          'ON_SALE'
+      ),
+
+      -- 식품 > 음료
+      (
+          42,
+          28,
+          '콜드브루 원액',
+          15900,
+          33,
+          '대용량 커피 원액',
+          'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+      (
+          43,
+          28,
+          '제로 탄산음료 세트',
+          12900,
+          0,
+          '품절 테스트용 음료 세트',
+          'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'SOLD_OUT'
+      ),
+
+      -- 식품 > 건강식품
+      (
+          44,
+          29,
+          '종합 비타민',
+          24000,
+          21,
+          '하루 1정 건강관리',
+          'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80',
+          30000,
+          'ON_SALE'
+      ),
+
+      -- 생활용품 > 주방용품
+      (
+          45,
+          30,
+          '스테인리스 프라이팬',
+          39000,
+          13,
+          '가정용 28cm 프라이팬',
+          'https://images.unsplash.com/photo-1584990347449-ae77c5f0e635?auto=format&fit=crop&w=800&q=80',
+          49000,
+          'ON_SALE'
+      ),
+      (
+          46,
+          30,
+          '전자저울',
+          17000,
+          19,
+          '베이킹용 디지털 저울',
+          'https://images.unsplash.com/photo-1514996937319-344454492b37?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'ON_SALE'
+      ),
+
+      -- 생활용품 > 욕실용품
+      (
+          47,
+          31,
+          '호텔식 수건 5장 세트',
+          25000,
+          24,
+          '도톰한 면 수건',
+          'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=800&q=80',
+          32000,
+          'ON_SALE'
+      ),
+
+      -- 생활용품 > 청소용품
+      (
+          48,
+          32,
+          '무선 핸디 청소기',
+          79000,
+          11,
+          '차량/원룸 청소용',
+          'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
+          99000,
+          'ON_SALE'
+      ),
+      (
+          49,
+          32,
+          '리필형 청소포',
+          8900,
+          60,
+          '대용량 청소포 리필',
+          'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+          NULL,
+          'HIDDEN'
+      );
 
 -- Member
 INSERT INTO member (
