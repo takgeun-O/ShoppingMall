@@ -55,7 +55,7 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 `demo` 프로필을 함께 활성화하면 `schema.sql`과 `data.sql`을 이용하여 테이블과 시연용 데이터가 초기화됩니다.
 
 
-## 방법 1. 로컬에서 실행
+## 실행 방법 1. 로컬에서 실행
 
 ### 1. 프로젝트 클론
 
@@ -107,7 +107,7 @@ gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
 
 
-## 방법 2. Ngrok 데모 접속
+## 실행 방법 2. Ngrok 데모 접속
 
 별도의 설치와 실행 없이 아래 링크에서 바로 확인하실 수 있습니다.
 
