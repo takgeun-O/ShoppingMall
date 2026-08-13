@@ -61,6 +61,14 @@ public class AdminProductViewController {
         model.addAttribute("treeMode", "admin");
         model.addAttribute("isAdmin", true);
 
+        // 추가
+//        model.addAttribute("searchQuery", searchQuery);
+//        model.addAttribute("showFilters", showFilters);
+//        model.addAttribute("selectedStatuses", selectedStatuses);
+//        model.addAttribute("categories", categories);
+//        model.addAttribute("selectedSubCategoryIds", selectedSubCategoryIds);
+//        model.addAttribute("selectedCategoryIds", selectedCategoryIds);
+
         return "admin/products/list";
     }
 

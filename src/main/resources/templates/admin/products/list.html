@@ -17,7 +17,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="mb-2 text-3xl font-bold text-gray-900">상품 관리</h1>
-                        <p class="text-gray-600">상품 재고와 상태를 관리하세요</p>
+                        <p class="text-gray-600">카테고리, 상태, 검색 조건으로 상품을 빠르게 관리하세요</p>
                     </div>
 
                     <a th:href="@{/admin/products/new}"
@@ -47,7 +47,7 @@
             </div>
 
             <!-- Summary Stats -->
-            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div class="rounded-xl bg-white p-4 shadow-sm">
                     <p class="mb-1 text-sm text-gray-600">전체 상품</p>
                     <p class="text-2xl font-bold text-gray-900"
@@ -61,44 +61,281 @@
                 </div>
 
                 <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">판매 준비</p>
-                    <p class="text-2xl font-bold text-blue-600"
-                       th:text="${summary.readyCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
                     <p class="mb-1 text-sm text-gray-600">숨김</p>
                     <p class="text-2xl font-bold text-gray-600"
                        th:text="${summary.hiddenCount}">0</p>
                 </div>
-            </div>
-
-            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">품절</p>
-                    <p class="text-2xl font-bold text-orange-600"
-                       th:text="${summary.soldOutCount}">0</p>
-                </div>
-
-                <div class="rounded-xl bg-white p-4 shadow-sm">
-                    <p class="mb-1 text-sm text-gray-600">판매 종료</p>
-                    <p class="text-2xl font-bold text-red-600"
-                       th:text="${summary.discontinuedCount}">0</p>
-                </div>
 
                 <div class="rounded-xl bg-white p-4 shadow-sm">
                     <p class="mb-1 text-sm text-gray-600">재고 부족</p>
-                    <p class="text-2xl font-bold text-amber-600"
+                    <p class="text-2xl font-bold text-orange-600"
                        th:text="${summary.lowStockCount}">0</p>
                 </div>
             </div>
 
-            <!-- Product List Table -->
-            <div class="mt-6 overflow-hidden rounded-xl bg-white shadow-sm">
+            <!-- Filter Card -->
+            <div class="mb-6 rounded-xl bg-white p-6 shadow-sm">
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5 text-gray-600"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M3 4a1 1 0 011-1h16a1 1 0 01.8 1.6L14 13.5V19a1 1 0 01-1.447.894l-2-1A1 1 0 0110 18v-4.5L3.2 4.6A1 1 0 013 4z"/>
+                        </svg>
+                        <h2 class="text-lg font-semibold text-gray-900">필터</h2>
+
+                        <span th:with="activeCount=${#lists.size(selectedStatuses) + #lists.size(selectedCategoryIds) + #lists.size(selectedSubCategoryIds)}"
+                              th:if="${activeCount > 0}"
+                              th:text="${activeCount}"
+                              class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-semibold text-white">
+                            0
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <a th:if="${!#lists.isEmpty(selectedStatuses) or !#lists.isEmpty(selectedCategoryIds) or !#lists.isEmpty(selectedSubCategoryIds) or !#strings.isEmpty(searchQuery)}"
+                           th:href="@{/admin/products}"
+                           class="inline-flex items-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:border-red-600 hover:bg-red-50">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="mr-1 h-4 w-4"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            전체 해제
+                        </a>
+
+                        <button type="button"
+                                id="toggleFiltersButton"
+                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                            <span th:text="${showFilters} ? '필터 숨기기' : '필터 보기'">필터 보기</span>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 id="toggleFiltersIcon"
+                                 class="ml-1 h-4 w-4 transition-transform"
+                                 th:classappend="${showFilters} ? ' rotate-180' : ''"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <form method="get" th:action="@{/admin/products}" id="filterForm">
+                    <input type="hidden" name="showFilters" id="showFiltersInput"
+                           th:value="${showFilters} ? 'true' : 'false'"/>
+
+                    <div class="mb-4">
+                        <div class="relative">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+
+                            <input type="text"
+                                   name="searchQuery"
+                                   th:value="${searchQuery}"
+                                   placeholder="상품명을 검색하세요"
+                                   class="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"/>
+                            </div>
+                    </div>
+
+                    <!-- Expand Filters -->
+                    <div id="filtersPanel"
+                         class="space-y-6 border-t pt-4"
+                         th:classappend="${showFilters} ? '' : ' hidden'">
+
+                        <!-- Status -->
+                        <div>
+                            <h3 class="mb-3 text-sm font-semibold text-gray-700">상태</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="statuses" value="ON_SALE" class="peer sr-only"
+                                           th:checked="${#lists.contains(selectedStatuses, 'ON_SALE')}"/>
+                                    <span class="inline-flex rounded-lg border-2 px-4 py-2 text-sm font-medium transition
+                                                 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white
+                                                 border-gray-200 bg-white text-gray-700 hover:border-gray-400">
+                                        판매중
+                                    </span>
+                                </label>
+
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="statuses" value="HIDDEN" class="peer sr-only"
+                                           th:checked="${#lists.contains(selectedStatuses, 'HIDDEN')}"/>
+                                    <span class="inline-flex rounded-lg border-2 px-4 py-2 text-sm font-medium transition
+                                                 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white
+                                                 border-gray-200 bg-white text-gray-700 hover:border-gray-400">
+                                        숨김
+                                    </span>
+                                </label>
+
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="statuses" value="READY" class="peer sr-only"
+                                           th:checked="${#lists.contains(selectedStatuses, 'READY')}"/>
+                                    <span class="inline-flex rounded-lg border-2 px-4 py-2 text-sm font-medium transition
+                                                 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white
+                                                 border-gray-200 bg-white text-gray-700 hover:border-gray-400">
+                                        준비중
+                                    </span>
+                                </label>
+
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="statuses" value="SOLD_OUT" class="peer sr-only"
+                                           th:checked="${#lists.contains(selectedStatuses, 'SOLD_OUT')}"/>
+                                    <span class="inline-flex rounded-lg border-2 px-4 py-2 text-sm font-medium transition
+                                                 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white
+                                                 border-gray-200 bg-white text-gray-700 hover:border-gray-400">
+                                        품절
+                                    </span>
+                                </label>
+
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="statuses" value="DISCONTINUED" class="peer sr-only"
+                                           th:checked="${#lists.contains(selectedStatuses, 'DISCONTINUED')}"/>
+                                    <span class="inline-flex rounded-lg border-2 px-4 py-2 text-sm font-medium transition
+                                                 peer-checked:border-gray-900 peer-checked:bg-gray-900 peer-checked:text-white
+                                                 border-gray-200 bg-white text-gray-700 hover:border-gray-400">
+                                        판매종료
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Categories -->
+                        <div>
+                            <h3 class="mb-3 text-sm font-semibold text-gray-700">카테고리</h3>
+
+                            <div class="space-y-2" th:if="${categories != null}">
+                                <div th:each="category : ${categories}"
+                                     class="rounded-lg border border-gray-100">
+                                    <div class="flex items-center gap-2 p-3 hover:bg-gray-50">
+                                        <input type="checkbox"
+                                               name="categoryIds"
+                                               th:value="${category.id}"
+                                               th:id="|cat-${category.id}|"
+                                               th:checked="${#lists.contains(selectedCategoryIds, category.id)}"
+                                               class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"/>
+
+                                        <label th:for="|cat-${category.id}|"
+                                               class="flex flex-1 cursor-pointer items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-900"
+                                                  th:text="${category.name}">카테고리명</span>
+                                            <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                                                  th:text="${category.count}">0</span>
+                                        </label>
+
+                                        <button type="button"
+                                                class="rounded p-1 hover:bg-gray-200"
+                                                th:if="${category.children != null and !#lists.isEmpty(category.children)}"
+                                                th:attr="data-toggle-target=|subcats-${category.id}|">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 class="h-4 w-4 text-gray-600"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke="currentColor"
+                                                 stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div th:if="${category.children != null and !#lists.isEmpty(category.children)}"
+                                         th:id="|subcats-${category.id}|"
+                                         class="ml-8 mt-1 space-y-1 pb-3 pr-3">
+                                        <div th:each="subCategory : ${category.children}"
+                                             class="flex items-center gap-2 rounded-lg p-2 hover:bg-blue-50">
+                                            <input type="checkbox"
+                                                   name="subCategoryIds"
+                                                   th:value="${subCategory.id}"
+                                                   th:id="|subcat-${subCategory.id}|"
+                                                   th:checked="${#lists.contains(selectedSubCategoryIds, subCategory.id)}"
+                                                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"/>
+
+                                            <label th:for="|subcat-${subCategory.id}|"
+                                                   class="flex flex-1 cursor-pointer items-center justify-between">
+                                                <span class="text-sm text-gray-700"
+                                                      th:text="${subCategory.name}">하위 카테고리명</span>
+                                                <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                                                      th:text="${subCategory.count}">0</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Actions -->
+                        <div class="flex flex-wrap gap-2">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700">
+                                적용
+                            </button>
+
+                            <a th:href="@{/admin/products(showFilters='true')}"
+                               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                                초기화
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Active Filter Tags -->
+                <div th:if="${!#lists.isEmpty(selectedStatuses) or !#lists.isEmpty(selectedCategoryIds) or !#lists.isEmpty(selectedSubCategoryIds)}"
+                     class="mt-4 border-t pt-4">
+                    <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">활성 필터</h4>
+
+                    <div class="flex flex-wrap gap-2">
+                        <span th:each="status : ${selectedStatuses}"
+                              class="inline-flex items-center rounded-full bg-gray-900 px-3 py-1 text-xs font-semibold text-white">
+                            <span th:switch="${status}">
+                                <span th:case="'ON_SALE'">판매중</span>
+                                <span th:case="'HIDDEN'">숨김</span>
+                                <span th:case="'READY'">준비중</span>
+                                <span th:case="'SOLD_OUT'">품절</span>
+                                <span th:case="'DISCONTINUED'">판매종료</span>
+                                <span th:case="*"
+                                      th:text="${status}">상태</span>
+                            </span>
+                        </span>
+
+                        <span th:each="category : ${categories}"
+                              th:if="${#lists.contains(selectedCategoryIds, category.id)}"
+                              class="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white"
+                              th:text="${category.name}">
+                            카테고리
+                        </span>
+
+                        <th:block th:each="category : ${categories}">
+                            <span th:each="subCategory : ${category.children}"
+                                  th:if="${#lists.contains(selectedSubCategoryIds, subCategory.id)}"
+                                  class="inline-flex items-center rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white"
+                                  th:text="${subCategory.name}">
+                                하위카테고리
+                            </span>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Table -->
+            <div class="overflow-hidden rounded-xl bg-white shadow-sm">
                 <div class="overflow-x-auto">
                     <div class="min-w-[1100px]">
 
-                        <!-- Table Header -->
                         <div class="border-b bg-gray-50 px-6 py-4">
                             <div class="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700">
                                 <div class="col-span-1">이미지</div>
@@ -110,13 +347,11 @@
                             </div>
                         </div>
 
-                        <!-- Table Body -->
                         <div class="divide-y" th:if="${!#lists.isEmpty(products)}">
                             <div th:each="product : ${products}"
                                  class="px-6 py-4 transition-colors hover:bg-gray-50">
                                 <div class="grid grid-cols-12 items-center gap-4">
 
-                                    <!-- Product Image -->
                                     <div class="col-span-1">
                                         <div class="h-16 w-16 overflow-hidden rounded-lg bg-gray-100">
                                             <img th:src="${product.imageUrl}"
@@ -126,42 +361,35 @@
                                         </div>
                                     </div>
 
-                                    <!-- Product Name -->
                                     <div class="col-span-3">
                                         <p class="font-semibold text-gray-900"
                                            th:text="${product.name}">상품명</p>
                                         <p class="text-sm text-gray-500"
                                            th:text="${product.categoryName}">카테고리</p>
+                                        <p th:if="${product.subCategoryName != null}"
+                                           class="text-xs text-gray-400"
+                                           th:text="${product.subCategoryName}">하위 카테고리</p>
                                     </div>
 
-                                    <!-- Price -->
                                     <div class="col-span-2">
                                         <p class="font-bold text-gray-900"
-                                           th:text="'₩' + ${#numbers.formatInteger(product.price, 0, 'COMMA')}">
-                                            ₩289,000
-                                        </p>
+                                           th:text="'₩' + ${#numbers.formatInteger(product.price, 0, 'COMMA')}">₩289,000</p>
                                         <p th:if="${product.originalPrice != null}"
                                            class="text-sm text-gray-400 line-through"
-                                           th:text="'₩' + ${#numbers.formatInteger(product.originalPrice, 0, 'COMMA')}">
-                                            ₩350,000
-                                        </p>
+                                           th:text="'₩' + ${#numbers.formatInteger(product.originalPrice, 0, 'COMMA')}">₩350,000</p>
                                     </div>
 
-                                    <!-- Stock -->
                                     <div class="col-span-1 text-center">
                                         <p class="font-semibold"
                                            th:classappend="${product.stock == 0} ? ' text-red-600' :
                                                           (${product.stock < 10} ? ' text-orange-600' : ' text-gray-900')"
                                            th:text="${product.stock == 0 ? '품절' : product.stock}">
-                                            45
+                                            0
                                         </p>
                                         <p th:if="${product.stock == 0}"
-                                           class="text-xs text-red-600">
-                                            재고 없음
-                                        </p>
+                                           class="text-xs text-red-600">재고 없음</p>
                                     </div>
 
-                                    <!-- Status -->
                                     <div class="col-span-2 text-center">
                                         <span th:if="${product.status.name() == 'ON_SALE'}"
                                               class="inline-flex rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white">
@@ -185,7 +413,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- Actions -->
                                     <div class="col-span-3 flex items-center justify-end gap-2">
                                         <a th:href="@{/admin/products/{id}/edit(id=${product.id})}"
                                            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600">
@@ -264,22 +491,36 @@
                             </div>
                         </div>
 
-                        <!-- Empty State -->
                         <div th:if="${#lists.isEmpty(products)}"
                              class="px-6 py-16 text-center">
-                            <p class="mb-4 text-gray-500">등록된 상품이 없습니다.</p>
-                            <a th:href="@{/admin/products/new}"
-                               class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                                 <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="mr-2 h-4 w-4"
+                                     class="h-8 w-8 text-gray-400"
                                      fill="none"
                                      viewBox="0 0 24 24"
                                      stroke="currentColor"
                                      stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M3 4a1 1 0 011-1h16a1 1 0 01.8 1.6L14 13.5V19a1 1 0 01-1.447.894l-2-1A1 1 0 0110 18v-4.5L3.2 4.6A1 1 0 013 4z"/>
                                 </svg>
-                                첫 상품 등록하기
-                            </a>
+                            </div>
+
+                            <p class="mb-2 text-lg font-semibold text-gray-900">상품이 없습니다</p>
+                            <p class="mb-4 text-gray-500">
+                                필터 조건을 바꾸거나 새로운 상품을 등록해보세요.
+                            </p>
+
+                            <div class="flex items-center justify-center gap-2">
+                                <a th:href="@{/admin/products}"
+                                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    필터 초기화
+                                </a>
+
+                                <a th:href="@{/admin/products/new}"
+                                   class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                                    첫 상품 등록하기
+                                </a>
+                            </div>
                         </div>
 
                     </div>
@@ -292,8 +533,6 @@
     <div id="deleteModal"
          class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-
-            <!-- Modal Header -->
             <div class="mb-6 text-center">
                 <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -310,7 +549,6 @@
                 <p class="text-sm text-gray-600">정말 이 상품을 삭제하시겠습니까?</p>
             </div>
 
-            <!-- Product Info -->
             <div class="mb-6 rounded-lg bg-gray-50 p-4">
                 <div class="flex items-center gap-4">
                     <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-200">
@@ -331,7 +569,6 @@
                 </div>
             </div>
 
-            <!-- Warning -->
             <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
                 <div class="flex items-start gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg"
@@ -344,17 +581,12 @@
                               d="M12 9v2m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.66 18h16.68a1 1 0 00.87-1.5l-7.5-13a1 1 0 00-1.74 0z"/>
                     </svg>
                     <div>
-                        <p class="mb-1 text-sm font-semibold text-red-900">
-                            주의: 이 작업은 되돌릴 수 없습니다
-                        </p>
-                        <p class="text-xs text-red-700">
-                            상품이 데이터베이스에서 영구 삭제됩니다.
-                        </p>
+                        <p class="mb-1 text-sm font-semibold text-red-900">주의: 이 작업은 되돌릴 수 없습니다</p>
+                        <p class="text-xs text-red-700">상품이 데이터베이스에서 영구 삭제됩니다.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="flex gap-3">
                 <button type="button"
                         onclick="closeDeleteModal()"
@@ -416,6 +648,39 @@
             if (event.target === this) {
                 closeDeleteModal();
             }
+        });
+
+        const toggleFiltersButton = document.getElementById('toggleFiltersButton');
+        const filtersPanel = document.getElementById('filtersPanel');
+        const showFiltersInput = document.getElementById('showFiltersInput');
+        const toggleFiltersIcon = document.getElementById('toggleFiltersIcon');
+
+        if (toggleFiltersButton && filtersPanel && showFiltersInput && toggleFiltersIcon) {
+            toggleFiltersButton.addEventListener('click', function () {
+                const isHidden = filtersPanel.classList.contains('hidden');
+
+                if (isHidden) {
+                    filtersPanel.classList.remove('hidden');
+                    toggleFiltersIcon.classList.add('rotate-180');
+                    showFiltersInput.value = 'true';
+                    toggleFiltersButton.querySelector('span').textContent = '필터 숨기기';
+                } else {
+                    filtersPanel.classList.add('hidden');
+                    toggleFiltersIcon.classList.remove('rotate-180');
+                    showFiltersInput.value = 'false';
+                    toggleFiltersButton.querySelector('span').textContent = '필터 보기';
+                }
+            });
+        }
+
+        document.querySelectorAll('[data-toggle-target]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const targetId = button.dataset.toggleTarget;
+                const target = document.getElementById(targetId);
+                if (target) {
+                    target.classList.toggle('hidden');
+                }
+            });
         });
     </script>
 

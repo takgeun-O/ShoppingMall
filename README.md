@@ -3,7 +3,7 @@
 Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트.
 상품 조회, 장바구니, 주문, 회원가입 및 로그인, 관리자 기능 등 쇼핑몰의 핵심 도메인을 직접 설계하고 구현한다.
 
-현재는 Mybatis + MySQL 기반으로 데이터 저장소를 구현했으며,
+현재는 MyBatis + MySQL 기반으로 데이터 저장소를 구현했으며,
 추후 JPA 기반 구현으로 확장하거나 REST API 중심 구조로 발전시키는 것을 목표로 하고 있음.
 
 ---
@@ -96,22 +96,21 @@ gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
 
 
-## 4. 접속
+## 4. 데모 접속 URL
 
-애플리케이션 실행 후 아래 주소로 접속할 수 있습니다.
-```bash
-http://localhost:8080
-```
+Ngrok을 이용한 임시 시연 주소입니다.
+- [쇼핑몰 데모 접속](https://exporter-bucket-flick.ngrok-free.dev/)
+- Ngrok 안내 화면에서 `Visit Site`를 선택해 주세요.
+- 로컬 서버 운영 시간에만 접속할 수 있습니다.
 
 ## 5. 테스트 계정
-
-관리자 계정
-- 이메일 : admin1@test.com
-- 패스워드 : admin1234!
 
 일반 사용자 계정
 - 이메일 : user1@test.com
 - 패스워드 : pw12341234!
+
+> 관리자 계정은 데이터 변경 및 삭제가 가능하므로 공개하지 않습니다.
+> 관리자 기능 시연이 필요한 경우 별도로 문의해 주세요.
 
 ---
 
