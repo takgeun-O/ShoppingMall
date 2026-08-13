@@ -9,10 +9,13 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 ---
 # 프로젝트 특징
 
-- MyBatis 기반 데이터 접근 구현 (추후 JPA 교체 예정)
+- MyBatis 기반 Repository 구현 및 향후 JPA 구현체 추가 가능 구조
 - 서비스 계층 트랜잭션 분리 (readOnly / write)
-- 주문/재고 처리의 원자성 보장
-- requestKey 기반 멱등성 처리
+- 주문 생성과 재고 차감을 단일 트랜잭션으로 처리
+- requestKey를 이용한 중복 주문 요청 방지 및 주문 생성 멱등성 처리
+- 사용자 / 관리자 기능 및 표현 계층 분리
+- 조회 / 변경 작업에 따른 트랜잭션 경계 분리
+- Domain 객체와 View DTO 분리
 - 도메인 중심 패키지 구조 설계
 
 # 프로젝트 목적
@@ -44,25 +47,35 @@ Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트
 # 실행 방법
 
 본 프로젝트는 MyBatis + MySQL 기반으로 동작합니다.
-실행 전 MySQL 데이터베이스를 생성하고, `schema.sql`을 통해 테이블을 준비해야 합니다.
 
-개발 환경에서는 프로필 설정에 따라 MyBatis Repository가 활성화되며,
-필요 시 테스트용 더미 데이터는 별도로 직접 입력하거나 초기화 스크립트를 통해 구성할 수 있습니다.
+개발 환경에서는 Spring Profile 설정에 따라 MyBatis Repository가 활성화됩니다.
 
-## 1. 프로젝트 클론
+`demo` 프로필을 함께 활성화하면 `schema.sql`과 `data.sql`을 이용하여 테이블과 시연용 데이터가 초기화됩니다.
+
+
+## 방법 1. 로컬에서 실행
+
+### 1. 프로젝트 클론
 
 ```bash
 git clone https://github.com/takgeun-O/ShoppingMall.git
 ```
 
-## 2. 데이터베이스 준비
-MySQL에서 프로젝트용 데이터베이스를 생성합니다.
+프로젝트 디렉토리로 이동합니다.
 
 ```bash
-create database shoppingmall;
+cd ShoppingMall
 ```
 
-필요한 테이블은 `schema.sql`을 통해 생성하거나, 프로젝트 설정에 맞게 초기화합니다.
+### 2. 데이터베이스 준비
+MySQL에서 프로젝트용 데이터베이스를 생성합니다.
+
+```sql
+CREATE DATABASE shoppingmall;
+```
+
+`demo` 프로필로 애플리케이션을 실행하면 `schema.sql`과 `data.sql`을 통해 필요한 테이블과 시연용 데이터가 초기화됩니다.
+
 
 ※ application.yml에서 DB 연결 정보 (url, username, password)를 환경에 맞게 수정해야 합니다.
 
@@ -71,29 +84,36 @@ create database shoppingmall;
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/shoppingmall
-    username: root
-    password: 1234
+    username: your_username
+    password: your_password
 ```
 
-## 3. 애플리케이션 실행
+### 3. 애플리케이션 실행
 
-아래와 같이 MyBatis 프로필로 실행합니다.
+MyBatis Repository와 Demo 데이터를 함께 사용하는 경우 다음과 같이 실행합니다.
 
-(demo 프로필은 더미데이터 추가용)
-
-```bash
-cd <project-directory>
-```
-
+macOS / Linux:
 
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
 
-윈도우 환경에서는 다음 명령어를 사용
+Windows: 
+
 ```bash
 gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 ```
+
+
+## 방법 2. Ngrok 데모 접속
+
+별도의 설치와 실행 없이 아래 링크에서 바로 확인하실 수 있습니다.
+
+> Ngrok 데모는 개발 서버가 실행 중인 경우에만 접속 가능합니다.
+
+- [데모 사이트 접속](https://exporter-bucket-flick.ngrok-free.dev/)
+
+Ngrok 안내 화면이 나타나면 `Visit Site`를 선택해 주세요.
 
 ---
 
@@ -104,6 +124,7 @@ gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 - 패스워드 : `pw12341234!`
 
 > 관리자 계정은 데이터 변경 및 삭제가 가능하므로 공개하지 않습니다.
+
 > 관리자 기능 시연이 필요한 경우 별도로 문의해 주세요.
 
 ---
@@ -113,7 +134,7 @@ gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 현재 프로젝트는 MVP 단계까지 개발한 상태이며, 아래 핵심 흐름을 중심으로 확인할 수 있습니다.
 
 ### 사용자 핵심 Flow
-1. [데모 사이트 접속](https://exporter-bucket-flick.ngrok-free.dev/)
+1. 데모 사이트 접속
 2. 테스트 계정으로 로그인
 3. 상품 목록 및 상품 상세 조회
 4. 상품을 장바구니에 추가
@@ -134,9 +155,10 @@ gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
 ### 관리자 기능
 
 관리자 화면에서는 상품, 주문, 회원 및 카테고리를 관리할 수 있습니다.
+
 관리자 기능은 데이터 변경 및 삭제가 가능하므로 계정을 공개하지 않습니다.
 
-필요 시 요청주시면 별도로 제공합니다.
+필요 시 요청주시면 별도로 제공드립니다.
 
 ### 참고 사항
 
@@ -161,17 +183,22 @@ Ngrok 데모는 로컬 서버가 실행 중인 시간에만 접속할 수 있습
 ---
 
 # 주요 접속 URL
-메인페이지 : https://exporter-bucket-flick.ngrok-free.dev/
 
-상품 목록 : https://exporter-bucket-flick.ngrok-free.dev/products
+## 로컬 접속
+- 메인 페이지: http://localhost:8080
+- 상품 목록: http://localhost:8080/products
+- 로그인: http://localhost:8080/login
+- 회원가입 : http://localhost:8080/signup
+- 마이페이지 : http://localhost:8080/members/me
+- 관리자 대시보드 : http://localhost:8080/admin
 
-로그인 : https://exporter-bucket-flick.ngrok-free.dev/login
-
-회원가입 : https://exporter-bucket-flick.ngrok-free.dev/signup
-
-마이페이지 : https://exporter-bucket-flick.ngrok-free.dev/members/me
-
-관리자 대시보드 : https://exporter-bucket-flick.ngrok-free.dev/admin
+## Ngrok 접속
+- 메인페이지 : https://exporter-bucket-flick.ngrok-free.dev/
+- 상품 목록 : https://exporter-bucket-flick.ngrok-free.dev/products
+- 로그인 : https://exporter-bucket-flick.ngrok-free.dev/login
+- 회원가입 : https://exporter-bucket-flick.ngrok-free.dev/signup
+- 마이페이지 : https://exporter-bucket-flick.ngrok-free.dev/members/me
+- 관리자 대시보드 : https://exporter-bucket-flick.ngrok-free.dev/admin
 
 ---
 
@@ -224,7 +251,13 @@ Ngrok 데모는 로컬 서버가 실행 중인 시간에만 접속할 수 있습
 ## 주문 기능
 
 - 주문 생성
-- 주문 상태 관리 (ORDERED, PAYMENT_COMPLETED, CANCELED)
+- 주문 상태 관리
+  - ORDERED
+  - PAYMENT_COMPLETED
+  - PREPARING
+  - SHIPPING
+  - DELIVERED
+  - CANCELED
 
 ## 관리자 기능
 
@@ -340,10 +373,10 @@ category, member, order, product 등 도메인별로 코드를 분리하고 각 
 
 # 아키텍처
 
-- Controller -> HTTP 요청 처리
-- Service -> 비즈니스 로직 처리
+- Controller -> HTTP 요청/응답 및 입력 검증
+- Application(Service) -> 유스케이스 흐름 및 트랜잭션 조정
+- Domain -> 핵심 비즈니스 규칙과 상태 변경
 - Repository -> 데이터 접근
-- Domain -> 핵심 비즈니스 모델
 
 ---
 
@@ -356,7 +389,7 @@ Repository 인터페이스와 MyBatis 구현체를 분리하여 설계했습니�
 추후 JPA 기반 구현체로 확장하거나 교체할 수 있도록 구조를 분리했습니다.
 
 ## View DTO 분리
-엔티티를 직접 뷰에 전달하지 않고 엔티티를 View DTO로 변환하여 사용
+도메인 객체를 View에 직접 노출하지 않고 화면 전용 View DTO로 변환하여 전달
 
 이 방식으로
 - View 책임 분리
@@ -384,8 +417,8 @@ category, member, order, product 등 도메인 기준으로 패키지를 분리�
 
 # 추후 진행 계획
 
-현재 프로젝트는 다음 단계를 계획 중임.
+현재 프로젝트는 다음 단계를 계획 중
 
-- (1순위) JPA 기반 DB 연동
-- REST API 구현
+- (1순위) MyBatis Repository와 동일한 인터페이스를 구현하는 JPA Repository 추가
+- REST API 중심 아키텍처로 확장
 
