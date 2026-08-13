@@ -130,17 +130,17 @@ Ngrok을 이용한 임시 시연 환경입니다.
 ---
 
 # 주요 접속 URL
-메인페이지 : http://localhost:8080
+메인페이지 : https://exporter-bucket-flick.ngrok-free.dev/
 
-상품 목록 : http://localhost:8080/products
+상품 목록 : https://exporter-bucket-flick.ngrok-free.dev/products
 
-로그인 : http://localhost:8080/login
+로그인 : https://exporter-bucket-flick.ngrok-free.dev/login
 
-회원가입 : http://localhost:8080/signup
+회원가입 : https://exporter-bucket-flick.ngrok-free.dev/signup
 
-마이페이지 : http://localhost:8080/members/me
+마이페이지 : https://exporter-bucket-flick.ngrok-free.dev/members/me
 
-관리자 대시보드 : http://localhost:8080/admin
+관리자 대시보드 : https://exporter-bucket-flick.ngrok-free.dev/admin
 
 ---
 
