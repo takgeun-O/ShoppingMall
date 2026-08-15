@@ -2,3 +2,10 @@ spring:
   sql:
     init:
       mode: always
+
+# application-demo.yml
+app:
+  demo:
+    admin:
+      email: ${ADMIN_EMAIL:admin1@test.com}
+      password: ${ADMIN_PASSWORD}
