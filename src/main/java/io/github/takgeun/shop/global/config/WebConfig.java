@@ -19,7 +19,9 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 관리자 전용
         registry.addInterceptor(adminAuthInterceptor)
-                .addPathPatterns("/admin/**")
+                .addPathPatterns(
+                        "/admin/**",
+                        "/api/v1/admin/**")
                 .excludePathPatterns(
                         "/login",
                         "/logout",
