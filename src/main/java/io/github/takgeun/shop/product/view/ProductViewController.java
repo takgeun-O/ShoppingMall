@@ -109,22 +109,26 @@ public class ProductViewController {
 
             String query = request.getQueryString();    // 사용자가 상품 목록 페이지를 어떻게 보고 있었는지 저장
 
-            // 목록으로 돌아가기용 리턴경로
+            // 사용자가 상품 목록에서 선택했던 카테고리, 정렬 조건을 유지하기 위해 만듦.
+            // 이건 상세페이지에서 상품 목록으로 돌아갈 때 사용
             String returnUrl = "/products";
             if(query != null && !query.isBlank()) {
                 returnUrl += "?" + query;
             }
 
-            // 현재 상세 페이지 제자리 복귀용 리턴경로
-            String currentUrl = request.getRequestURI();
+            // 사용자가 상품 목록에서 선택했던 카테고리, 정렬 조건을 유지하기 위해 만듦.
+            // 이건 로그인 등 작업 후 현재 상품 상세 페이지로 돌아올 때 사용
+            // 여기서는 장바구니에 추가하는 요청폼을 통해서 CartViewController로 값이 전달됨.
+            // 장바구니에 담는 순간 현재 보고 있는 상품상세페이지로 이동되게끔 한 것.
+            String detailReturnUrl = request.getRequestURI();
             if(query != null && !query.isBlank()) {
-                currentUrl += "?" + query;
+                detailReturnUrl += "?" + query;
             }
 
             model.addAttribute("product", view);
 //            model.addAttribute("treeMode", admin ? "admin" : "public");
             model.addAttribute("returnUrl", returnUrl);
-            model.addAttribute("currentUrl", currentUrl);
+            model.addAttribute("detailReturnUrl", detailReturnUrl);
 
             return "public/products/detail";
         } catch (NotFoundException e) {

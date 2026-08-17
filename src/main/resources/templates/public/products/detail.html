@@ -192,7 +192,7 @@
                     <!-- Cart Add Form -->
                     <form th:action="@{/cart/items}" method="post" id="addToCartForm" class="space-y-4">
                         <input type="hidden" name="productId" th:value="${product.id}"/>
-                        <input type="hidden" name="returnUrl" th:value="${currentUrl}"/>
+                        <input type="hidden" name="returnUrl" th:value="${detailReturnUrl}"/>
 
                         <!-- Row 1: Quantity Selector -->
                         <div class="flex items-center justify-center sm:justify-start">

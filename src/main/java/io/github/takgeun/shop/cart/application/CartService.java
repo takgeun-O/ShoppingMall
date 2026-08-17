@@ -229,7 +229,7 @@ public class CartService {
         }
 
         if(product.getStatus() != ProductStatus.ON_SALE) {
-            throw new ConflictException("판매 중인 상품만 장바구니에 담을 수 있습니다.");
+            throw new NotFoundException("판매 중인 상품만 장바구니에 담을 수 있습니다.");
         }
 
         return product;
