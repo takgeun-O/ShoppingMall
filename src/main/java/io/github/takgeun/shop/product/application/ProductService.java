@@ -53,8 +53,8 @@ public class ProductService {
     public Product getForDetail(boolean admin, Long productId) {
         Product product = findById(productId);
 
-        if(!product.isPublicVisible()) {
-            throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
+        if(!admin && !product.isPublicVisible()) {
+            throw new NotFoundException("판매 중인 상품만 조회할 수 있습니다.");
         }
 
         return product;

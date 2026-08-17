@@ -47,6 +47,7 @@ public class MyBatisCategoryRepository implements CategoryRepository {
     public List<Category> findAllPublic() {
         List<Category> allCategories = categoryMapper.findAll();
 
+        // 부모별 자식 그룹화
         Map<Long, List<Category>> childrenByParentId = new LinkedHashMap<>();   // 입력 순서 유지 -> 트리 출력 시 순서 깨지지 않음.
         for (Category category : allCategories) {
             Long parentId = category.getParentId();

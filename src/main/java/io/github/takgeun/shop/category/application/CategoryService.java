@@ -162,6 +162,7 @@ public class CategoryService {
         List<CategoryResponse> all = getAllPublicCategories();
         log.info("allPublic.size={}", all.size());
 
+        // 공개 카테고리 전체 중 사용자가 선택한 카테고리와 그 하위 카테고리 추려내기
         return findDescendantIdsIncludingSelf(all, rootId);
     }
 
