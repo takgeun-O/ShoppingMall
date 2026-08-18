@@ -41,14 +41,24 @@ public class ProductUpdateForm {
 
     public static ProductUpdateForm from(Product product) {
         ProductUpdateForm form = new ProductUpdateForm();
+
         form.setCategoryId(product.getCategoryId());
         form.setName(product.getName());
         form.setPrice(product.getPrice());
         form.setOriginalPrice(product.getOriginalPrice());
         form.setStock(product.getStock());
         form.setDescription(product.getDescription());
-        form.setStatus(product.getStatus());
+
         form.setImageUrl(product.getImageUrl());
+//        form.setStatus(product.getStatus());
+
+        // SOLD_OUT은 재고로부터 파생되는 상태
+        // 관리자 운영 상태에서는 ON_SALE로 표시
+        form.setStatus(
+                product.getStatus() == ProductStatus.SOLD_OUT
+                        ? ProductStatus.ON_SALE
+                        : product.getStatus()
+        );
         return form;
     }
 }

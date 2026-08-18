@@ -53,7 +53,7 @@ public class ProductService {
     public Product getForDetail(boolean admin, Long productId) {
         Product product = findById(productId);
 
-        if(!admin && !product.isPublicVisible()) {
+        if (!admin && !product.isPublicVisible()) {
             throw new NotFoundException("판매 중인 상품만 조회할 수 있습니다.");
         }
 
@@ -73,7 +73,7 @@ public class ProductService {
     public Product getForOrder(Long productId) {
         Product product = findById(productId);
 
-        if(!product.isOrderable()) {
+        if (!product.isOrderable()) {
             throw new ConflictException("주문할 수 없는 상품입니다.");
         }
 
@@ -137,7 +137,17 @@ public class ProductService {
         if (originalPrice != null) product.changeOriginalPrice(originalPrice);
         if (imageUrl != null) product.changeImageUrl(imageUrl);
         if (stock != null) product.changeStock(stock);
-        if (status != null && status != product.getStatus()) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
+//        if (status != null && status != product.getStatus()) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
+
+        boolean soldOutByStock = product.getStatus() == ProductStatus.SOLD_OUT
+                && product.getStock() == 0
+                && status == ProductStatus.ON_SALE;
+
+        if (status != null
+                && status != product.getStatus()
+                && !soldOutByStock) {
+            applyStatus(product, status);
+        }
 
         productRepository.save(product);
     }
@@ -223,11 +233,11 @@ public class ProductService {
     private List<Product> applySort(List<Product> products, String sort) {
         List<Product> base = new ArrayList<>(products);
 
-        if("sale".equals(sort)) {
+        if ("sale".equals(sort)) {
             base = new ArrayList<>(
                     base.stream()
-                    .filter(p -> p.discountPercent() > 0)
-                    .toList()
+                            .filter(p -> p.discountPercent() > 0)
+                            .toList()
             );
         }
 
@@ -295,7 +305,7 @@ public class ProductService {
 
     private void validateDeletable(Product product) {
         // 판매 중 상품은 삭제 금지
-        if(product.getStatus() == ProductStatus.ON_SALE) {
+        if (product.getStatus() == ProductStatus.ON_SALE) {
             throw new ConflictException("판매 중인 상품은 삭제할 수 없습니다. 먼저 숨김 또는 판매종료 처리해주세요.");
         }
     }

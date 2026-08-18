@@ -144,6 +144,10 @@
                            class="mt-1 text-sm text-red-600">
                             재고 오류
                         </p>
+                        <p id="stockStatus"
+                           class="mt-2 text-sm font-medium">
+                            재고 상태
+                        </p>
                     </div>
 
                     <!-- Description -->
@@ -200,7 +204,9 @@
                                 th:field="*{status}"
                                 class="mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2"
                                 th:classappend="${#fields.hasErrors('status')} ? ' border-red-500 focus:ring-red-500' : ' border-gray-300 focus:ring-gray-900'">
+
                             <option value="">상품 상태를 선택하세요</option>
+
                             <option th:each="status : ${productStatuses}"
                                     th:value="${status}"
                                     th:text="${status.displayName}"
@@ -248,28 +254,101 @@
     </div>
 
     <script th:inline="javascript">
-        document.addEventListener("DOMContentLoaded", function () {
-            const statusSelect = document.getElementById("status");
-            const descriptionEl = document.getElementById("statusDescription");
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+                const stockInput =
+                    document.getElementById("stock");
 
-            if (!statusSelect || !descriptionEl) {
-                return;
-            }
+                const stockStatus =
+                    document.getElementById("stockStatus");
 
-            function updateStatusDescription() {
-                const selectedOption = statusSelect.options[statusSelect.selectedIndex];
-                if (!selectedOption) {
-                    descriptionEl.textContent = "상품 상태를 선택해 주세요.";
+                const statusSelect =
+                    document.getElementById("status");
+
+                const descriptionEl =
+                    document.getElementById(
+                        "statusDescription"
+                    );
+
+                if (!stockInput
+                    || !stockStatus
+                    || !statusSelect
+                    || !descriptionEl) {
                     return;
                 }
 
-                const description = selectedOption.getAttribute("data-description");
-                descriptionEl.textContent = description || "상품 상태를 선택해 주세요.";
-            }
+                function updateStockStatus() {
+                    const stock = Number(stockInput.value);
 
-            statusSelect.addEventListener("change", updateStatusDescription);
-            updateStatusDescription();
-        });
+                    if (stock === 0) {
+                        stockStatus.textContent =
+                            "재고 상태: 품절";
+
+                        stockStatus.className =
+                            "mt-2 text-sm font-medium text-red-600";
+
+                        return;
+                    }
+
+                    if (stock > 0) {
+                        stockStatus.textContent =
+                            "재고 상태: 판매 가능";
+
+                        stockStatus.className =
+                            "mt-2 text-sm font-medium text-green-600";
+
+                        return;
+                    }
+
+                    stockStatus.textContent =
+                        "재고 수량을 입력해 주세요.";
+
+                    stockStatus.className =
+                        "mt-2 text-sm font-medium text-gray-500";
+                }
+
+                function updateStatusDescription() {
+                    const selectedOption =
+                        statusSelect.options[
+                            statusSelect.selectedIndex
+                            ];
+
+                    if (!selectedOption) {
+                        descriptionEl.textContent =
+                            "상품 상태를 선택해 주세요.";
+                        return;
+                    }
+
+                    const description =
+                        selectedOption.getAttribute(
+                            "data-description"
+                        );
+
+                    descriptionEl.textContent =
+                        description
+                        || "상품 상태를 선택해 주세요.";
+                }
+
+                stockInput.addEventListener(
+                    "input",
+                    updateStockStatus
+                );
+
+                stockInput.addEventListener(
+                    "change",
+                    updateStockStatus
+                );
+
+                statusSelect.addEventListener(
+                    "change",
+                    updateStatusDescription
+                );
+
+                updateStockStatus();
+                updateStatusDescription();
+            }
+        );
     </script>
 
 </th:block>

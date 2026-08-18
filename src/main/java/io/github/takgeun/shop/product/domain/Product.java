@@ -23,13 +23,13 @@ public class Product {
     }
 
     private Product(Long categoryId,
-                   String name,
-                   int price,
-                   int stock,
-                   String description,
-                   ProductStatus status,
-                   Integer originalPrice,
-                   String imageUrl) {
+                    String name,
+                    int price,
+                    int stock,
+                    String description,
+                    ProductStatus status,
+                    Integer originalPrice,
+                    String imageUrl) {
 
         // 생성자 생성 시점에서 검증 로직을 넣기
         changeCategory(categoryId);
@@ -70,20 +70,20 @@ public class Product {
     // 우선 assignId 메서드를 직접 만들고 임시로 사용할 것.
     // 추후 JPA를 통해 해결할 예정
     public void assignId(Long id) {
-        if(id == null || id <= 0) {
+        if (id == null || id <= 0) {
             throw new IllegalArgumentException("id는 양수여야 합니다.");
         }
-        if(this.id != null) {
+        if (this.id != null) {
             throw new ConflictException("id는 이미 할당되었습니다.");
         }
         this.id = id;
     }
 
     public void changeCategory(Long categoryId) {
-        if(categoryId == null) {
+        if (categoryId == null) {
             throw new IllegalArgumentException("categoryId는 필수입니다.");
         }
-        if(categoryId <= 0) {
+        if (categoryId <= 0) {
             throw new IllegalArgumentException("categoryId는 양수여야 합니다.");
         }
         this.categoryId = categoryId;
@@ -92,14 +92,14 @@ public class Product {
     public void changeName(String name) {
         String normalized = normalizeRequiredText(name, "상품명은 필수입니다.");
 
-        if(normalized.length() > 100) {
+        if (normalized.length() > 100) {
             throw new IllegalArgumentException("상품명은 100자 이하입니다.");
         }
         this.name = normalized;
     }
 
     public void changePrice(int price) {
-        if(price < 0) {
+        if (price < 0) {
             throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
         }
         this.price = price;
@@ -107,7 +107,7 @@ public class Product {
         // 정가가 판매가보다 작아지는 경우 자동 정리
         // 관리자가 price를 바꾸면 originalPrice보다 price가 더 높은 상황이 생길 수 있음. -> 규칙 위반
         // 판매가 인상으로 정가보다 높아지면 할인 의미가 없어지므로 정가 자동 제거
-        if(this.originalPrice != null && this.originalPrice <= this.price) {
+        if (this.originalPrice != null && this.originalPrice <= this.price) {
             this.originalPrice = null;
         }
     }
@@ -118,25 +118,24 @@ public class Product {
     }
 
 
-
     public void changeDescription(String description) {
         String normalized = normalizeOptionalText(description);
 
-        if(normalized != null && normalized.length() > 2000) {
+        if (normalized != null && normalized.length() > 2000) {
             throw new IllegalArgumentException("상품 설명은 2000자 이하여야 합니다.");
         }
         this.description = normalized;
     }
 
     public void changeOriginalPrice(Integer originalPrice) {
-        if(originalPrice == null || originalPrice <= 0) {
+        if (originalPrice == null || originalPrice <= 0) {
             this.originalPrice = null;
             return;
         }
-        if(originalPrice < this.price) {
+        if (originalPrice < this.price) {
             throw new IllegalArgumentException("정가는 판매가 이상이어야 합니다.");
         }
-        if(originalPrice == this.price) {
+        if (originalPrice == this.price) {
             this.originalPrice = null;  // 할인 없음
             return;
         }
@@ -146,7 +145,7 @@ public class Product {
     public void changeImageUrl(String imageUrl) {
         String normalized = normalizeOptionalText(imageUrl);
 
-        if(normalized != null && normalized.length() > 500) {
+        if (normalized != null && normalized.length() > 500) {
             throw new IllegalArgumentException("imageUrl은 500자 이하여야 합니다.");
         }
         this.imageUrl = normalized;
@@ -210,17 +209,17 @@ public class Product {
     }
 
     public void discontinue() {
-        if(this.status == ProductStatus.DISCONTINUED) return;
+        if (this.status == ProductStatus.DISCONTINUED) return;
         this.status = ProductStatus.DISCONTINUED;
     }
 
     public void decreaseStock(int quantity) {
 
-        if(quantity <= 0) {
+        if (quantity <= 0) {
             throw new IllegalArgumentException("감소 수량은 1 이상이어야 합니다.");
         }
 
-        if(this.stock < quantity) {
+        if (this.stock < quantity) {
             throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다. 현재 재고 : " + this.stock);
         }
         this.stock = this.stock - quantity;
@@ -229,7 +228,7 @@ public class Product {
     }
 
     public void increaseStock(int quantity) {
-        if(quantity <= 0) {
+        if (quantity <= 0) {
             throw new IllegalArgumentException("증가 수량은 1 이상이어야 합니다.");
         }
         this.stock = this.stock + quantity;
@@ -262,7 +261,7 @@ public class Product {
             case ON_SALE -> onSale();
             case HIDDEN -> hide();
             case SOLD_OUT -> {
-                if(this.stock > 0) {
+                if (this.stock > 0) {
                     throw new IllegalArgumentException("재고가 있는 상품은 초기 상태를 SOLD_OUT으로 설정할 수 없습니다.");
                 }
                 this.status = ProductStatus.SOLD_OUT;
@@ -273,26 +272,34 @@ public class Product {
 
     // 재고에 따른 상태 변경 (SOLD_OUT vs ON_SALE)
     private void adjustStatusByStock() {
-        if(this.status != ProductStatus.ON_SALE && this.status != ProductStatus.SOLD_OUT) {
+        // ON_SALE + 재고 0 -> SOLD_OUT
+        if (this.status == ProductStatus.ON_SALE
+                && this.stock == 0) {
+            this.status = ProductStatus.SOLD_OUT;
             return;
         }
-        this.status = (this.stock == 0) ? ProductStatus.SOLD_OUT : ProductStatus.ON_SALE;
+
+        // SOLD_OUT + 재고 1 이상
+        if (this.status == ProductStatus.SOLD_OUT
+                && this.stock > 0) {
+            this.status = ProductStatus.ON_SALE;
+        }
     }
 
     private String normalizeRequiredText(String value, String message) {
-        if(value == null) {
+        if (value == null) {
             throw new IllegalArgumentException(message);
         }
 
         String normalized = value.trim();
-        if(normalized.isEmpty()) {
+        if (normalized.isEmpty()) {
             throw new IllegalArgumentException(message);
         }
         return normalized;
     }
 
     private String normalizeOptionalText(String value) {
-        if(value == null) {
+        if (value == null) {
             return null;
         }
 
@@ -301,7 +308,7 @@ public class Product {
     }
 
     private void changeStockOnly(int stock) {
-        if(stock < 0) {
+        if (stock < 0) {
             throw new IllegalArgumentException("재고는 0 이상이어야 합니다.");
         }
         this.stock = stock;

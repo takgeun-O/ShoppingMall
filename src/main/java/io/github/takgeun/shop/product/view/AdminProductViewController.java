@@ -329,6 +329,7 @@ public class AdminProductViewController {
 
         model.addAttribute("categories", categoryService.getAllAdminCategories());
         model.addAttribute("productStatuses", editableStatuses);
+
         model.addAttribute("treeMode", "admin");
         model.addAttribute("isAdmin", true);
     }
