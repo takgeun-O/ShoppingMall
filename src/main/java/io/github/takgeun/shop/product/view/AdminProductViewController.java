@@ -26,6 +26,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -322,8 +323,12 @@ public class AdminProductViewController {
     }
 
     private void populateProductFormModel(Model model) {
+        List<ProductStatus> editableStatuses = Arrays.stream(ProductStatus.values())
+                        .filter(status -> status != ProductStatus.SOLD_OUT)
+                                .toList();
+
         model.addAttribute("categories", categoryService.getAllAdminCategories());
-        model.addAttribute("productStatuses", ProductStatus.values());
+        model.addAttribute("productStatuses", editableStatuses);
         model.addAttribute("treeMode", "admin");
         model.addAttribute("isAdmin", true);
     }

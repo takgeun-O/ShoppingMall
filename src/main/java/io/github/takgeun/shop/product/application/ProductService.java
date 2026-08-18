@@ -137,7 +137,7 @@ public class ProductService {
         if (originalPrice != null) product.changeOriginalPrice(originalPrice);
         if (imageUrl != null) product.changeImageUrl(imageUrl);
         if (stock != null) product.changeStock(stock);
-        if (status != null) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
+        if (status != null && status != product.getStatus()) applyStatus(product, status);        // SOLD_OUT은 직접 변경 불가. (재고를 통해서만)
 
         productRepository.save(product);
     }
