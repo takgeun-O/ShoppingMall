@@ -70,7 +70,6 @@ public class Order {
         validateShippingZipCode(shippingZipCode);
         validateShippingAddress(shippingAddress);
         validateShippingAddressDetail(shippingAddressDetail);
-        validateRequestMessage(requestMessage);
         validateShippingFee(shippingFee);
 
         this.memberId = memberId;
@@ -83,7 +82,7 @@ public class Order {
         this.shippingZipCode = shippingZipCode;
         this.shippingAddress = shippingAddress;
         this.shippingAddressDetail = shippingAddressDetail;
-        this.requestMessage = requestMessage;
+        this.requestMessage = normalizeRequestMessage(requestMessage);
 
         this.subtotal = orderItems.stream()
                 .mapToInt(OrderItem::lineTotal)
@@ -253,11 +252,26 @@ public class Order {
         }
     }
 
-    private void validateRequestMessage(String requestMessage) {
-        requireText(requestMessage, "requestMessage는 필수입니다.");
-        if(requestMessage.length() > MAX_REQUEST_MESSAGE_LENGTH) {
-            throw new IllegalArgumentException("requestMessage는 최대 " + MAX_REQUEST_MESSAGE_LENGTH + "자까지 가능합니다.");
+    private String normalizeRequestMessage(String requestMessage) {
+        if(requestMessage == null) {
+            return null;
         }
+
+        String normalized = requestMessage.trim();
+
+        if(normalized.isEmpty()) {
+            return null;
+        }
+
+        if(normalized.length() > MAX_REQUEST_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException(
+                    "requestMessage는 최대 "
+                            + MAX_REQUEST_MESSAGE_LENGTH
+                            + "자까지 가능합니다."
+            );
+        }
+
+        return normalized;
     }
 
     private void validateMemberId(Long memberId) {
