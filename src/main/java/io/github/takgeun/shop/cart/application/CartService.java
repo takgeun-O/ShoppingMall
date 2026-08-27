@@ -59,7 +59,7 @@ public class CartService {
                     Long productId = entry.getKey();
                     int quantity = entry.getValue();        // 카트에 담긴 수량
 
-                    Product product = productService.getForOrderPublic(productId);
+                    Product product = productService.getForOrder(productId);
                     if(product == null) {
                         throw new NotFoundException("상품을 찾을 수 없습니다.");
                     }
@@ -223,7 +223,7 @@ public class CartService {
     }
 
     private Product getOrderableProduct(Long productId) {
-        Product product = productService.getForOrderPublic(productId);      // 일반 사용자 주문용 상품 꺼내기
+        Product product = productService.getForOrder(productId);      // 일반 사용자 주문용 상품 꺼내기
         if(product == null) {
             throw new NotFoundException("상품을 찾을 수 없습니다.");
         }

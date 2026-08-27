@@ -47,7 +47,7 @@ class ProductServiceTest {
         // then
         assertNotNull(productId);
 
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getPublicDetail(productId);
         assertEquals("맥북 파우치", product.getName());
         assertEquals(categoryId, product.getCategoryId());
         assertEquals(39000, product.getPrice());
@@ -76,7 +76,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getPublicDetail(productId);
         assertEquals(49000, product.getOriginalPrice());
     }
 
@@ -118,7 +118,7 @@ class ProductServiceTest {
         );
 
         // when
-        Product product = productService.getForDetail(false, productId);
+        Product product = productService.getPublicDetail(productId);
 
         // then
         assertEquals("맥북 파우치", product.getName());
@@ -129,7 +129,7 @@ class ProductServiceTest {
     void 상품_단건_조회_실패_상품_없음() {
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.getForDetail(false, 999L));
+                () -> productService.getPublicDetail(999L));
         assertEquals("존재하지 않는 상품입니다.", e.getMessage());
     }
 
@@ -151,7 +151,7 @@ class ProductServiceTest {
         );
 
         // when
-        List<Product> productList = productService.findForList(false, categoryId, "latest");
+        List<Product> productList = productService.findPublicList(categoryId, "latest");
 
         // then
         assertEquals(1, productList.size());
@@ -177,7 +177,7 @@ class ProductServiceTest {
         );
 
         // when
-        List<Product> productList = productService.findForList(true, categoryId, "latest");
+        List<Product> productList = productService.findAdminList(categoryId, "latest");
 
         // then
         assertEquals(3, productList.size());
@@ -213,7 +213,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product updated = productService.getForDetail(true, productId);
+        Product updated = productService.getAdminDetail(productId);
         assertEquals("맥북 파우치2", updated.getName());
         assertEquals(40000, updated.getPrice());
         assertEquals(20, updated.getStock());
@@ -253,7 +253,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product updated = productService.getForDetail(true, productId);
+        Product updated = productService.getAdminDetail(productId);
         assertEquals(fashionId, updated.getCategoryId());
         assertEquals("맥북 파우치2", updated.getName());
         assertEquals("https://example.com/image2.jpg", updated.getImageUrl());
@@ -288,7 +288,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product updated = productService.getForDetail(true, productId);
+        Product updated = productService.getAdminDetail(productId);
         assertEquals(50000, updated.getOriginalPrice());
     }
 
@@ -321,7 +321,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product updated = productService.getForDetail(true, productId);
+        Product updated = productService.getAdminDetail(productId);
         assertEquals(ProductStatus.HIDDEN, updated.getStatus());
     }
 
@@ -354,7 +354,7 @@ class ProductServiceTest {
         );
 
         // then
-        Product updated = productService.getForDetail(true, productId);
+        Product updated = productService.getAdminDetail(productId);
         assertNull(updated.getImageUrl());
     }
 
@@ -400,7 +400,7 @@ class ProductServiceTest {
 
         // then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.getForDetail(false, productId));
+                () -> productService.getPublicDetail(productId));
         assertEquals("존재하지 않는 상품입니다.", e.getMessage());
     }
 
@@ -428,15 +428,15 @@ class ProductServiceTest {
                 "https://example.com/image.jpg"
         );
 
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getAdminDetail(productId);
         product.decreaseStock(1);
         productService.save(product);
 
         // when
-        List<Product> productList = productService.findForList(false, categoryId, "latest");
+        List<Product> productList = productService.findPublicList(categoryId, "latest");
 
         // then
-        assertEquals(ProductStatus.SOLD_OUT, productService.getForDetail(true, productId).getStatus());
+        assertEquals(ProductStatus.SOLD_OUT, productService.getAdminDetail(productId).getStatus());
         assertTrue(productList.stream().anyMatch(p -> p.getId().equals(productId)));
     }
 
@@ -459,7 +459,7 @@ class ProductServiceTest {
 
         // when & then
         NotFoundException e = assertThrows(NotFoundException.class,
-                () -> productService.getForDetail(false, productId));
+                () -> productService.getPublicDetail(productId));
 
         assertEquals("존재하지 않는 상품입니다.", e.getMessage());
     }

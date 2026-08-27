@@ -61,7 +61,7 @@ public class AdminProductController {
     ) {
         requireAdmin(session);
 
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getAdminDetail(productId);
         return ResponseEntity.ok(ProductResponse.from(product));
     }
 
@@ -76,7 +76,7 @@ public class AdminProductController {
 
         String normalizedSort = normalizeSort(sort);
 
-        List<ProductResponse> result = productService.findForList(true, categoryId, normalizedSort).stream()
+        List<ProductResponse> result = productService.findAdminList(categoryId, normalizedSort).stream()
                 .map(ProductResponse::from)
                 .toList();
         return ResponseEntity.ok(result);

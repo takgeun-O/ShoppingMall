@@ -53,18 +53,15 @@ public class ProductViewController {
     public String list(
             @RequestParam(required = false) @Positive Long categoryId,
             @RequestParam(required = false, defaultValue = "latest") String sort,
-            Model model,
-            HttpSession session
+            Model model
     ) {
 
         log.info("ENTER list: categoryId={}, sort={}", categoryId, sort);
 
-        boolean admin = isAdmin(session);
-
         // sort 검증 (아무 값 들어오는 것 방지)
         String normalizedSort = normalizeSort(sort);
 
-        List<Product> products = productService.findForList(admin, categoryId, normalizedSort);
+        List<Product> products = productService.findPublicList(categoryId, normalizedSort);
 
         log.info("products={}", products.stream().map(Product::getName).toList());
         List<ProductCardView> cards = products.stream()
@@ -77,11 +74,8 @@ public class ProductViewController {
 
         // 제목용 카테고리명
         String selectedCategoryName = null;
-        if(categoryId != null) {
-            selectedCategoryName = admin
-                    ? categoryService.findAdminNameOrNull(categoryId)
-                    : categoryService.findPublicNameOrNull(categoryId);
-        }
+        selectedCategoryName = categoryService.findPublicNameOrNull(categoryId);
+
         model.addAttribute("selectedCategoryName", selectedCategoryName);
 //        model.addAttribute("treeMode", admin ? "admin" : "public");
 
@@ -97,14 +91,11 @@ public class ProductViewController {
     @GetMapping("/{productId:\\d+}")
     public String detail(@PathVariable @Positive Long productId,
                          Model model,
-                         HttpSession session,
                          HttpServletRequest request,
                          RedirectAttributes ra) {
 
-        boolean admin = isAdmin(session);
-
         try {
-            Product product = productService.getForDetail(admin, productId);
+            Product product = productService.getPublicDetail(productId);
             ProductDetailView view = ProductDetailView.from(product);
 
             String query = request.getQueryString();    // 사용자가 상품 목록 페이지를 어떻게 보고 있었는지 저장

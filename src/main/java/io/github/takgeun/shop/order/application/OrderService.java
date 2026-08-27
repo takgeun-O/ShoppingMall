@@ -78,7 +78,7 @@ public class OrderService {
                 continue;
             }
 
-            Product product = productService.getForOrderPublic(checkoutItem.getProductId());
+            Product product = productService.getForOrder(checkoutItem.getProductId());
             requireOnSale(product);
 
             // 트랜잭션 주의

@@ -49,7 +49,7 @@ public class AdminProductViewController {
 
         log.info("관리자 상품 관리 페이지 진입");
 
-        List<Product> products = productService.findForList(true, null, "latest");
+        List<Product> products = productService.findAdminList(null, "latest");
 
         List<AdminProductListItemView> views = products.stream()
                 .map(this::toAdminListItemView)
@@ -77,7 +77,7 @@ public class AdminProductViewController {
 
         requireAdmin(session);
 
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getAdminDetail(productId);
         ProductDetailView view = ProductDetailView.from(product);
 
         String returnUrl = request.getRequestURI();
@@ -167,7 +167,7 @@ public class AdminProductViewController {
     ) {
         requireAdmin(session);
 
-        Product product = productService.getForDetail(true, productId);
+        Product product = productService.getAdminDetail(productId);
 
         if(!model.containsAttribute("form")) {
             model.addAttribute("form", ProductUpdateForm.from(product));

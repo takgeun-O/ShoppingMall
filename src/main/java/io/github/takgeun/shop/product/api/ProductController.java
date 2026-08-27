@@ -33,16 +33,13 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<List<ProductResponse>> list(
             @RequestParam(required = false) @Positive Long categoryId,
-            @RequestParam(required = false, defaultValue = "latest") String sort,
-            HttpSession session
+            @RequestParam(required = false, defaultValue = "latest") String sort
     ) {
-
-        boolean admin = isAdmin(session);
 
         // sort 검증 (아무 값 들어오는 것 방지)
         sort = normalizeSort(sort);
 
-        List<Product> products = productService.findForList(admin, categoryId, sort);
+        List<Product> products = productService.findAdminList(categoryId, sort);
         List<ProductResponse> result = products.stream()
                 .map(ProductResponse::from)
                 .toList();
@@ -58,7 +55,7 @@ public class ProductController {
     ) {
         boolean admin = isAdmin(session);
 
-        Product product = productService.getForDetail(admin, productId);
+        Product product = productService.getAdminDetail(productId);
         return ResponseEntity.ok(ProductResponse.from(product));
     }
 

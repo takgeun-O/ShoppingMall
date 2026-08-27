@@ -24,8 +24,6 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
         Long productId = givenOnSaleProduct(1000, 10);
         MockHttpSession session = sessionAsMember(memberId);
 
-        OrderCreateRequest request = new OrderCreateRequest();
-
         // 주문 생성 API에 보낼 요청 JSON 바디를 만들기
         String json = """
                 {
@@ -102,7 +100,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
         Long productId = givenOnSaleProduct(1000, 2);
         MockHttpSession session = sessionAsMember(memberId);
 
-        int beforeStock = productService.getForOrderPublic(productId).getStock();
+        int beforeStock = productService.getForOrder(productId).getStock();
 
         String json = """
                 {
@@ -126,7 +124,7 @@ class OrderE2EIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.message").exists());
 
         // then
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 }

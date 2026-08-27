@@ -27,15 +27,12 @@ public class ProductService {
     private final CategoryService categoryService;
 
     /**
-     * 목록 조회
-     * admin=true : 전체
-     * admin=false : 공개 상품만 보여주기
+     * 목록 조회(일반 사용자용)
      */
-    public List<Product> findForList(boolean admin, Long categoryId, String sort) {
+    public List<Product> findPublicList(Long categoryId, String sort) {
 
         // base 조회
-        List<Product> base = findBaseProducts(admin, categoryId);
-
+        List<Product> base = findBaseProducts(categoryId);
 
         log.info("base={}", base.stream()
                 .map(Product::getName)
@@ -47,24 +44,28 @@ public class ProductService {
     }
 
     /**
-     * 상품 상세보기 (조회용) - 주문 로직에서 쓰지 말기..
-     * productService.getForDetail(true, productId) 로 잘못 쓸 수 있음.
+     * 목록 조회 (관리자용)
      */
-    public Product getForDetail(boolean admin, Long productId) {
-        Product product = findById(productId);
+    public List<Product> findAdminList(Long categoryId, String sort) {
 
-        if (!admin && !product.isPublicVisible()) {
-            throw new NotFoundException("판매 중인 상품만 조회할 수 있습니다.");
-        }
-
-        return product;
+        List<Product> products = findBaseAdminProducts(categoryId);
+        return applySort(products, normalizeSort(sort));
     }
 
     /**
-     * 일반 사용자 주문용 조회
+     * 일반 사용자용 상품 상세 조회
      */
-    public Product getForOrderPublic(Long productId) {
-        return getForDetail(false, productId);
+    public Product getPublicDetail(Long productId) {
+        return productRepository.findById(productId)
+                .filter(Product::isPublicVisible)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+    }
+
+    /**
+     * 관리자용 상품 상세 조회
+     */
+    public Product getAdminDetail(Long productId) {
+        return findById(productId);
     }
 
     /**
@@ -207,22 +208,28 @@ public class ProductService {
     }
 
 
-    private List<Product> findBaseProducts(boolean admin, Long categoryId) {
+    private List<Product> findBaseProducts(Long categoryId) {
         if (categoryId == null) {
-            return admin
-                    ? productRepository.findAllAdmin()
-                    : productRepository.findAllPublic();
+            return productRepository.findAllPublic();
         }
 
         // 자손 포함 카테고리 id 구하기
-        Set<Long> categoryIds = admin
-                ? categoryService.findAdminDescendantIdsIncludingSelf(categoryId)
-                : categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
+        Set<Long> categoryIds = categoryService.findPublicDescendantIdsIncludingSelf(categoryId);
 
         // IN 조회
-        return admin
-                ? productRepository.findAllAdminByCategoryIds(categoryIds)
-                : productRepository.findAllPublicByCategoryIds(categoryIds);
+        return productRepository.findAllPublicByCategoryIds(categoryIds);
+    }
+
+    private List<Product> findBaseAdminProducts(Long categoryId) {
+        if (categoryId == null) {
+            return productRepository.findAllAdmin();
+        }
+
+        // 자손 포함 카테고리 id 구하기
+        Set<Long> categoryIds = categoryService.findAdminDescendantIdsIncludingSelf(categoryId);
+
+        // IN 조회
+        return productRepository.findAllAdminByCategoryIds(categoryIds);
     }
 
     private String normalizeSort(String sort) {

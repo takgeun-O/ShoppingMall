@@ -60,14 +60,14 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
 
         int quantity = 2;
-        int beforeStock = productService.getForOrderPublic(productId).getStock();
+        int beforeStock = productService.getForOrder(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         Long orderId = orderService.checkout(memberId, checkoutItems, cmd);
 
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
 
         assertNotNull(orderId);
 
@@ -104,7 +104,7 @@ class OrderServiceTest {
         Long memberId = null;
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
-        int beforeStock = productService.getForOrderPublic(productId).getStock();
+        int beforeStock = productService.getForOrder(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -112,7 +112,7 @@ class OrderServiceTest {
         assertThrows(UnauthorizedException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 
@@ -125,7 +125,7 @@ class OrderServiceTest {
 
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
-        int beforeStock = productService.getForDetail(true, productId).getStock();
+        int beforeStock = productService.getAdminDetail(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -133,7 +133,7 @@ class OrderServiceTest {
         assertThrows(ForbiddenException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 
@@ -144,7 +144,7 @@ class OrderServiceTest {
         );
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.DISCONTINUED);
-        int beforeStock = productService.getForDetail(true, productId).getStock();
+        int beforeStock = productService.getAdminDetail(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -152,7 +152,7 @@ class OrderServiceTest {
         assertThrows(ConflictException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
-        int afterStock = productService.getForDetail(true, productId).getStock();
+        int afterStock = productService.getAdminDetail(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 
@@ -163,7 +163,7 @@ class OrderServiceTest {
         );
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
-        int beforeStock = productService.getForOrderPublic(productId).getStock();
+        int beforeStock = productService.getForOrder(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 0));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -171,7 +171,7 @@ class OrderServiceTest {
         assertThrows(ConflictException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 
@@ -182,7 +182,7 @@ class OrderServiceTest {
         );
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
-        int beforeStock = productService.getForOrderPublic(productId).getStock();
+        int beforeStock = productService.getForOrder(productId).getStock();
 
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 11));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -190,7 +190,7 @@ class OrderServiceTest {
         assertThrows(ConflictException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
-        int afterStock = productService.getForOrderPublic(productId).getStock();
+        int afterStock = productService.getForOrder(productId).getStock();
         assertEquals(beforeStock, afterStock);
     }
 
