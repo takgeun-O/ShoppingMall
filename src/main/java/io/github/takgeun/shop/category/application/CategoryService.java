@@ -58,17 +58,23 @@ public class CategoryService {
 
     /**
      * 카테고리 수정
-     * - 자기 자신을 부모로 설정 금지
-     * - 순환 참조 금지
-     * - depth 2 초과 금지
+     * - 부모 지정 없음
+     * - 자기 자신인가?
+     * - 부모가 실제로 존재하는가?
+     * - 후손을 부모로 지정했는가?
+     * - 최대 깊이를 위반하는가?
+     * 순으로 검증
      */
     @Transactional
     public void update(Long categoryId, String name, Long parentId) {
 
         Category category = getCategoryOrThrow(categoryId);
-        Category parent = validateUpdatableParent(categoryId, parentId);        // 부모 카테고리 존재 여부 확인 + 자기 자신 부모 설정 금지 + 2단 금지
+
+        validateNoSelfParent(categoryId, parentId);     // 자기 자신을 부모로 설정할 수 없음
 
         validateNoCircularReference(categoryId, parentId);      // 순환 참조 여부 "A면 B이고 B가 C이면 A는 C이다." 금지
+
+        Category parent = validateUpdatableParent(categoryId, parentId);        // 부모 카테고리 존재 여부 확인 + 자기 자신 부모 설정 금지 + 2단 금지
 
         String normalizedKey = Category.normalizeKey(name);
         validateDuplicateNameForUpdate(normalizedKey, categoryId);  // 카테고리 수정할 때 나 자신을 제외한 카테고리명 중복이 있는지 체크
@@ -216,7 +222,7 @@ public class CategoryService {
 
     private Category getCategoryOrThrow(Long categoryId) {
         return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다. id=" + categoryId));
+                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
     }
 
     private void validateDuplicateName(String normalizedKey) {
@@ -254,6 +260,16 @@ public class CategoryService {
         if(categoryRepository.existsBySlugExceptId(slug, categoryId)) {
             throw new ConflictException("이미 존재하는 카테고리 slug입니다.");
         }
+    }
+
+    private void validateNoSelfParent(Long categoryId, Long parentId) {
+        if(parentId == null) {
+            return;
+        }
+
+        if(categoryId.equals(parentId)) {
+            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
+        };
     }
 
     private void validateNoCircularReference(Long categoryId, Long parentId) {
@@ -300,7 +316,7 @@ public class CategoryService {
         }
 
         Category parent = categoryRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("상위 카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다."));
 
         // 부모가 이미 하위 카테고리라면 여기에 자식을 달 경우 3단이 되어버림
         if(parent.getParentId() != null) {
@@ -316,7 +332,7 @@ public class CategoryService {
         }
 
         Category parent = categoryRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("부모 카테고리를 찾을 수 없습니다. id=" + parentId));
+                .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다. id=" + parentId));
 
         if(parent.getId().equals(categoryId)) {
             throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");

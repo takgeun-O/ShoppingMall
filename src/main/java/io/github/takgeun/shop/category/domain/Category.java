@@ -65,7 +65,7 @@ public class Category {
     }
 
     public static String normalizeKey(String raw) {
-        if (raw == null) return null;
+        if (raw == null || raw.isBlank()) return null;
         String trimmed = raw.trim();
         return trimmed.toLowerCase(Locale.ROOT);
     }
