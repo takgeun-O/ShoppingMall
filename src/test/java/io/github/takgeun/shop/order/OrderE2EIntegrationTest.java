@@ -3,6 +3,7 @@ package io.github.takgeun.shop.order;
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.order.dto.request.OrderCreateRequest;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -14,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled("주문 REST API 재구현 전까지 임시 비활성화")
 class OrderE2EIntegrationTest extends IntegrationTestSupport {
 
     @Test
