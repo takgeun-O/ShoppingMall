@@ -2,8 +2,8 @@ package io.github.takgeun.shop.cart.view;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

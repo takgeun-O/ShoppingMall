@@ -1,6 +1,6 @@
 package io.github.takgeun.shop.member.domain;
 
-import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
 import lombok.Getter;
 
 import java.time.LocalDateTime;

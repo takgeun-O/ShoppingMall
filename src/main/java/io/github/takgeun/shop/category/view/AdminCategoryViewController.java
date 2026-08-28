@@ -4,13 +4,12 @@ import io.github.takgeun.shop.category.application.AdminCategoryQueryService;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryEditView;
-import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryItemView;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryPageView;
 import io.github.takgeun.shop.category.view.form.CategoryCreateForm;
 import io.github.takgeun.shop.category.view.form.CategoryEditForm;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import jakarta.servlet.http.HttpSession;
@@ -23,8 +22,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Slf4j
 @Controller

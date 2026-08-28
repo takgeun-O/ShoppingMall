@@ -1,8 +1,8 @@
 package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import io.github.takgeun.shop.product.domain.ProductStatus;

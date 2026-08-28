@@ -1,6 +1,6 @@
 package io.github.takgeun.shop.order.domain;
 
-import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
 import lombok.Getter;
 
 @Getter

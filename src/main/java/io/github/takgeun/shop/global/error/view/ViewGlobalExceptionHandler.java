@@ -1,5 +1,9 @@
-package io.github.takgeun.shop.global.error;
+package io.github.takgeun.shop.global.error.view;
 
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +15,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.ModelAndView;
 
+/**
+ * 예외를 HTML 오류 화면으로 변환
+ */
 @Slf4j
 @ControllerAdvice(
         basePackages = "io.github.takgeun.shop",

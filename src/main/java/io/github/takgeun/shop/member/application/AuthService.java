@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.member.application;
 
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.UnauthorizedException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import lombok.RequiredArgsConstructor;

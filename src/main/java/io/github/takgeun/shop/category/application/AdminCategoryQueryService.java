@@ -5,7 +5,7 @@ import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryItemView;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryPageView;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategorySummaryView;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.product.domain.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

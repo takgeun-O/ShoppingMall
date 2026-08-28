@@ -1,8 +1,8 @@
 package io.github.takgeun.shop.member.view;
 
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.UnauthorizedException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.LoginValidationSequence;
 import io.github.takgeun.shop.global.validation.SignupValidationSequence;
@@ -13,7 +13,6 @@ import io.github.takgeun.shop.member.view.form.LoginForm;
 import io.github.takgeun.shop.member.view.form.SignupForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

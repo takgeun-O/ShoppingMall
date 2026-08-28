@@ -1,11 +1,9 @@
 package io.github.takgeun.shop.order.view;
 
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.order.application.AdminOrderService;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.dto.request.AdminOrderUpdateStatusRequest;
-import io.github.takgeun.shop.order.dto.response.AdminOrderDetailResponse;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderDetailView;
 import io.github.takgeun.shop.order.view.form.OrderStatusForm;
 import jakarta.validation.Valid;
