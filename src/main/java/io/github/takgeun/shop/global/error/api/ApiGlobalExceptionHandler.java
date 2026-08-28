@@ -1,12 +1,11 @@
 package io.github.takgeun.shop.global.error.api;
 
 import io.github.takgeun.shop.global.error.code.ErrorCode;
-import io.github.takgeun.shop.global.error.exception.*;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -80,7 +79,7 @@ public class ApiGlobalExceptionHandler {
                 .toList();
 
         ApiErrorResponse response = ApiErrorResponse.validation(
-                ErrorCode.INVALID_INPUT,
+                errorCode,
                 request.getRequestURI(),
                 fieldErrors
         );
@@ -105,7 +104,7 @@ public class ApiGlobalExceptionHandler {
                 .toList();
 
         ApiErrorResponse response = ApiErrorResponse.validation(
-                ErrorCode.INVALID_INPUT,
+                errorCode,
                 request.getRequestURI(),
                 fieldErrors
         );
@@ -136,8 +135,8 @@ public class ApiGlobalExceptionHandler {
         );
 
         ApiErrorResponse response = ApiErrorResponse.of(
-                ErrorCode.TYPE_MISMATCH,
-                ErrorCode.TYPE_MISMATCH.getDefaultMessage(),
+                errorCode,
+                errorCode.getDefaultMessage(),
                 request.getRequestURI()
         );
 
@@ -165,8 +164,8 @@ public class ApiGlobalExceptionHandler {
         );
 
         ApiErrorResponse response = ApiErrorResponse.of(
-                ErrorCode.MALFORMED_JSON,
-                ErrorCode.MALFORMED_JSON.getDefaultMessage(),
+                errorCode,
+                errorCode.getDefaultMessage(),
                 request.getRequestURI()
         );
 
@@ -209,7 +208,7 @@ public class ApiGlobalExceptionHandler {
      * TODO: 클라이언트 입력 또는 비즈니스 규칙 위반에 해당하는 예외는 BusinessException 계열로 점진적으로 전환한다.
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiErrorResponse> handelIllegalArgument(
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
             IllegalArgumentException e,
             HttpServletRequest request
     ) {
@@ -243,7 +242,7 @@ public class ApiGlobalExceptionHandler {
     ) {
         ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
 
-        log.warn(
+        log.error(
                 "예상하지 못한 서버 오류: method={}, path={}",
                 request.getMethod(),
                 request.getRequestURI(),

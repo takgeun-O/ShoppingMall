@@ -11,7 +11,7 @@ import java.util.List;
  * 모든 API 오류의 공통 JSON 형식
  */
 public record ApiErrorResponse(
-        OffsetDateTime timeStamp,
+        OffsetDateTime timestamp,
         int status,
         String code,
         String message,
