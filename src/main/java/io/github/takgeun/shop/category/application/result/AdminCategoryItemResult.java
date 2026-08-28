@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.category.view.dto.admin;
+package io.github.takgeun.shop.category.application.result;
 
 import lombok.Getter;
 
@@ -14,21 +14,21 @@ import java.util.List;
  * List<AdminCategoryItemView> children
  */
 @Getter
-public class AdminCategoryItemView {
+public class AdminCategoryItemResult {
 
     private final Long id;
     private final String name;
     private final String slug;      // 공백은 '-'로 전환, 소문자 사용
     private final int productCount;
     private final Long parentId;
-    private final List<AdminCategoryItemView> children;
+    private final List<AdminCategoryItemResult> children;
 
-    private AdminCategoryItemView(Long id,
-                                 String name,
-                                 String slug,
-                                 int productCount,
-                                 Long parentId,
-                                 List<AdminCategoryItemView> children) {
+    private AdminCategoryItemResult(Long id,
+                                    String name,
+                                    String slug,
+                                    int productCount,
+                                    Long parentId,
+                                    List<AdminCategoryItemResult> children) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -37,14 +37,14 @@ public class AdminCategoryItemView {
         this.children = children;
     }
 
-    public static AdminCategoryItemView of(
+    public static AdminCategoryItemResult of(
             Long id,
             String name,
             String slug,
             int productCount,
             Long parentId
     ) {
-        return new AdminCategoryItemView(
+        return new AdminCategoryItemResult(
                 id,
                 name,
                 slug,
@@ -54,7 +54,7 @@ public class AdminCategoryItemView {
         );
     }
 
-    public void addChild(AdminCategoryItemView child) {
+    public void addChild(AdminCategoryItemResult child) {
         this.children.add(child);
     }
 }

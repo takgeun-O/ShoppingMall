@@ -327,7 +327,7 @@ public class AdminProductViewController {
                         .filter(status -> status != ProductStatus.SOLD_OUT)
                                 .toList();
 
-        model.addAttribute("categories", categoryService.getAllAdminCategories());
+        model.addAttribute("categories", categoryService.getAllAdmin());
         model.addAttribute("productStatuses", editableStatuses);
 
         model.addAttribute("treeMode", "admin");
