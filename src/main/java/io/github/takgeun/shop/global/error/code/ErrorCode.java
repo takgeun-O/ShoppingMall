@@ -62,10 +62,20 @@ public enum ErrorCode {
             "CATEGORY_NOT_FOUND",
             "카테고리가 존재하지 않습니다."
     ),
+    PARENT_CATEGORY_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "PARENT_CATEGORY_NOT_FOUND",
+            "상위 카테고리가 존재하지 않습니다."
+    ),
     CATEGORY_NAME_DUPLICATED(
             HttpStatus.CONFLICT,
             "CATEGORY_NAME_DUPLICATED",
             "이미 존재하는 카테고리명입니다."
+    ),
+    CATEGORY_SLUG_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "CATEGORY_SLUG_DUPLICATED",
+            "이미 존재하는 카테고리 URL 식별자입니다."
     ),
     CATEGORY_HAS_CHILDREN(
             HttpStatus.CONFLICT,
@@ -77,7 +87,21 @@ public enum ErrorCode {
             "CATEGORY_HAS_PRODUCTS",
             "상품이 연결된 카테고리는 삭제할 수 없습니다."
     ),
-
+    INVALID_CATEGORY_PARENT(
+            HttpStatus.BAD_REQUEST,
+            "INVALID_CATEGORY_PARENT",
+            "유효하지 않은 상위 카테고리 설정입니다."
+    ),
+    CATEGORY_DEPTH_EXCEEDED(
+            HttpStatus.BAD_REQUEST,
+            "CATEGORY_DEPTH_EXCEEDED",
+            "카테고리는 2단까지만 설정할 수 있습니다."
+    ),
+    CATEGORY_CIRCULAR_REFERENCE(
+            HttpStatus.CONFLICT,
+            "CATEGORY_CIRCULAR_REFERENCE",
+            "순환 참조가 발생하는 카테고리 구조는 허용되지 않습니다."
+    ),
     INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "INTERNAL_SERVER_ERROR",

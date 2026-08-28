@@ -5,6 +5,8 @@ import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryEditView;
 import io.github.takgeun.shop.category.view.dto.admin.CategoryOptionView;
+import io.github.takgeun.shop.global.error.code.ErrorCode;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.product.domain.ProductRepository;
@@ -132,7 +134,7 @@ public class CategoryService {
     public Category getPublic(Long id) {
         Category category = getCategoryOrThrow(id);
         if (!category.isActive()) {
-            throw new NotFoundException("카테고리가 존재하지 않습니다.");
+            throw new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND);
         }
 
         return category;
@@ -201,12 +203,12 @@ public class CategoryService {
 
     public AdminCategoryEditView getAdminCategoryEditView(Long id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
 
         String parentName = null;
         if(category.getParentId() != null) {
             Category parent = categoryRepository.findById(category.getParentId())
-                    .orElseThrow(() -> new NotFoundException("부모 카테고리를 찾을 수 없습니다."));   // 데이터가 꼬여서 parentId는 있는데 부모가 실제로 없는 데이터일 경우 방지
+                    .orElseThrow(() -> new IllegalStateException("카테고리의 부모 참조가 유효하지 않습니다."));   // 데이터가 꼬여서 parentId는 있는데 부모가 실제로 없는 데이터일 경우 방지
             parentName = parent.getName();
         }
 
@@ -222,43 +224,43 @@ public class CategoryService {
 
     private Category getCategoryOrThrow(Long categoryId) {
         return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("카테고리가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
     private void validateDuplicateName(String normalizedKey) {
         if (normalizedKey == null) {
-            throw new IllegalArgumentException("카테고리명은 필수입니다.");
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if (categoryRepository.existsByNameKey(normalizedKey)) {
-            throw new ConflictException("이미 존재하는 카테고리명입니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
     }
 
     private void validateDuplicateNameForUpdate(String normalizedKey, Long categoryId) {
         if (normalizedKey == null) {
-            throw new IllegalArgumentException("카테고리명은 필수입니다.");
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if (categoryRepository.existsByNameKeyExceptId(normalizedKey, categoryId)) {
             // 나 자신을 제외한 카테고리명이 있는지 여부 체크
-            throw new ConflictException("이미 존재하는 카테고리명입니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_NAME_DUPLICATED);
         }
     }
 
     private void validateDuplicateSlug(String slug) {
         if(slug == null) {
-            throw new IllegalArgumentException("slug는 필수입니다.");
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if(categoryRepository.existsBySlug(slug)) {
-            throw new ConflictException("이미 존재하는 카테고리 slug입니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_SLUG_DUPLICATED);
         }
     }
 
     private void validateDuplicateSlugForUpdate(String slug, Long categoryId) {
         if(slug == null) {
-            throw new IllegalArgumentException("slug는 필수입니다.");
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
         if(categoryRepository.existsBySlugExceptId(slug, categoryId)) {
-            throw new ConflictException("이미 존재하는 카테고리 slug입니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_SLUG_DUPLICATED);
         }
     }
 
@@ -268,8 +270,8 @@ public class CategoryService {
         }
 
         if(categoryId.equals(parentId)) {
-            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
-        };
+            throw new BusinessException(ErrorCode.INVALID_CATEGORY_PARENT);
+        }
     }
 
     private void validateNoCircularReference(Long categoryId, Long parentId) {
@@ -283,15 +285,15 @@ public class CategoryService {
         while (currentId != null) {
             if (currentId.equals(categoryId)) {
                 // A가 B면 B는 A다.
-                throw new IllegalArgumentException("순환 참조가 발생하는 부모 설정은 허용되지 않습니다.");
+                throw new ConflictException(ErrorCode.CATEGORY_CIRCULAR_REFERENCE);
             }
             if (!visited.add(currentId)) {
                 // A -> B, B -> C, .... ? -> A~(이미 방문한 카테고리)
-                throw new IllegalArgumentException("카테고리 계층 구조에 순환 참조가 존재합니다.");
+                throw new IllegalStateException("저장된 카테고리 계층에 순환 참조가 존재합니다.");  // 이미 저장된 데이터 자체에 순환이 있다는 뜻으로 서버 내부 오류로 봐야함. 클라이언트에서는 공통 메시지로 처리할 것.
             }
 
             Category current = categoryRepository.findById(currentId)
-                    .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.PARENT_CATEGORY_NOT_FOUND));
 
             currentId = current.getParentId();
         }
@@ -299,13 +301,13 @@ public class CategoryService {
 
     private void validateNoChildren(Long categoryId) {
         if (categoryRepository.existsByParentId(categoryId)) {
-            throw new ConflictException("하위 카테고리가 존재하여 삭제할 수 없습니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_HAS_CHILDREN);
         }
     }
 
     private void validateNoProducts(Long categoryId) {
         if(productRepository.existsAdminByCategoryId(categoryId)) {
-            throw new ConflictException("상품이 연결된 카테고리는 삭제할 수 없습니다.");
+            throw new ConflictException(ErrorCode.CATEGORY_HAS_PRODUCTS);
         }
     }
 
@@ -316,11 +318,11 @@ public class CategoryService {
         }
 
         Category parent = categoryRepository.findById(parentId)
-                .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PARENT_CATEGORY_NOT_FOUND));
 
         // 부모가 이미 하위 카테고리라면 여기에 자식을 달 경우 3단이 되어버림
         if(parent.getParentId() != null) {
-            throw new IllegalArgumentException("카테고리는 2단까지만 생성할 수 있습니다.");
+            throw new BusinessException(ErrorCode.CATEGORY_DEPTH_EXCEEDED);
         }
 
         return parent;
@@ -332,13 +334,13 @@ public class CategoryService {
         }
 
         Category parent = categoryRepository.findById(parentId)
-                .orElseThrow(() -> new NotFoundException("상위 카테고리를 찾을 수 없습니다. id=" + parentId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PARENT_CATEGORY_NOT_FOUND));
 
         if(parent.getId().equals(categoryId)) {
-            throw new IllegalArgumentException("자기 자신을 부모로 설정할 수 없습니다.");
+            throw new BusinessException(ErrorCode.INVALID_CATEGORY_PARENT);
         }
         if(parent.getParentId() != null) {
-            throw new IllegalArgumentException("카테고리는 2단까지만 설정할 수 있습니다.");
+            throw new BusinessException(ErrorCode.CATEGORY_DEPTH_EXCEEDED);
         }
 
         return parent;

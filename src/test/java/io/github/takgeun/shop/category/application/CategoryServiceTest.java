@@ -3,6 +3,8 @@ package io.github.takgeun.shop.category.application;
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
 import io.github.takgeun.shop.category.infra.memory.MemoryCategoryRepository;
+import io.github.takgeun.shop.global.error.code.ErrorCode;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.product.application.ProductService;
@@ -15,265 +17,503 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CategoryServiceTest {
-
-    private CategoryRepository categoryRepository;
-    private ProductRepository productRepository;
 
     private CategoryService categoryService;
     private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        categoryRepository = new MemoryCategoryRepository();
-        productRepository = new MemoryProductRepository();
+        CategoryRepository categoryRepository =
+                new MemoryCategoryRepository();
 
-        categoryService = new CategoryService(categoryRepository, productRepository);
-        productService = new ProductService(productRepository, categoryService);
+        ProductRepository productRepository =
+                new MemoryProductRepository();
+
+        categoryService = new CategoryService(
+                categoryRepository,
+                productRepository
+        );
+
+        productService = new ProductService(
+                productRepository,
+                categoryService
+        );
     }
 
     @Test
     void 루트_카테고리_생성_성공() {
-        // given
-        Long id = categoryService.create("전자", null);
+        // when
+        Long categoryId = categoryService.create(
+                "전자",
+                null
+        );
 
-        // when & then
-        assertNotNull(id);
+        // then
+        assertNotNull(categoryId);
     }
 
     @Test
     void 카테고리_생성_실패_이름_중복_trim_기준() {
+        // given
         categoryService.create("전자", null);
 
-        ConflictException e = assertThrows(ConflictException.class,
-                () -> categoryService.create(" 전자 ", null));
+        // when
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> categoryService.create(" 전자 ", null)
+        );
 
-        assertEquals("이미 존재하는 카테고리명입니다.", e.getMessage());
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_NAME_DUPLICATED
+        );
     }
 
     @Test
     void 카테고리_생성_실패_공백만() {
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> categoryService.create(" ", null));
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> categoryService.create(" ", null)
+        );
 
-        assertEquals("카테고리명은 필수입니다.", e.getMessage());
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.INVALID_INPUT
+        );
     }
 
     @Test
-    void 부모_카테고리_존재하지_않음_예외() {
-        NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.create("노트북", 999L));
+    void 카테고리_생성_실패_부모_카테고리가_존재하지_않음() {
+        // when
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> categoryService.create("노트북", 999L)
+        );
 
-        assertEquals("상위 카테고리를 찾을 수 없습니다.", e.getMessage());
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.PARENT_CATEGORY_NOT_FOUND
+        );
+    }
+
+    @Test
+    void 카테고리_생성_실패_깊이_제한_초과() {
+        // given
+        Long electronicsId =
+                categoryService.create("전자", null);
+
+        Long computerId =
+                categoryService.create("컴퓨터", electronicsId);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> categoryService.create("노트북", computerId)
+        );
+
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_DEPTH_EXCEEDED
+        );
     }
 
     @Test
     void 유저_카테고리_조회_성공() {
         // given
-        Long id = categoryService.create("전자", null);
+        Long categoryId =
+                categoryService.create("전자", null);
 
         // when
-        Category category = categoryService.getPublic(id);
+        Category category =
+                categoryService.getPublic(categoryId);
 
         // then
+        assertThat(category.getId()).isEqualTo(categoryId);
         assertThat(category.getName()).isEqualTo("전자");
     }
 
     @Test
     void 유저_카테고리_조회_실패_카테고리_없음() {
-        NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.getPublic(999L));
+        // when
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> categoryService.getPublic(999L)
+        );
 
-        assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_NOT_FOUND
+        );
     }
 
     @Test
     void 유저_카테고리_목록_조회_성공() {
         // given
         categoryService.create("전자", null);
-        Long electronicsId = categoryService.create("전자2", null);
-        categoryService.create("컴퓨터", electronicsId);
+
+        Long applianceId =
+                categoryService.create("전자2", null);
+
+        categoryService.create("컴퓨터", applianceId);
 
         // when
-        List<Category> categoryList = categoryService.getAllPublic();
+        List<Category> categories =
+                categoryService.getAllPublic();
 
         // then
-        assertEquals(3, categoryList.size());
+        assertThat(categories)
+                .hasSize(3)
+                .extracting(Category::getName)
+                .containsExactly(
+                        "전자",
+                        "전자2",
+                        "컴퓨터"
+                );
 
-        assertThat(categoryList).extracting(Category::getName)
-                .containsExactly("전자", "전자2", "컴퓨터");
-
-        Category parent = categoryList.stream()
-                .filter(c -> c.getName().equals("전자2"))
+        Category parent = categories.stream()
+                .filter(category ->
+                        category.getName().equals("전자2"))
                 .findFirst()
                 .orElseThrow();
 
-        Category child = categoryList.stream()
-                .filter(c -> c.getName().equals("컴퓨터"))
+        Category child = categories.stream()
+                .filter(category ->
+                        category.getName().equals("컴퓨터"))
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals(parent.getId(), child.getParentId());
+        assertThat(child.getParentId())
+                .isEqualTo(parent.getId());
     }
 
     @Test
     void 카테고리_수정_성공_이름() {
         // given
-        Long id = categoryService.create("전자", null);
+        Long categoryId =
+                categoryService.create("전자", null);
 
         // when
-        categoryService.update(id, "전자2", null);
+        categoryService.update(
+                categoryId,
+                "가전",
+                null
+        );
 
         // then
-        Category updated = categoryService.getAdmin(id);
-        assertEquals("전자2", updated.getName());
+        Category updated =
+                categoryService.getAdmin(categoryId);
+
+        assertThat(updated.getName()).isEqualTo("가전");
     }
 
     @Test
-    void 카테고리_수정_성공_이동() {
+    void 카테고리_수정_성공_부모_이동() {
         // given
-        Long electronicsId = categoryService.create("전자", null);
-        Long computerId = categoryService.create("컴퓨터", null);
+        Long electronicsId =
+                categoryService.create("전자", null);
+
+        Long computerId =
+                categoryService.create("컴퓨터", null);
 
         // when
-        categoryService.update(computerId, "컴퓨터", electronicsId);
+        categoryService.update(
+                computerId,
+                "컴퓨터",
+                electronicsId
+        );
 
         // then
-        Category updated = categoryService.getAdmin(computerId);
-        assertEquals(electronicsId, updated.getParentId());
+        Category updated =
+                categoryService.getAdmin(computerId);
+
+        assertThat(updated.getParentId())
+                .isEqualTo(electronicsId);
     }
 
     @Test
-    void 카테고리_수정_성공_아무_값도_안_들어왔을_때가_아니라_이름과_부모를_명시적으로_유지() {
+    void 카테고리_수정_성공_이름과_부모를_기존_값으로_유지() {
         // given
-        Long id = categoryService.create("전자", null);
-        Category before = categoryService.getAdmin(id);
+        Long categoryId =
+                categoryService.create("전자", null);
+
+        Category before =
+                categoryService.getAdmin(categoryId);
 
         String beforeName = before.getName();
         Long beforeParentId = before.getParentId();
 
         // when
-        categoryService.update(id, beforeName, beforeParentId);
-        Category updated = categoryService.getAdmin(id);
+        categoryService.update(
+                categoryId,
+                beforeName,
+                beforeParentId
+        );
 
         // then
-        assertEquals(beforeName, updated.getName());
-        assertEquals(beforeParentId, updated.getParentId());
+        Category updated =
+                categoryService.getAdmin(categoryId);
+
+        assertThat(updated.getName())
+                .isEqualTo(beforeName);
+
+        assertThat(updated.getParentId())
+                .isEqualTo(beforeParentId);
     }
 
     @Test
-    void 카테고리_수정_실패_이름중복() {
+    void 카테고리_수정_실패_이름_중복() {
         // given
-        Long id1 = categoryService.create("전자", null);
-        Long id2 = categoryService.create("전자2", null);
+        categoryService.create("전자", null);
 
-        // when & then
-        ConflictException e = assertThrows(ConflictException.class,
-                () -> categoryService.update(id2, "전자", null));
-
-        assertEquals("이미 존재하는 카테고리명입니다.", e.getMessage());
-    }
-
-    @Test
-    void 카테고리_수정_실패_부모_카테고리_존재하지_않음() {
-        // given
-        Long id = categoryService.create("전자", null);
+        Long secondCategoryId =
+                categoryService.create("전자2", null);
 
         // when
-        NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.update(id, "전자", 999L));
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> categoryService.update(
+                        secondCategoryId,
+                        "전자",
+                        null
+                )
+        );
 
         // then
-        assertEquals("상위 카테고리를 찾을 수 없습니다.", e.getMessage());
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_NAME_DUPLICATED
+        );
     }
 
     @Test
-    void 카테고리_수정_실패_자기자신부모() {
+    void 카테고리_수정_실패_부모_카테고리가_존재하지_않음() {
         // given
-        Long electronicsId = categoryService.create("전자", null);
-
-        // when & then
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> categoryService.update(electronicsId, "전자", electronicsId));
-
-        assertEquals("자기 자신을 부모로 설정할 수 없습니다.", e.getMessage());
-    }
-
-    @Test
-    void 카테고리_수정_실패_부모순환구조() {
-        // given
-        Long electronicsId = categoryService.create("전자", null);
-        Long notebookId = categoryService.create("노트북", electronicsId);
+        Long categoryId =
+                categoryService.create("전자", null);
 
         // when
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> categoryService.update(electronicsId, "전자", notebookId));
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> categoryService.update(
+                        categoryId,
+                        "전자",
+                        999L
+                )
+        );
 
         // then
-        assertEquals("순환 참조가 발생하는 부모 설정은 허용되지 않습니다.", e.getMessage());
+        assertErrorCode(
+                exception,
+                ErrorCode.PARENT_CATEGORY_NOT_FOUND
+        );
+    }
+
+    @Test
+    void 카테고리_수정_실패_자기_자신을_부모로_설정() {
+        // given
+        Long categoryId =
+                categoryService.create("전자", null);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> categoryService.update(
+                        categoryId,
+                        "전자",
+                        categoryId
+                )
+        );
+
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.INVALID_CATEGORY_PARENT
+        );
+    }
+
+    @Test
+    void 카테고리_수정_실패_부모_순환_참조() {
+        // given
+        Long electronicsId =
+                categoryService.create("전자", null);
+
+        Long notebookId =
+                categoryService.create(
+                        "노트북",
+                        electronicsId
+                );
+
+        // 전자 → 노트북으로 부모를 변경하면
+        // 전자 → 노트북 → 전자의 순환 구조가 생성된다.
+
+        // when
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> categoryService.update(
+                        electronicsId,
+                        "전자",
+                        notebookId
+                )
+        );
+
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_CIRCULAR_REFERENCE
+        );
+    }
+
+    @Test
+    void 카테고리_수정_실패_깊이_제한_초과() {
+        // given
+        Long electronicsId =
+                categoryService.create("전자", null);
+
+        Long computerId =
+                categoryService.create(
+                        "컴퓨터",
+                        electronicsId
+                );
+
+        Long applianceId =
+                categoryService.create("가전", null);
+
+        // 가전을 컴퓨터 아래로 이동하면
+        // 전자 → 컴퓨터 → 가전의 3단 구조가 된다.
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> categoryService.update(
+                        applianceId,
+                        "가전",
+                        computerId
+                )
+        );
+
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_DEPTH_EXCEEDED
+        );
     }
 
     @Test
     void 카테고리_삭제_성공() {
         // given
-        Long electronicsId = categoryService.create("전자", null);
+        Long categoryId =
+                categoryService.create("전자", null);
 
         // when
-        categoryService.delete(electronicsId);
+        categoryService.delete(categoryId);
 
         // then
-        NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.getAdmin(electronicsId));
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> categoryService.getAdmin(categoryId)
+        );
 
-        assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_NOT_FOUND
+        );
     }
 
     @Test
-    void 카테고리_삭제_실패_카테고리_없음() {
+    void 카테고리_삭제_실패_카테고리가_존재하지_않음() {
         // when
-        NotFoundException e = assertThrows(NotFoundException.class,
-                () -> categoryService.delete(999L));
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> categoryService.delete(999L)
+        );
 
         // then
-        assertEquals("카테고리가 존재하지 않습니다.", e.getMessage());
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_NOT_FOUND
+        );
     }
 
     @Test
-    void 카테고리_삭제_실패_하위_카테고리_존재() {
+    void 카테고리_삭제_실패_하위_카테고리가_존재함() {
         // given
-        Long electronicsId = categoryService.create("전자", null);
-        Long computerId = categoryService.create("컴퓨터", electronicsId);
+        Long electronicsId =
+                categoryService.create("전자", null);
 
-        // when & then
-        ConflictException e = assertThrows(ConflictException.class,
-                () -> categoryService.delete(electronicsId));
+        categoryService.create(
+                "컴퓨터",
+                electronicsId
+        );
 
-        assertEquals("하위 카테고리가 존재하여 삭제할 수 없습니다.", e.getMessage());
+        // when
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> categoryService.delete(electronicsId)
+        );
+
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_HAS_CHILDREN
+        );
     }
 
     @Test
-    void 카테고리_삭제_실패_해당_카테고리_상품_존재() {
+    void 카테고리_삭제_실패_연결된_상품이_존재함() {
         // given
-        Long electronicsId = categoryService.create("전자", null);
+        Long electronicsId =
+                categoryService.create("전자", null);
 
         productService.create(
                 electronicsId,
                 "냉장고",
                 100_000,
                 10,
-                "ddd",
+                "냉장고 상품 설명",
                 ProductStatus.ON_SALE,
                 120_000,
                 "/images/no-image.png"
         );
 
-        // when & then
-        ConflictException e = assertThrows(ConflictException.class,
-                () -> categoryService.delete(electronicsId));
+        // when
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> categoryService.delete(electronicsId)
+        );
 
-        assertEquals("상품이 연결된 카테고리는 삭제할 수 없습니다.", e.getMessage());
+        // then
+        assertErrorCode(
+                exception,
+                ErrorCode.CATEGORY_HAS_PRODUCTS
+        );
+    }
+
+    /**
+     * 예외에 저장된 ErrorCode와 기본 메시지를 함께 검증한다.
+     */
+    private void assertErrorCode(
+            BusinessException exception,
+            ErrorCode expectedErrorCode
+    ) {
+        assertEquals(
+                expectedErrorCode,
+                exception.getErrorCode()
+        );
+
+        assertEquals(
+                expectedErrorCode.getDefaultMessage(),
+                exception.getMessage()
+        );
     }
 }
