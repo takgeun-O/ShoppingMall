@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.member.application;
 
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.member.domain.MemberRole;
@@ -9,8 +9,6 @@ import io.github.takgeun.shop.member.domain.MemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

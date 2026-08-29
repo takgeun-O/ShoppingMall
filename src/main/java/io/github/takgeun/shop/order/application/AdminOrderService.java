@@ -1,6 +1,6 @@
 package io.github.takgeun.shop.order.application;
 
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.order.domain.Order;

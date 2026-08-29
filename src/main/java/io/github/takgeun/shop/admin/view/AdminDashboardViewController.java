@@ -2,7 +2,7 @@ package io.github.takgeun.shop.admin.view;
 
 import io.github.takgeun.shop.admin.application.AdminDashboardQueryService;
 import io.github.takgeun.shop.admin.view.dto.AdminDashboardView;
-import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;

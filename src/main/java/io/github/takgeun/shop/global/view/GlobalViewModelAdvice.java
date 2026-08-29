@@ -35,8 +35,8 @@ public class GlobalViewModelAdvice {
         model.addAttribute("treeMode", treeMode);
         model.addAttribute("categoryTree",
                 isAdmin
-                        ? categoryService.getAllAdminCategories()
-                        : categoryService.getAllPublicCategories());
+                        ? categoryService.getAllAdmin()
+                        : categoryService.getAllPublic());
 
         // 헤더 드롭다운용 루트 카테고리 (이건 항상 public 전용으로 할 것. 어차피 대표 카테고리는 admin이 의미 없음)
         model.addAttribute("rootCategories", categoryService.getTopCategories());

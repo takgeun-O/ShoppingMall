@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.admin.application;
 
 import io.github.takgeun.shop.admin.view.dto.AdminDashboardView;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.order.domain.Order;

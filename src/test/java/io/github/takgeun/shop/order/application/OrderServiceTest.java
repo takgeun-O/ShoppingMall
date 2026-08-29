@@ -2,10 +2,10 @@ package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.infra.memory.MemoryCategoryRepository;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.NotFoundException;
-import io.github.takgeun.shop.global.error.UnauthorizedException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;

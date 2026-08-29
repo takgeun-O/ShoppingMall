@@ -1,9 +1,8 @@
 package io.github.takgeun.shop.member.view;
 
-import io.github.takgeun.shop.global.error.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
-import io.github.takgeun.shop.global.validation.ValidationGroups;
 import io.github.takgeun.shop.member.application.AdminMemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.dto.request.AdminMemberStatusUpdateRequest;

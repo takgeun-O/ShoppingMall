@@ -24,3 +24,12 @@ logging:
     org.mybatis: debug
     org.mybatis.spring: debug
     com.zaxxer.hikari: INFO
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true

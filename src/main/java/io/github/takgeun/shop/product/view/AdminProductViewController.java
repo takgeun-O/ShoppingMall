@@ -1,9 +1,9 @@
 package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
@@ -327,7 +327,7 @@ public class AdminProductViewController {
                         .filter(status -> status != ProductStatus.SOLD_OUT)
                                 .toList();
 
-        model.addAttribute("categories", categoryService.getAllAdminCategories());
+        model.addAttribute("categories", categoryService.getAllAdmin());
         model.addAttribute("productStatuses", editableStatuses);
 
         model.addAttribute("treeMode", "admin");

@@ -3,14 +3,13 @@ package io.github.takgeun.shop.category.view;
 import io.github.takgeun.shop.category.application.AdminCategoryQueryService;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.domain.Category;
-import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryEditView;
-import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryItemView;
-import io.github.takgeun.shop.category.view.dto.admin.AdminCategoryPageView;
+import io.github.takgeun.shop.category.application.result.AdminCategoryEditResult;
+import io.github.takgeun.shop.category.application.result.AdminCategoryPageResult;
 import io.github.takgeun.shop.category.view.form.CategoryCreateForm;
 import io.github.takgeun.shop.category.view.form.CategoryEditForm;
-import io.github.takgeun.shop.global.error.ConflictException;
-import io.github.takgeun.shop.global.error.ForbiddenException;
-import io.github.takgeun.shop.global.error.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import jakarta.servlet.http.HttpSession;
@@ -23,8 +22,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Slf4j
 @Controller
@@ -45,7 +42,7 @@ public class AdminCategoryViewController {
         requireAdmin(session);
         log.info("관리자 카테고리 관리 페이지 진입");
 
-        AdminCategoryPageView pageView = adminCategoryQueryService.getCategoryPage();
+        AdminCategoryPageResult pageView = adminCategoryQueryService.getCategoryPage();
 
         if(!model.containsAttribute("form")) {
             CategoryCreateForm form = new CategoryCreateForm();
@@ -104,7 +101,7 @@ public class AdminCategoryViewController {
         requireAdmin(session);
 
         try {
-            AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
+            AdminCategoryEditResult category = adminCategoryQueryService.getEditResult(id);
             CategoryEditForm form = CategoryEditForm.of(category.getName(), category.getParentId());
 
             String parentName = null;
@@ -141,7 +138,7 @@ public class AdminCategoryViewController {
         requireAdmin(session);
 
         if(bindingResult.hasErrors()) {
-            AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
+            AdminCategoryEditResult category = adminCategoryQueryService.getEditResult(id);
 
 //            model.addAttribute("category", category);
             model.addAttribute("categoryId", category.getId());
@@ -155,7 +152,7 @@ public class AdminCategoryViewController {
             ra.addFlashAttribute("success", "카테고리가 수정되었습니다.");
             return "redirect:/admin/categories/{id}/edit";
         } catch (ConflictException | IllegalArgumentException e) {
-            AdminCategoryEditView category = categoryService.getAdminCategoryEditView(id);
+            AdminCategoryEditResult category = adminCategoryQueryService.getEditResult(id);
 
 //            model.addAttribute("category", category);
             model.addAttribute("categoryId", category.getId());

@@ -1,9 +1,8 @@
 package io.github.takgeun.shop.order.infra.memory;
 
-import io.github.takgeun.shop.global.error.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
-import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
