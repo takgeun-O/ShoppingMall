@@ -1,11 +1,11 @@
 package io.github.takgeun.shop.order.view;
 
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.order.view.dto.OrderHistoryPageView;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/members/me/orders")
 public class MyPageOrderViewController {

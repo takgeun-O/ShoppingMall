@@ -5,6 +5,7 @@ import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.order.application.OrderCheckoutService;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.view.dto.CheckoutItemView;
@@ -14,7 +15,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -30,7 +30,7 @@ import java.util.UUID;
  * 이 경로는 인터셉터측에서 로그인 체크해줌
  */
 @Slf4j
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/orders")
 public class OrderViewController {

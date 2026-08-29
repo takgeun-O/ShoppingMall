@@ -1,12 +1,10 @@
 package io.github.takgeun.shop.global.view;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-// @Controller 범위에만 적용
-@ControllerAdvice(annotations = Controller.class)
+@ControllerAdvice(annotations = ViewController.class)
 public class GlobalActiveTopAdvice {
 
     @ModelAttribute("activeTop")

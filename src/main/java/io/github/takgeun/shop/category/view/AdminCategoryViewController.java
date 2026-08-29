@@ -11,12 +11,12 @@ import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Slf4j
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/admin/categories")
 public class AdminCategoryViewController {

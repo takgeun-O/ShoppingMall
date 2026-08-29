@@ -8,7 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-@ControllerAdvice
+@ControllerAdvice(annotations = ViewController.class)
 public class GlobalViewModelAdvice {
 
     private final CategoryService categoryService;
@@ -33,10 +33,6 @@ public class GlobalViewModelAdvice {
         model.addAttribute("loginRole", loginRole);
         model.addAttribute("isAdmin", isAdmin);
         model.addAttribute("treeMode", treeMode);
-        model.addAttribute("categoryTree",
-                isAdmin
-                        ? categoryService.getAllAdmin()
-                        : categoryService.getAllPublic());
 
         // 헤더 드롭다운용 루트 카테고리 (이건 항상 public 전용으로 할 것. 어차피 대표 카테고리는 admin이 의미 없음)
         model.addAttribute("rootCategories", categoryService.getTopCategories());

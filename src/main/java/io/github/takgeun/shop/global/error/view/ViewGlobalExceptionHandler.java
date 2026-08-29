@@ -1,9 +1,7 @@
 package io.github.takgeun.shop.global.error.view;
 
-import io.github.takgeun.shop.global.error.exception.ConflictException;
-import io.github.takgeun.shop.global.error.exception.ForbiddenException;
-import io.github.takgeun.shop.global.error.exception.NotFoundException;
-import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
+import io.github.takgeun.shop.global.view.ViewController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -13,24 +11,18 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
  * 예외를 HTML 오류 화면으로 변환
  */
 @Slf4j
-@ControllerAdvice(
-        basePackages = "io.github.takgeun.shop",
-        annotations = org.springframework.stereotype.Controller.class
-)
+@ControllerAdvice(annotations = ViewController.class)
 public class ViewGlobalExceptionHandler {
 
-    // 공통: 상태코드 + 뷰 + 메시지 세팅
-    private ModelAndView render(HttpStatus status, String viewName, String message, HttpServletRequest request, Exception e) {
-
-        log.error("render viewName={}", viewName);
-        log.error("Unhandled exception, status={}, path={}", status.value(), request.getRequestURI(), e);
-
+    private ModelAndView render(HttpStatus status, String viewName, String message, HttpServletRequest request) {
         ModelAndView mv = new ModelAndView(viewName);
         mv.setStatus(status);
 
@@ -53,7 +45,8 @@ public class ViewGlobalExceptionHandler {
                 .findFirst()
                 .orElse("요청 값이 올바르지 않습니다.");
 
-        return render(status, "error/400", message, request, e);
+        logClientError(e, status, request);
+        return render(status, "error/400", message, request);
     }
 
     // 2) 파라미터 Validation 실패 (@RequestParam @PathVariable) 그러니까 숫자 타입에 문자가 들어온다던지 등등
@@ -67,42 +60,54 @@ public class ViewGlobalExceptionHandler {
                 .findFirst()
                 .orElse("요청 값이 올바르지 않습니다.");
 
-        return render(status, "error/400", message, request, e);
+        logClientError(e, status, request);
+        return render(status, "error/400", message, request);
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public ModelAndView handleNotFound(NotFoundException e, HttpServletRequest request) {
-        return render(HttpStatus.NOT_FOUND, "error/404", e.getMessage(), request, e);
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ModelAndView handleMethodValidation(HandlerMethodValidationException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logClientError(e, status, request);
+        return render(status, "error/400", "요청 값이 올바르지 않습니다.", request);
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
-    public ModelAndView handleBadRequest(RuntimeException e, HttpServletRequest request) {
-        return render(HttpStatus.BAD_REQUEST, "error/400", e.getMessage(), request, e);
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ModelAndView handleTypeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logClientError(e, status, request);
+        return render(status, "error/400", "요청 값의 형식이 올바르지 않습니다.", request);
     }
 
-    @ExceptionHandler(ConflictException.class)
-    public ModelAndView handleConflict(ConflictException e, HttpServletRequest request) {
-        return render(HttpStatus.CONFLICT, "error/409", e.getMessage(), request, e);
+    @ExceptionHandler(BusinessException.class)
+    public ModelAndView handleBusinessException(BusinessException e, HttpServletRequest request) {
+        HttpStatus status = e.getErrorCode().getStatus();
+        String message = status.is5xxServerError()
+                ? "서버 오류가 발생했습니다."
+                : e.getMessage();
+
+        logClientError(e, status, request);
+        return render(status, resolveView(status), message, request);
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ModelAndView handleUnauthorized(UnauthorizedException e, HttpServletRequest request) {
-        return render(HttpStatus.UNAUTHORIZED, "error/401", e.getMessage(), request, e);
-    }
-
-    @ExceptionHandler(ForbiddenException.class)
-    public ModelAndView handleForbidden(ForbiddenException e, HttpServletRequest request) {
-        return render(HttpStatus.FORBIDDEN, "error/403", e.getMessage(), request, e);
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ModelAndView handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logClientError(e, status, request);
+        return render(status, "error/400", e.getMessage(), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ModelAndView handleNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
-        return render(HttpStatus.BAD_REQUEST, "error/400", "요청 본문이 올바르지 않습니다.", request, e);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        logClientError(e, status, request);
+        return render(status, "error/400", "요청 본문이 올바르지 않습니다.", request);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ModelAndView handleMediaType(HttpMediaTypeNotSupportedException e, HttpServletRequest request) {
-        return render(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "error/415", "지원하지 않는 Content-Type 입니다.", request, e);
+        HttpStatus status = HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+        logClientError(e, status, request);
+        return render(status, "error/400", "지원하지 않는 Content-Type 입니다.", request);
     }
 
     /**
@@ -111,16 +116,36 @@ public class ViewGlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ModelAndView handleException(Exception e, HttpServletRequest request) {
-        // 예외 처리 중 발생한 예외는 스프링 기본 에러 처리에 맡겨서 무한 루프를 끊을 것.
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        log.error(
+                "Unexpected view exception: method={}, path={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                e
+        );
+        return render(status, "error/500", "서버 오류가 발생했습니다.", request);
+    }
 
-        // 스프링에서 에러 처리 시도 -> /error 포워드 -> /error 처리 과정에서 또 예외 발생
-        // --> ViewGlobalExceptionHandler의 @ExceptionHandler(Exception.class)로 에러 처리 중 발생한 예외까지 다시 잡아서 error/500 렌더링
-        // --> 그 렌더링도 실패 --> 다시 /error ... 무한 재귀에 빠져서 StackOverflowError 가 터짐.
-        if("/error".equals(request.getRequestURI())) {
-            // /error 처리 중이면 여기서 또 error/500 렌더링 시도하지 말고 그대로 던져서 StackOverflowError 방지
-            throw new RuntimeException(e);
-        }
+    private String resolveView(HttpStatus status) {
+        return switch (status.value()) {
+            case 400 -> "error/400";
+            case 401 -> "error/401";
+            case 403 -> "error/403";
+            case 404 -> "error/404";
+            case 409 -> "error/409";
+            case 415 -> "error/400";
+            default -> status.is4xxClientError() ? "error/400" : "error/500";
+        };
+    }
 
-        return render(HttpStatus.INTERNAL_SERVER_ERROR, "error/500", "서버 오류가 발생했습니다.", request, e);
+    private void logClientError(Exception e, HttpStatus status, HttpServletRequest request) {
+        log.warn(
+                "View request rejected: status={}, exception={}, method={}, path={}, message={}",
+                status.value(),
+                e.getClass().getSimpleName(),
+                request.getMethod(),
+                request.getRequestURI(),
+                e.getMessage()
+        );
     }
 }

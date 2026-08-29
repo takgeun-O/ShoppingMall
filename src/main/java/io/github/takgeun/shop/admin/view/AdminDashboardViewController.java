@@ -4,6 +4,7 @@ import io.github.takgeun.shop.admin.application.AdminDashboardQueryService;
 import io.github.takgeun.shop.admin.view.dto.AdminDashboardView;
 import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
@@ -11,12 +12,11 @@ import io.github.takgeun.shop.member.domain.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/admin")
 public class AdminDashboardViewController {

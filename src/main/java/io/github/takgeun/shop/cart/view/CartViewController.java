@@ -4,15 +4,15 @@ import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.view.ViewController;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/cart")
 public class CartViewController {

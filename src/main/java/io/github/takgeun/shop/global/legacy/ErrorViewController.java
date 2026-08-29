@@ -1,9 +1,9 @@
 package io.github.takgeun.shop.global.legacy;
 
-import org.springframework.stereotype.Controller;
+import io.github.takgeun.shop.global.view.ViewController;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@Controller
+@ViewController
 public class ErrorViewController {
 
     @GetMapping("/forbidden")

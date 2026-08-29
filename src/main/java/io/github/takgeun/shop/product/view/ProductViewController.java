@@ -3,6 +3,7 @@ package io.github.takgeun.shop.product.view;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
@@ -13,7 +14,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +26,7 @@ import java.util.List;
 
 @Slf4j
 @Validated
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/products")
 public class ProductViewController {

@@ -2,6 +2,7 @@ package io.github.takgeun.shop.member.view;
 
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.SignupValidationSequence;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.application.MyPageQueryService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -14,7 +15,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/members/me")
 public class MemberViewController {

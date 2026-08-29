@@ -6,6 +6,7 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.LoginValidationSequence;
 import io.github.takgeun.shop.global.validation.SignupValidationSequence;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.application.AuthService;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -14,7 +15,6 @@ import io.github.takgeun.shop.member.view.form.SignupForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 public class AuthViewController {
 

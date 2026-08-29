@@ -57,7 +57,7 @@
                     </a>
 
                     <!-- 장바구니 : 일반 사용자만 -->
-                    <a th:if="${!isAdmin}"
+                    <a th:if="${isAdmin != true}"
                        th:href="@{/cart}"
                        class="inline-flex items-center justify-center rounded-md h-10 w-10 text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                         <span class="sr-only">장바구니</span>
