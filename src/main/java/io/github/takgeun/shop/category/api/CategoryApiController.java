@@ -25,7 +25,10 @@ import java.util.List;
         name = "Public Category",
         description = "일반 사용자에게 공개되는 카테고리 조회 API"
 )
-@Validated
+// @Validated: AOP 프록시가 존재해야 작동함. 최근 스프링MVC는 컨트롤러 메서드 파라미터의 제약조건을 자체적으로 검증하기 때문에 제거해도 된다.
+// @Validated AOP 검증 방식의 경우 주로 ConstraintViolationException 예외가 발생하며
+// 이번에 바꾼 Spring MVC 기본 검증은 HandlerMethodValidationException 예외가 주로 발생한다.
+//@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/categories")

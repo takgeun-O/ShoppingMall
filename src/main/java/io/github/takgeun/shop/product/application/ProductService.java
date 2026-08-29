@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.product.application;
 
 import io.github.takgeun.shop.category.application.CategoryService;
+import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.product.domain.Product;
@@ -58,7 +59,7 @@ public class ProductService {
     public Product getPublicDetail(Long productId) {
         return productRepository.findById(productId)
                 .filter(Product::isPublicVisible)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
     /**
@@ -273,7 +274,7 @@ public class ProductService {
 
     private Product findById(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 상품입니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
     private void validateCreateArgs(Integer price, Integer stock) {

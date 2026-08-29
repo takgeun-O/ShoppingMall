@@ -87,6 +87,7 @@ public enum ErrorCode {
             "CATEGORY_HAS_PRODUCTS",
             "상품이 연결된 카테고리는 삭제할 수 없습니다."
     ),
+
     INVALID_CATEGORY_PARENT(
             HttpStatus.BAD_REQUEST,
             "INVALID_CATEGORY_PARENT",
@@ -102,6 +103,15 @@ public enum ErrorCode {
             "CATEGORY_CIRCULAR_REFERENCE",
             "순환 참조가 발생하는 카테고리 구조는 허용되지 않습니다."
     ),
+
+    // PRODUCT
+    PRODUCT_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "PRODUCT_NOT_FOUND",
+            "존재하지 않는 상품입니다."
+    ),
+
+    // 서버 오류
     INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "INTERNAL_SERVER_ERROR",
