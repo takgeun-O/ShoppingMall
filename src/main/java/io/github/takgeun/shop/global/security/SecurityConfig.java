@@ -45,8 +45,8 @@ public class SecurityConfig {
             ApiAuthenticationEntryPoint apiAuthenticationEntryPoint,
             ApiAccessDeniedHandler apiAccessDeniedHandler,
             ViewAuthenticationEntryPoint viewAuthenticationEntryPoint,
-            ViewAccessDeniedHandler viewAccessDeniedHandler) throws Exception
-    {
+            ViewAccessDeniedHandler viewAccessDeniedHandler
+    ) throws Exception {
 
         http
                 // TODO(security-migration): SecurityContext 전환 후 CSRF, logout, URL 권한 규칙을 활성화한다.
@@ -55,6 +55,9 @@ public class SecurityConfig {
                 // 기존 AuthViewController가 세션 무효화와 성공 메시지를 계속 담당한다.
                 .logout(logout -> logout.disable())
                 .authorizeHttpRequests(auth -> auth
+                        /**
+                         * 누구나 접근할 수 있는 공개 경로
+                         */
                         .requestMatchers(
                                 "/",
                                 "/login",
@@ -73,25 +76,70 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()
-                        .anyRequest().permitAll()   // 앞에서 설정한 규칙에 걸리지 않은 모든 요청을 우선 인증, 권한 검사 없이 모두 허용
+
+                        /**
+                         * 관리자 권한 필요
+                         *
+                         * hasRole("ADMIN")은 내부적으로 ROLE_ADMIN 권한을 검사한다.
+                         */
+                        .requestMatchers(
+                                "/admin/**",
+                                "/api/v1/admin/**"
+                        ).hasRole("ADMIN")
+
+                        /**
+                         * Role 과 관계없이 로그인 필요
+                         */
+                        .requestMatchers(
+                                "/orders",
+                                "/orders/**",
+                                "/members/me",
+                                "/members/me/**"
+                        ).authenticated()
+
+                        /**
+                         * 아직 권한 계약을 정하지 않은 경로는
+                         * 이번 마이그레이션 단계에서 기준 동작을 유지
+                         */
+                        .anyRequest().permitAll()
                 )
-                .authenticationProvider(authenticationProvider)
 
                 // SecurityConfig에 처리기 연결
                 .exceptionHandling(exception -> exception
+
+                        // API 비로그인 요청
                         .defaultAuthenticationEntryPointFor(
                                 apiAuthenticationEntryPoint,
-                                PathPatternRequestMatcher.withDefaults()
+                                PathPatternRequestMatcher
+                                        .withDefaults()
                                         .matcher("/api/**")
                         )
+
+                        // 그 밖의 화면 비로그인 요청
+                        .defaultAuthenticationEntryPointFor(
+                                viewAuthenticationEntryPoint,
+                                PathPatternRequestMatcher
+                                        .withDefaults()
+                                        .matcher("/**")
+                        )
+
+                        // API 권한 부족
                         .defaultAccessDeniedHandlerFor(
                                 apiAccessDeniedHandler,
                                 PathPatternRequestMatcher.withDefaults()
                                         .matcher("/api/**")
                         )
-                        .authenticationEntryPoint(viewAuthenticationEntryPoint)
-                        .accessDeniedHandler(viewAccessDeniedHandler)
-                );
+
+                        // 그 밖의 화면 권한 부족
+                        .defaultAccessDeniedHandlerFor(
+                                viewAccessDeniedHandler,
+                                PathPatternRequestMatcher
+                                        .withDefaults()
+                                        .matcher("/**")
+                        )
+                )
+
+                .authenticationProvider(authenticationProvider);
 
         return http.build();
     }

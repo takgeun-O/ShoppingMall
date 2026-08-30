@@ -3,9 +3,9 @@ package io.github.takgeun.shop.member;
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.global.session.SessionConst;
-import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,19 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Transactional
 @Rollback
-public class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
+class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
 
     private static final String PASSWORD = "pw12341234!";
 
     /**
-     * 기존 UserAuthInterceptor 기준선 즉, 기존 세션 인증 동작을 기준선으로 고정하기 위해 만든 테스트
-     *
-     * 이후 Spring Security가 보호 경로를 완전히 담당한 이후에는
-     * Security의 인증 진입점 테스트로 전환한다.
+     * 비로그인 사용자가 인증이 필요한 화면에 접근하면
+     * ViewAuthenticationEntryPoint가 로그인 화면으로 리다이렉트한다.
      */
     @Test
     void 비로그인_사용자가_주문_페이지에_접근하면_로그인_페이지로_리다이렉트된다() throws Exception {
@@ -43,7 +42,8 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
     }
 
     /**
-     * 기존 AdminAuthInterceptor 기준선
+     * 비로그인 사용자가 관리자 화면에 접근하면
+     * ViewAuthenticationEntryPoint가 로그인 화면으로 리다이렉트한다.
      */
     @Test
     void 비로그인_사용자가_관리자_페이지에_접근하면_로그인_페이지로_리다이렉트된다() throws Exception {
@@ -55,43 +55,161 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
                 ));
     }
 
+    @Test
+    void 비로그인_사용자가_관리자_API에_접근하면_JSON_401을_반환한다()
+            throws Exception {
+
+        /**
+         * MockMvc가 요청 생성 (별도의 로그인 세션이나 인증 정보 안 넣었으니 비로그인 요청)
+         * -> Spring Security 필터 체인 진입 (이 시점에 아직 Controller 매핑 찾지 않음)
+         * -> 인증 정보 확인
+         *      Spring Security는 현재 요청의 SecurityContext에서 Authentication을 확인함
+         *      -> 테스트 요청에 로그인 세션이 없음
+         *      -> 따라서 권한 조건을 만족하지 않음. (ROLE_ADMIN 불만족)
+         * -> hasRole("ADMIN") 검사 실패
+         * -> Spring Security 내부에서 AccessDeniedException 발생
+         * -> ExceptionTranslationFilter가 AccessDeniedException 예외를 처리한다.
+         *      - ExceptionTranslationFilter가 현재 사용자의 로그인 상태를 확인한다
+         *          - 비로그인 사용자라면 -> 인증이 필요 -> AuthenticationEntryPoint 실행
+         *          - 로그인했지만 권한이 부족하면 -> AccessDeniedHandler 실행
+         * -> /api/** 요청으로 들어왔으니 SecurityCOnfig에서 API용 EntryPoint 선택
+         *      - 만약 요청이 /admin이었다면 기본 처리기인 viewAuthenticationEntryPoint가 선택됐을 것.
+         */
+        mockMvc.perform(get("/api/v1/admin/test"))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON
+                ))
+                .andExpect(jsonPath("$.status")
+                        .value(401))
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.message")
+                        .value("로그인이 필요합니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/admin/test"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+    }
+
     /**
-     * 기존 AdminAuthInterceptor의 권한 검사 기준선
-     *
-     * Security 전환 완료 후에는 ROLE_ADMIN 인가 테스트로 교체한다.
+     * ROLE_ADMIN이 없는 인증 사용자가 관리자 화면에 접근하면
+     * ViewAccessDeniedHandler가 403 오류 화면 경로로 포워드한다.
      */
     @Test
     void 일반_회원이_관리자_페이지에_접근하면_403을_반환한다() throws Exception {
 
-        Long memberId = createMember("user");
-        Member member = memberService.findById(memberId);
+        /**
+         * MockMvc
+         *   → GET /admin 요청
+         *
+         * Spring Security FilterChain
+         *   → /admin/** 규칙 확인
+         *   → hasRole("ADMIN") 검사
+         *   → 로그인은 했지만 ROLE_ADMIN 없음
+         *   → AccessDeniedException 발생
+         *
+         * ExceptionTranslationFilter
+         *   → 사용자가 인증된 상태인지 확인
+         *   → 인증은 되었으나 권한 부족
+         *   → ViewAccessDeniedHandler 실행
+         *
+         * ViewAccessDeniedHandler
+         *   → HTTP 상태를 403으로 설정
+         *   → 현재 HttpServletRequest에 오류 정보 저장
+         *       securityErrorMessage
+         *       securityErrorPath
+         *   → /security/forbidden으로 내부 forward 요청
+         *
+         *   이 시점에서 첫 번째 MockMvc.perform()이 관찰한 결과는 아래와 같다.
+         *   status       = 403
+         *   forwardedUrl = /security/forbidden
+         *   request attribute:
+         *     securityErrorMessage = 접근 권한이 없습니다.
+         *     securityErrorPath    = /admin
+         */
+        // given
+        String email = uniqueEmail("user");
 
-        MockHttpSession session = legacyAuthenticatedSession(member);
+        memberService.signup(
+                email,
+                PASSWORD,
+                "일반회원",
+                "010-1111-2222"
+        );
 
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        // when & then
         mockMvc.perform(get("/admin")
-                .session(session))
+                        .session(session))
                 .andExpect(status().isForbidden())
-                .andExpect(view().name("error/403"))
-                .andExpect(model().attribute("status", 403))
-                .andExpect(model().attribute(
-                        "message",
-                        "관리자 권한이 필요합니다."
+                .andExpect(forwardedUrl("/security/forbidden"))
+                .andExpect(request().attribute(
+                        "securityErrorMessage",
+                        "접근 권한이 없습니다."
                 ))
-                .andExpect(model().attribute("path", "/admin"));
+                .andExpect(request().attribute("securityErrorPath", "/admin"));
+    }
+
+    @Test
+    void 일반_회원이_관리자_API에_접근하면_JSON_403을_반환한다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail("api-user");
+
+        memberService.signup(
+                email,
+                PASSWORD,
+                "API 일반회원",
+                "010-2222-3333"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/admin/test")
+                        .session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON
+                ))
+                .andExpect(jsonPath("$.status")
+                        .value(403))
+                .andExpect(jsonPath("$.code")
+                        .value("ACCESS_DENIED"))
+                .andExpect(jsonPath("$.message")
+                        .value("접근 권한이 없습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/admin/test"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
     }
 
     /**
-     * 기존 AdminAuthInterceptor의 관리자 접근 기준선.
+     * ROLE_ADMIN 권한을 가진 인증 사용자는
+     * 관리자 화면에 접근할 수 있다.
      */
     @Test
     void 활성_관리자는_관리자_페이지에_접근할_수_있다()
             throws Exception {
 
-        Long memberId = createMember("admin");
+        // given
+        String email = uniqueEmail("admin");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "관리자",
+                "010-1111-2222"
+        );
+
         memberService.changeRole(memberId, MemberRole.ADMIN);
 
-        Member admin = memberService.findById(memberId);
-        MockHttpSession session = legacyAuthenticatedSession(admin);
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
 
         mockMvc.perform(get("/admin")
                         .session(session))
@@ -101,59 +219,19 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
     }
 
     /**
-     * 로그인 성공 시 기존 세션 인증 정보가 어떻게 저장되는지 고정한다.
-     *
-     * Spring Security 전환 후에는 이 세션 속성들이
-     * SecurityContext 기반 인증으로 대체될 수 있다.
-     */
-//    @Test
-//    void 로그인에_성공하면_회원정보를_세션에_저장한다()
-//            throws Exception {
-//
-//        String email = uniqueEmail("login");
-//        Long memberId = memberService.signup(
-//                email,
-//                PASSWORD,
-//                "로그인회원",
-//                "010-1111-2222"
-//        );
-//
-//        mockMvc.perform(post("/login")
-//                        .param("email", email)
-//                        .param("password", PASSWORD))
-//                .andExpect(status().is3xxRedirection())
-//                .andExpect(redirectedUrl("/"))
-//                .andExpect(flash().attribute(
-//                        "success",
-//                        "로그인되었습니다."
-//                ))
-//                .andExpect(request().sessionAttribute(
-//                        SessionConst.LOGIN_MEMBER_ID,
-//                        memberId
-//                ))
-//                .andExpect(request().sessionAttribute(
-//                        SessionConst.LOGIN_ROLE,
-//                        MemberRole.USER
-//                ))
-//                .andExpect(request().sessionAttribute(
-//                        SessionConst.LOGIN_MEMBER_NAME,
-//                        "로그인회원"
-//                ));
-//    }
-    /**
      * 마이그레이션 단계의 로그인 성공 결과
-     *
-     * 신규 Spring Security 인증 정보와 기존 Interceptor 호환용 세션 속성이 한 세션에 함꼐 저장되는지 검증
-     *
+     * <p>
+     * 신규 Spring Security 인증 정보와 기존 Interceptor 호환용 세션 속성이 한 세션에 함께 저장되는지 검증
+     * <p>
      * 전체 흐름
-     *      * POST /login
-     *      * -> AuthenticationManager가 인증
-     *      * -> DaoAuthenticationProvider가 회원, 비밀번호, 상태 검사
-     *      * -> 인증 성공 Authentication 생성
-     *      * -> SecurityContext에 Authentication 저장
-     *      * -> SecurityContext를 HttpSession에 저장
-     *      * -> 기존 인터셉터용 세션 정보도 저장
-     *      * -> 테스트에서 두 인증 정보 모두 검증
+     * * POST /login
+     * * -> AuthenticationManager가 인증
+     * * -> DaoAuthenticationProvider가 회원, 비밀번호, 상태 검사
+     * * -> 인증 성공 Authentication 생성
+     * * -> SecurityContext에 Authentication 저장
+     * * -> SecurityContext를 HttpSession에 저장
+     * * -> 기존 인터셉터용 세션 정보도 저장
+     * * -> 테스트에서 두 인증 정보 모두 검증
      */
     @Test
     void 로그인에_성공하면_SecurityContext와_기존_호환_세션정보를_저장한다() throws Exception {
@@ -402,7 +480,7 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
 
     /**
      * 실제 로그인으로 생성한 세션을 로그아웃 요청에 전달한다.
-     *
+     * <p>
      * 현재 구현은 세션 전체를 무효화하며,
      * Security logout으로 완전히 전환할 때 다시 조정한다.
      */
@@ -449,66 +527,121 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
 
     /**
      * 기존에 AdminAuthInterceptor가 DB 상태를 다시 확인하는지 보는 기준선
-     *
+     * <p>
      * 세션에는 관리자 정보가 남아 있어도 DB에서 비활성화되었다면
      * 세션을 폐기하고 로그인 페이지로 이동해야 한다.
-     *
-     * Security 전환 완료 후에는 Principal 갱신 및 비활성화 정책 테스트로 교체한다.
+     * <p>
+     * TODO: Security 전환 완료 후에는 Principal 갱신 및 비활성화 정책 테스트로 교체한다.
      */
     @Test
     void 로그인_후_비활성화된_관리자가_접근하면_세션을_무효화한다()
             throws Exception {
 
-        Long memberId = createMember("inactive-admin");
+        /**
+         * 1. ACTIVE + ADMIN 회원 생성
+         * 2. 로그인 성공
+         * 3. 세션의 SecurityContext에 ROLE_ADMIN 저장
+         * 4. DB 회원 상태를 INACTIVE로 변경
+         * 5. GET /admin 요청
+         * 6. Spring Security는 기존 ROLE_ADMIN을 보고 접근 허용
+         * 7. AdminAuthInterceptor가 DB 상태 재조회
+         * 8. INACTIVE 확인
+         * 9. 세션 무효화
+         * 10. /login?...reason=INACTIVE_ACCOUNT 리다이렉트
+         */
+        // given
+        String email = uniqueEmail("inactive-admin");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "비활성관리자",
+                "010-1111-2222"
+        );
 
         memberService.changeRole(memberId, MemberRole.ADMIN);
 
-        Member admin = memberService.findById(memberId);
+        // 로그인 시점에는 ACTIVE + ADMIN이므로
+        // SecurityContext에는 ROLE_ADMIN 인증 정보가 저장된다.
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
 
-        MockHttpSession session = legacyAuthenticatedSession(admin);
+        SecurityContext securityContext = getSecurityContext(session);
 
+        assertThat(securityContext
+                .getAuthentication()
+                .isAuthenticated()
+        ).isTrue();
+
+        assertThat(
+                securityContext
+                        .getAuthentication()
+                        .getAuthorities()
+        )
+                .extracting(GrantedAuthority::getAuthority)
+                .contains("ROLE_ADMIN");
+
+        /**
+         * 로그인 이후 DB 회원 상태 변경
+         *
+         * 기존 SecurityContext의 ROLE_ADMIN 권한은
+         * 여기서 자동으로 갱신되지 않는다.
+         */
         memberService.deactivate(memberId);
 
+        // when & then
         mockMvc.perform(get("/admin")
-                        .session(session))
+                .session(session))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl(
-                        "/login?next=/admin&reason=INACTIVE_ACCOUNT"
+                .andExpect(redirectedUrl("/login?next=/admin&reason=INACTIVE_ACCOUNT"
                 ));
 
         assertThat(session.isInvalid()).isTrue();
     }
 
-    private Long createMember(String prefix) {
-        return memberService.signup(
-                uniqueEmail(prefix),
-                PASSWORD,
-                prefix + "회원",
-                "010-1234-5678"
-        );
+    @Test
+    void 권한부족_오류정보를_403_화면으로_변환한다()
+            throws Exception {
+
+        /**
+         * 테스트 코드
+         * → securityErrorMessage에 "접근 권한이 없습니다." 직접 저장
+         * → GET /security/forbidden
+         * → Controller가 request attribute를 읽음
+         * → Model의 message로 복사
+         * → error/403 화면 반환
+         */
+
+        mockMvc.perform(get("/security/forbidden")
+                        .requestAttr(
+                                "securityErrorMessage",
+                                "접근 권한이 없습니다."
+                        )
+                        .requestAttr(
+                                "securityErrorPath",
+                                "/admin"
+                        ))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/403"))
+                .andExpect(model().attribute(
+                        "status",
+                        403
+                ))
+                .andExpect(model().attribute(
+                        "error",
+                        "Forbidden"
+                ))
+                .andExpect(model().attribute(
+                        "message",
+                        "접근 권한이 없습니다."
+                ))
+                .andExpect(model().attribute(
+                        "path",
+                        "/admin"
+                ));
     }
 
     private String uniqueEmail(String prefix) {
         return prefix + System.nanoTime() + "@test.com";
-    }
-
-    private MockHttpSession legacyAuthenticatedSession(Member member) {
-        MockHttpSession session = new MockHttpSession();
-
-        session.setAttribute(
-                SessionConst.LOGIN_MEMBER_ID,
-                member.getId()
-        );
-        session.setAttribute(
-                SessionConst.LOGIN_ROLE,
-                member.getRole()
-        );
-        session.setAttribute(
-                SessionConst.LOGIN_MEMBER_NAME,
-                member.getName()
-        );
-
-        return session;
     }
 
     private MvcResult performSuccessfulLogin(
@@ -522,7 +655,7 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
                 .param("email", email)
                 .param("password", password);
 
-        if(next != null) {
+        if (next != null) {
             requestBuilder.param("next", next);
         }
 
@@ -568,5 +701,24 @@ public class AuthenticationMigrationIntegrationTest extends IntegrationTestSuppo
         assertThat(session.getAttribute(
                 SessionConst.LOGIN_MEMBER_NAME
         )).isEqualTo(memberName);
+    }
+
+    private MockHttpSession loginAndGetSession(
+            String email, String password
+    ) throws Exception {
+
+        MvcResult result = mockMvc.perform(
+                        post("/login")
+                                .param("email", email)
+                                .param("password", password)
+                )
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+
+        assertThat(session).isNotNull();
+
+        return session;
     }
 }
