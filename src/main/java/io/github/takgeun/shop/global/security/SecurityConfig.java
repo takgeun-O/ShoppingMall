@@ -1,5 +1,9 @@
 package io.github.takgeun.shop.global.security;
 
+import io.github.takgeun.shop.global.security.handler.ApiAccessDeniedHandler;
+import io.github.takgeun.shop.global.security.handler.ApiAuthenticationEntryPoint;
+import io.github.takgeun.shop.global.security.handler.ViewAccessDeniedHandler;
+import io.github.takgeun.shop.global.security.handler.ViewAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 @Configuration
 public class SecurityConfig {
@@ -34,8 +39,14 @@ public class SecurityConfig {
      * -> SecurityFilterChain : 로그인 요청과 URL 접근 권한 처리
      */
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider)
-            throws Exception {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            DaoAuthenticationProvider authenticationProvider,
+            ApiAuthenticationEntryPoint apiAuthenticationEntryPoint,
+            ApiAccessDeniedHandler apiAccessDeniedHandler,
+            ViewAuthenticationEntryPoint viewAuthenticationEntryPoint,
+            ViewAccessDeniedHandler viewAccessDeniedHandler) throws Exception
+    {
 
         http
                 // TODO(security-migration): SecurityContext 전환 후 CSRF, logout, URL 권한 규칙을 활성화한다.
@@ -51,6 +62,7 @@ public class SecurityConfig {
                                 "/products/**",
                                 "/api/v1/categories/**",
                                 "/api/v1/products/**",
+                                "/security/forbidden",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
@@ -61,9 +73,24 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()
-                        .anyRequest().permitAll()
+                        .anyRequest().permitAll()   // 앞에서 설정한 규칙에 걸리지 않은 모든 요청을 우선 인증, 권한 검사 없이 모두 허용
                 )
-                .authenticationProvider(authenticationProvider
+                .authenticationProvider(authenticationProvider)
+
+                // SecurityConfig에 처리기 연결
+                .exceptionHandling(exception -> exception
+                        .defaultAuthenticationEntryPointFor(
+                                apiAuthenticationEntryPoint,
+                                PathPatternRequestMatcher.withDefaults()
+                                        .matcher("/api/**")
+                        )
+                        .defaultAccessDeniedHandlerFor(
+                                apiAccessDeniedHandler,
+                                PathPatternRequestMatcher.withDefaults()
+                                        .matcher("/api/**")
+                        )
+                        .authenticationEntryPoint(viewAuthenticationEntryPoint)
+                        .accessDeniedHandler(viewAccessDeniedHandler)
                 );
 
         return http.build();
@@ -105,7 +132,7 @@ public class SecurityConfig {
      * SecurityContext 저장소 빈 등록
      * AuthenticationManager.authenticate()는 인증 결과를 반환할 뿐
      * 컨트롤러에서 수동으로 인증한 경우 결과를 세션에 자동 저장해주지 않음.
-     *
+     * <p>
      * 따라서 인증 결과를 저장해주는 역할을 하는 SecurityContextRepository을 빈으로 등록하기
      * 인증 정보를 SPRING_SECURITY_CONTEXT 라는 세션 속성에 저장하게 해준다.
      */
