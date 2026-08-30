@@ -30,6 +30,7 @@ import java.util.List;
  *  -> 도메인 객체가 자신의 비즈니스 규칙이 아니라 프레임워크 계약까지 책임지는 구조가 됨.
  *
  *  ShopUserPrincipal 객체는 도메인 Member를 Spring Security가 이해할 수 있는 형태로 변환하는 어댑터 역할을 함.
+ *  즉 여기에는 Spring Security가 사용할 회원 정보를 담아야 한다.
  *
  *  로그인 요청
  *  -> Spring Security
@@ -71,11 +72,25 @@ public class ShopUserPrincipal implements UserDetails {
         this.status = status;
     }
 
-
+    /**
+     * 현재 로그인한 사용자가 가진 권한을 Spring Security가 이해하는 형태로 반환
+     * Spring Security는 이 반환값을 이용해 URL 접근 권한을 판단
+     * --> .requestMatchers("/admin/**").hasRole("ADMIN") : 참고로 hasRole은 내부적으로 ROLE_을 자동으로 붙임
+     *
+     * 코드 흐름
+     * DB Member role = ADMIN
+     * -> ShopUserPrincipal role = ADMIN
+     * -> getAuthorities()
+     * -> SimpleGrantedAuthority("ROLE_ADMIN")
+     * -> SecurityContext에 인증 정보 저장
+     * -> /admin 접근 시 hasRole("ADMIN") 검사
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(
                 new SimpleGrantedAuthority("ROLE_" + role.name())
+                // 문자열 형태의 권한을 Spring Security의 GrantedAuthority 객체로 포장
+                // 한 사용자에게 여러 권한이 있을 수 있으니 컬렉션으로 반환
         );
     }
 
@@ -87,6 +102,7 @@ public class ShopUserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
+        // 비활성 회원을 로그인하지 못하게 하는 역할
         return status == MemberStatus.ACTIVE;
     }
 }

@@ -9,6 +9,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 이메일로 회원을 조회하고 ShopUserPrincipal로 변환하는 역할
+ */
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -19,6 +23,11 @@ public class ShopUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
+        // email이 null로 들어올 때 NullPointerException 방지
+        if(email == null || email.trim().isBlank()) {
+            throw new UsernameNotFoundException("이메일 또는 비밀번호가 올바르지 않습니다.");
+
+        }
         String normalizedEmail = email.trim().toLowerCase();
 
         Member member = memberRepository.findByEmail(normalizedEmail)
@@ -29,7 +38,7 @@ public class ShopUserDetailsService implements UserDetailsService {
         return new ShopUserPrincipal(
                 member.getId(),
                 member.getEmail(),
-                member.getPassword(),
+                member.getPassword(),   // DB에 저장된 BCrypt 해시
                 member.getName(),
                 member.getRole(),
                 member.getStatus()

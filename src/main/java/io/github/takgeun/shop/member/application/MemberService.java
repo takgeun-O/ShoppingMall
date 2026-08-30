@@ -115,6 +115,20 @@ public class MemberService {
         return memberRepository.existsByEmail(normalizeEmail(email));
     }
 
+    /**
+     * AuthService.login() 에서 담당하는 역할 중 하나인
+     * 최근 로그인 시각 갱신을 MemberService 책임으로 옮김.
+     * (Spring Security 전환하면서 AuthService는 끌꺼니까)
+     */
+    @Transactional
+    public void recordSuccessfulLogin(Long memberId) {
+        Member member = findMember(memberId);
+
+        member.updateLastLoginAt();
+
+        memberRepository.save(member);
+    }
+
 
     private void validateDuplicateEmail(String normalizedEmail) {
         if(memberRepository.existsByEmail(normalizedEmail)) {
@@ -141,7 +155,7 @@ public class MemberService {
 
     // 이메일 정규화
     private String normalizeEmail(String email) {
-        if(email == null) {
+        if(email == null || email.trim().isBlank()) {
             throw new IllegalArgumentException("이메일은 필수입니다.");
         }
         return email.trim().toLowerCase();
