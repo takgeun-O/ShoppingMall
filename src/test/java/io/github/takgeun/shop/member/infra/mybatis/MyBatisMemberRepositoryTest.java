@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.List;
 import java.util.Optional;
 
+import static io.github.takgeun.shop.TestPasswordFixtures.BCRYPT_PASSWORD;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,7 +33,7 @@ class MyBatisMemberRepositoryTest {
         // given
         Member member = Member.create(
                 "test@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저",
                 "010-1234-5555"
         );
@@ -51,7 +52,7 @@ class MyBatisMemberRepositoryTest {
         // given
         Member member = Member.create(
                 "test@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저",
                 "010-1234-5555"
         );
@@ -71,7 +72,7 @@ class MyBatisMemberRepositoryTest {
         // given
         Member member = Member.create(
                 "test@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저",
                 "010-1234-5555"
         );
@@ -91,7 +92,7 @@ class MyBatisMemberRepositoryTest {
         // given
         Member member = Member.create(
                 "test@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저",
                 "010-1234-5555"
         );
@@ -112,13 +113,13 @@ class MyBatisMemberRepositoryTest {
         // given
         Member member1 = Member.create(
                 "test1@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저1",
                 "010-1234-2222"
         );
         Member member2 = Member.create(
                 "test2@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저2",
                 "010-1234-3333"
         );

@@ -5,6 +5,7 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 이메일로 회원 조회
@@ -31,8 +33,7 @@ public class AuthService {
         Member member = memberRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다."));
 
-        // 비밀번호 불일치
-        if(!member.getPassword().equals(password)) {
+        if(!passwordEncoder.matches(password, member.getPassword())) {
             throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 

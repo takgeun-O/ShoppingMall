@@ -766,7 +766,7 @@ INSERT INTO member (
 ) VALUES (
              1,
              'user1@test.com',
-             'pw12341234!',
+             '$2y$10$782aPyMGYv6/z7jBkkVZqu5L3MPgbopNA253uw2CYJk.EUjfyvbpe',
              '일반회원',
              '010-1111-1111',
              'USER',

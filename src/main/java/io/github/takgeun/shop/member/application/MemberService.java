@@ -7,6 +7,7 @@ import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // 회원가입
     @Transactional
@@ -24,9 +26,15 @@ public class MemberService {
         String normalizedEmail = normalizeEmail(email);
 
         validateDuplicateEmail(normalizedEmail);
+        validateRawPassword(password);
 
-        // TODO(v2) : password는 인코딩 후 저장
-        Member member = Member.create(normalizedEmail, password, name, phone);
+        String encodedPassword = passwordEncoder.encode(password);
+        Member member = Member.create(
+                normalizedEmail,
+                encodedPassword,
+                name,
+                phone
+        );
         return memberRepository.save(member).getId();
     }
 
@@ -48,7 +56,8 @@ public class MemberService {
         Member member = findMember(memberId);
 
         if(password != null) {
-            member.changePassword(password);
+            validateRawPassword(password);
+            member.changePassword(passwordEncoder.encode(password));
         }
         if(name != null) {
             member.changeName(name);
@@ -101,12 +110,27 @@ public class MemberService {
         memberRepository.save(member);
     }
 
-
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return memberRepository.existsByEmail(normalizeEmail(email));
+    }
 
 
     private void validateDuplicateEmail(String normalizedEmail) {
         if(memberRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("이미 사용 중인 이메일입니다.");
+        }
+    }
+
+    private void validateRawPassword(String password) {
+        if(password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("password는 필수입니다.");
+        }
+        if(password.length() < 8) {
+            throw new IllegalArgumentException("password 길이는 8자 이상이어야 합니다.");
+        }
+        if(password.length() > 20) {
+            throw new IllegalArgumentException("password 길이는 20자 이하이어야 합니다.");
         }
     }
 

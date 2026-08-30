@@ -22,6 +22,7 @@ import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +48,7 @@ class OrderServiceTest {
         this.orderRepository = orderRepository;
         this.categoryService = new CategoryService(categoryRepository, productRepository);
         this.productService = new ProductService(productRepository, categoryService);
-        this.memberService = new MemberService(memberRepository);
+        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4));
         this.orderService = new OrderService(orderRepository, productService, memberService);
     }
 

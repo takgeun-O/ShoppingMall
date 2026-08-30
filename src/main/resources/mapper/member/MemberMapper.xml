@@ -63,6 +63,7 @@
         update member
         set
             email = #{email},
+            password = #{password},
             name = #{name},
             phone = #{phone},
             role = #{role},
