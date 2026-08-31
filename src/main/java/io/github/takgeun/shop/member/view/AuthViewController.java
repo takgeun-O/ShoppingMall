@@ -20,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -54,6 +56,7 @@ public class AuthViewController {
      */
     private final AuthenticationManager authenticationManager;      // 아이디와 비밀번호가 맞는지 인증 (Spring Security의 진입점)
     private final SecurityContextRepository securityContextRepository;  // 인증 성공 결과를 다음 요청에서도 유지하도록 저장
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;  // 로그인 성공 후 세션 고정 보호, 동시 세션 제어, SessionRegistry 등록 등 세션 인증 처리를 적용하기 위해 호출
     private final MemberService memberService;
 
     // 회원가입 폼
@@ -156,10 +159,24 @@ public class AuthViewController {
 
             /**
              * AuthenticationManager 인증으로 교체
+             * 여기서 Authentication은 인증 완료 객체임
+             * authenticationManager의 역할은 인증 결과를 반환하는 역할만 한다.
+             *
+             * 1. 이메일과 비밀번호 인증
+             * AuthenticationManager는 인증 결과를 반환할 뿐,
+             * SecurityContext 저장이나 세션 등록은 하지 않는다.
+             *
+             * 여기서 만든 authentication 객체의 상태는 아래와 같다.
+             * principal   = 입력한 이메일
+             * credentials = 입력한 평문 비밀번호
+             * authenticated = false
+             * authorities = 비어 있음
+             *
+             * 즉, 인증 결과가 아니라 "이 정보로 인증해 주세요."라는 요청서
              */
             Authentication authentication =
-                    authenticationManager.authenticate(
-                            UsernamePasswordAuthenticationToken
+                    authenticationManager.authenticate(         // 참고: 실제 authenticationManager는 ProviderManager임.
+                            UsernamePasswordAuthenticationToken // 이 토큰이 DaoAuthenticationProvider 호출하게 함.
                                     .unauthenticated(
                                             form.getEmail(),    // principal = 이메일
                                             form.getPassword()  // credentials(자격) = 사용자가 입력한 평문 비밀번호
@@ -167,29 +184,61 @@ public class AuthViewController {
                             // 아직 검증 전이므로 unauthenticated() 상태
                     );
 
+            /**
+             * 2. 로그인 성공 후 세션 인증 전략 실행
+             * CompositeSessionAuthenticationStrategy를 등록했다면
+             * 다음 작업이 설정된 순서대로 실행된다.
+             * - 동시 로그인 세션 수 검사
+             * - 세션 고정 보호를 위한 세션 ID 변경
+             * - 변경된 세션을 SessionRegistry에 등록
+             */
+            sessionAuthenticationStrategy.onAuthentication(
+                    authentication,
+                    request,
+                    response
+            );
+
+            /**
+             * 3. 인증 회원 정보 가져오기
+             */
             ShopUserPrincipal principal =
                     (ShopUserPrincipal) authentication.getPrincipal();
 
+
+            /**
+             * 4. 인증 결과를 담을 SecurityContext 생성
+             */
             SecurityContext securityContext =
                     SecurityContextHolder.createEmptyContext();
 
             securityContext.setAuthentication(authentication);
+
+            /**
+             * 5. 현재 요청을 처리하는 Thread에서 인증 정보를 사용할 수 있도록 설정
+             */
             SecurityContextHolder.setContext(securityContext);
 
+            /**
+             * 6. 세션 ID 변경이 끝난 최종 세션에 SecurityContext 저장
+             */
             securityContextRepository.saveContext(
                     securityContext,
                     request,
                     response
             );
 
+            /**
+             * 7. 마지막 로그인 시각 갱신
+             */
             memberService.recordSuccessfulLogin(principal.getMemberId());
 
             /**
-             * 마이그레이션 임시 호환 코드
+             * 8. 기존 Interceptor와의 임시 호환
+             * 기존 Interceptor용 세션 속성 저장
              *
-             * 기존 UserAuthInterceptor와 AdminAuthInterceptor가
-             * SessionConst 값을 검사하고 있으므로 당장은 유지한다.
-             * 인터셉터 제거 후 함께 삭제 예정
+             * SessionAuthenticationStrategy가 필요에 따라
+             * 세션을 생성하거나 ID를 변경한 이후이므로,
+             * 여기서 조회한 세션은 최종 세션이다.
              */
             HttpSession session = request.getSession(true); // 세션이 있으면 그 세션을 반환하고 없으면 새로 만들어서 반환
             session.setAttribute(
@@ -221,6 +270,13 @@ public class AuthViewController {
             bindingResult.reject(
                     "login.forbidden",
                     "비활성화된 계정입니다. 관리자에게 문의하세요."
+            );
+            model.addAttribute("next", safeNext);
+            return "auth/login";
+        } catch (SessionAuthenticationException e) {
+            bindingResult.reject(
+                    "login.session",
+                    "현재 계정의 로그인 세션을 생성할 수 없습니다."
             );
             model.addAttribute("next", safeNext);
             return "auth/login";

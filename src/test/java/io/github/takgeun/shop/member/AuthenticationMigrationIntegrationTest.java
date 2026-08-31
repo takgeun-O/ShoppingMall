@@ -2,14 +2,18 @@ package io.github.takgeun.shop.member;
 
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
+import io.github.takgeun.shop.global.security.session.MemberSessionService;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MvcResult;
@@ -26,6 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
 
     private static final String PASSWORD = "pw12341234!";
+
+    @Autowired
+    private SessionRegistry sessionRegistry;
+    @Autowired
+    private MemberSessionService memberSessionService;
 
     /**
      * 비로그인 사용자가 인증이 필요한 화면에 접근하면
@@ -590,7 +599,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
 
         // when & then
         mockMvc.perform(get("/admin")
-                .session(session))
+                        .session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?next=/admin&reason=INACTIVE_ACCOUNT"
                 ));
@@ -638,6 +647,126 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                         "path",
                         "/admin"
                 ));
+    }
+
+    @Test
+    void 로그인에_성공하면_SessionRegistry에_세션이_등록된다() throws Exception {
+
+        /**
+         * 테스트 회원 생성
+         * → 실제 로그인 요청
+         * → 인증 성공
+         * → 세션 ID 변경
+         * → SessionRegistry 등록
+         * → 로그인 응답에서 세션 획득
+         * → 회원의 Principal 조회
+         * → Principal에 연결된 세션 목록 조회
+         * → 실제 로그인 세션 ID가 포함됐는지 검증
+         * → 테스트에서 등록한 세션 정보 제거
+         */
+
+        // given
+        String email = uniqueEmail("session-registry");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "세션회원",
+                "010-1111-2222"
+        );
+
+        // when
+        MockHttpSession session = null;
+
+        try {
+            /**
+             * 실제 로그인 요청 실행
+             *
+             * POST /login
+             * → AuthViewController.login()
+             * → AuthenticationManager.authenticate()
+             * → DaoAuthenticationProvider
+             * → ShopUserDetailsService
+             * → DB에서 이메일로 회원 조회
+             * → PasswordEncoder.matches()
+             * → 인증된 Authentication 반환
+             */
+            session = loginAndGetSession(
+                    email,
+                    PASSWORD
+            );
+
+            // then
+            ShopUserPrincipal principal =
+                    sessionRegistry.getAllPrincipals()
+                            .stream()
+                            .filter(ShopUserPrincipal.class::isInstance)
+                            .map(ShopUserPrincipal.class::cast)
+                            .filter(principalItem ->
+                                    principalItem.getMemberId().equals(memberId))
+                            .findFirst()
+                            .orElseThrow();
+
+            assertThat(
+                    sessionRegistry.getAllSessions(
+                            principal, false
+                    )
+            )
+                    .extracting(SessionInformation::getSessionId)
+                    .contains(session.getId());
+        } finally {
+            /**
+             * 세션 정리 코드
+             *
+             * DB 데이터는 @Transactional과 @Rollback으로 정리할 수 있지만
+             * SessionRegistry는 DB가 아니라 메모리에 저장된 Singleton Bean이므로 트랜잭션 롤백 대상이 아님.
+             * --> 즉, 다른 테스트의 세션 정보가 누적될 수 있음.
+             *
+             * 따라서 테스트 종료 후 세션을 정리해준다.
+             */
+            if (session != null) {
+                sessionRegistry.removeSessionInformation(session.getId());
+            }
+        }
+    }
+
+    @Test
+    void 회원_ID로_등록된_모든_세션을_만료시킨다() throws Exception {
+
+        // given
+        String email = uniqueEmail("expire-session");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "만료회원",
+                "010-2222-3333"
+        );
+
+        loginAndGetSession(email, PASSWORD);
+
+        ShopUserPrincipal principal = sessionRegistry.getAllPrincipals()
+                .stream()
+                .filter(ShopUserPrincipal.class::isInstance)
+                .map(ShopUserPrincipal.class::cast)
+                .filter(p ->
+                        memberId.equals(p.getMemberId())
+                )
+                .findFirst()
+                .orElseThrow();
+
+        SessionInformation sessionInformation = sessionRegistry.getAllSessions(
+                principal,
+                false
+        ).getFirst();
+
+        assertThat(sessionInformation.isExpired()).isFalse();
+
+        // when
+        memberSessionService.expireAllByMemberId(memberId);
+
+        // then
+        assertThat(sessionInformation.isExpired()).isTrue();
     }
 
     private String uniqueEmail(String prefix) {

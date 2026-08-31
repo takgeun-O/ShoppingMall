@@ -10,12 +10,20 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -41,6 +49,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
+            SessionRegistry sessionRegistry,
             DaoAuthenticationProvider authenticationProvider,
             ApiAuthenticationEntryPoint apiAuthenticationEntryPoint,
             ApiAccessDeniedHandler apiAccessDeniedHandler,
@@ -54,6 +63,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // 기존 AuthViewController가 세션 무효화와 성공 메시지를 계속 담당한다.
                 .logout(logout -> logout.disable())
+
+                /**
+                 * SessionRegistry와 Security FilterChain 연결
+                 * Spring Filter Chain이 SessionRegistry를 사용하게 한다.
+                 *
+                 * -1 : 동시 세션 수는 제한하지 않고
+                 * SessionRegistry: 로그인 세션 추적 및 강제 만료에 사용
+                 */
+                .sessionManagement(session -> session
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry)
+                )
                 .authorizeHttpRequests(auth -> auth
                         /**
                          * 누구나 접근할 수 있는 공개 경로
@@ -187,5 +208,60 @@ public class SecurityConfig {
     @Bean
     SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
+    }
+
+    /**
+     * SessionRegistry는 다음 관계를 관리한다.
+     * ShopUserPrincipal
+     * └── SessionInformation
+     *     ├── sessionId
+     *     ├── lastRequest
+     *     └── expired
+     *
+     * 기존 세션 로그인 방식은 Spring Security의 인증 필터가 아니라
+     * AuthViewController에서 AuthenticationManager를 직접 호출하는 수동 인증 방식이다.
+     *
+     * AuthenticationManager.authenticate()는 인증된 Authentication을
+     * 반환할 뿐, 세션 등록이나 SessionRegistry 관리를 수행하지 않는다.
+     *
+     * 따라서 로그인 성공 후 세션 고정 보호, 동시 세션 제어, SessionRegistry 등록 등의
+     * 세션 인증 처리를 적용하려면
+     * SessionAuthenticationStrategy를 Controller에서 직접 호출해야 한다.
+     *
+     * Controller에서 직접 호출하기 위해 아래쪽에서 SessionAuthenticationStrategy 빈을 추가한다.
+     */
+    @Bean
+    SessionRegistry sessionRegistry() {
+        /**
+         * SessionRegistry 객체는 세션 정보를 보관할 장소만 제공한다.
+         * 로그인 세션을 자동으로 찾아 등록하지 않음.
+         *
+         * 실제로 아래 호출이 발생해야 등록된다.
+         * sessionRegistry.registerNewSession(sessionId, authentication.getPrincipal());
+         *
+         * 보통 이러한 호출을 직접 작성하지 않고 RegisterSEssionAuthenticationStrategy가 담당함.
+         */
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    SessionAuthenticationStrategy sessionAuthenticationStrategy(
+            SessionRegistry sessionRegistry
+    ) {
+        /**
+         * ChangeSessionIdAuthenticationStrategy 의 역할
+         * - 로그인 성공 시 세션 ID를 변경
+         * - 세션 고정 공격 방지
+         * - 기존 장바구니 같은 세션 속성은 유지
+         *
+         * RegisterSessionAuthenticationStrategy() 의 역할
+         * - 로그인한 Principal과 세션 ID를 SessionRegistry에 등록
+         */
+        return new CompositeSessionAuthenticationStrategy(
+                List.of(
+                        new ChangeSessionIdAuthenticationStrategy(),
+                        new RegisterSessionAuthenticationStrategy(sessionRegistry)
+                )
+        );
     }
 }
