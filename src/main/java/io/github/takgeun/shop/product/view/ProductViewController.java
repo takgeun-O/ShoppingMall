@@ -2,15 +2,12 @@ package io.github.takgeun.shop.product.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
-import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.view.ViewController;
-import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.view.dto.ProductCardView;
 import io.github.takgeun.shop.product.view.dto.ProductDetailView;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -126,12 +123,6 @@ public class ProductViewController {
             ra.addFlashAttribute("error", "해당 상품은 현재 판매 중이 아니거나 찾을 수 없습니다.");
             return "redirect:/products";
         }
-    }
-
-    private boolean isAdmin(HttpSession session) {
-        if(session == null) return false;
-        MemberRole role = (MemberRole) session.getAttribute(SessionConst.LOGIN_ROLE);
-        return role == MemberRole.ADMIN;
     }
 
     private String normalizeSort(String sort) {

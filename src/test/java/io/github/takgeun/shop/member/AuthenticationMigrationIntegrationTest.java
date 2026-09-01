@@ -5,6 +5,7 @@ import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.global.security.session.MemberSessionService;
 import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.member.domain.MemberRole;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -37,6 +38,25 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     private MemberSessionService memberSessionService;
 
     /**
+     * SessionRegistry는 트랜잭션 롤백 대상이 아님.
+     * 로그인 관련 여러 테스트가 세션을 계속 등록할 수 있으니
+     * 각 테스트가 끝날 때 메모리의 세션 등록 정보를 비운다.
+     */
+    @AfterEach
+    void clearSessionRegistry() {
+        sessionRegistry.getAllPrincipals()
+                .forEach(principal ->
+                        sessionRegistry
+                                .getAllSessions(principal, true)
+                                .forEach(session ->
+                                        sessionRegistry
+                                                .removeSessionInformation(session.getSessionId()
+                                                )
+                                )
+                );
+    }
+
+    /**
      * 비로그인 사용자가 인증이 필요한 화면에 접근하면
      * ViewAuthenticationEntryPoint가 로그인 화면으로 리다이렉트한다.
      */
@@ -47,6 +67,45 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl(
                         "/login?next=/orders&reason=LOGIN_REQUIRED"
+                ));
+    }
+
+    @Test
+    void Spring_Security_인증만_있는_회원도_주문_페이지에_접근할_수_있다() throws Exception {
+
+        // given
+        String email = uniqueEmail("security-only-order");
+
+        memberService.signup(
+                email,
+                PASSWORD,
+                "security인증회원",
+                "010-1111-2222"
+        );
+
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        /**
+         * Spring Security 인증 정보는 유지하고,
+         * 기존 Interceptor 호환용 세션 정보만 제거한다.
+         */
+        session.removeAttribute(SessionConst.LOGIN_MEMBER_ID);
+        session.removeAttribute(SessionConst.LOGIN_ROLE);
+        session.removeAttribute(SessionConst.LOGIN_MEMBER_NAME);
+
+        // SecurityContext는 살아있는지 확인
+        assertThat(session.getAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
+        )).isNotNull();
+
+        // when & then
+        mockMvc.perform(get("/orders/checkout")
+                        .session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cart"))      // 장바구니에 아무것도 안 담았으니까
+                .andExpect(flash().attribute(
+                        "error",
+                        "장바구니가 비어있습니다."
                 ));
     }
 
@@ -608,6 +667,52 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void 로그인_후_비활성화된_관리자는_관리자_페이지에_접근할_수_없다() throws Exception {
+
+        // given
+        String email = uniqueEmail("inactive-admin-dashboard");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "비활성관리자",
+                "010-1111-2222"
+        );
+
+        memberService.changeRole(memberId, MemberRole.ADMIN);
+
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        /**
+         * expireNow()
+         * → SessionInformation.expired = true
+         * → 다음 요청
+         * → ConcurrentSessionFilter가 있어야 만료 감지
+         */
+        SessionInformation sessionInformation = findSessionInformation(memberId);
+
+        assertThat(sessionInformation.getSessionId())
+                .isEqualTo(session.getId());
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
+
+        // when
+        memberSessionService.expireAllByMemberId(memberId);
+
+        assertThat(sessionInformation.isExpired())
+                .isTrue();
+
+        // then
+        // 만약 200 으로 테스트 결과가 나오면 ConcurrentSessionFilter가 동작하는지 체크하기 (SecurityConfig에서)
+        mockMvc.perform(get("/admin")
+                .session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl(
+                        "/login?reason=SESSION_EXPIRED"
+                ));
+    }
+
+    @Test
     void 권한부족_오류정보를_403_화면으로_변환한다()
             throws Exception {
 
@@ -678,57 +783,44 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         // when
         MockHttpSession session = null;
 
-        try {
-            /**
-             * 실제 로그인 요청 실행
-             *
-             * POST /login
-             * → AuthViewController.login()
-             * → AuthenticationManager.authenticate()
-             * → DaoAuthenticationProvider
-             * → ShopUserDetailsService
-             * → DB에서 이메일로 회원 조회
-             * → PasswordEncoder.matches()
-             * → 인증된 Authentication 반환
-             */
-            session = loginAndGetSession(
-                    email,
-                    PASSWORD
-            );
 
-            // then
-            ShopUserPrincipal principal =
-                    sessionRegistry.getAllPrincipals()
-                            .stream()
-                            .filter(ShopUserPrincipal.class::isInstance)
-                            .map(ShopUserPrincipal.class::cast)
-                            .filter(principalItem ->
-                                    principalItem.getMemberId().equals(memberId))
-                            .findFirst()
-                            .orElseThrow();
+        /**
+         * 실제 로그인 요청 실행
+         *
+         * POST /login
+         * → AuthViewController.login()
+         * → AuthenticationManager.authenticate()
+         * → DaoAuthenticationProvider
+         * → ShopUserDetailsService
+         * → DB에서 이메일로 회원 조회
+         * → PasswordEncoder.matches()
+         * → 인증된 Authentication 반환
+         */
+        session = loginAndGetSession(
+                email,
+                PASSWORD
+        );
 
-            assertThat(
-                    sessionRegistry.getAllSessions(
-                            principal, false
-                    )
-            )
-                    .extracting(SessionInformation::getSessionId)
-                    .contains(session.getId());
-        } finally {
-            /**
-             * 세션 정리 코드
-             *
-             * DB 데이터는 @Transactional과 @Rollback으로 정리할 수 있지만
-             * SessionRegistry는 DB가 아니라 메모리에 저장된 Singleton Bean이므로 트랜잭션 롤백 대상이 아님.
-             * --> 즉, 다른 테스트의 세션 정보가 누적될 수 있음.
-             *
-             * 따라서 테스트 종료 후 세션을 정리해준다.
-             */
-            if (session != null) {
-                sessionRegistry.removeSessionInformation(session.getId());
-            }
-        }
+        // then
+        ShopUserPrincipal principal =
+                sessionRegistry.getAllPrincipals()
+                        .stream()
+                        .filter(ShopUserPrincipal.class::isInstance)
+                        .map(ShopUserPrincipal.class::cast)
+                        .filter(principalItem ->
+                                principalItem.getMemberId().equals(memberId))
+                        .findFirst()
+                        .orElseThrow();
+
+        assertThat(
+                sessionRegistry.getAllSessions(
+                        principal, false
+                )
+        )
+                .extracting(SessionInformation::getSessionId)
+                .contains(session.getId());
     }
+
 
     @Test
     void 회원_ID로_등록된_모든_세션을_만료시킨다() throws Exception {
@@ -767,6 +859,122 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(sessionInformation.isExpired()).isTrue();
+    }
+
+    @Test
+    void 관리자는_requireAdmin_없이도_관리자_상품_페이지에_접근할_수_있다() throws Exception {
+
+        // given
+        String email = uniqueEmail("admin-products");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "상품관리자",
+                "010-1111-2222"
+        );
+
+        memberService.changeRole(
+                memberId,
+                MemberRole.ADMIN
+        );
+
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        // when & then
+        mockMvc.perform(get("/admin/products")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name(
+                        "admin/products/list"
+                ))
+                .andExpect(model().attributeExists(
+                        "products",
+                        "summary"
+                ));
+    }
+
+    @Test
+    void 일반_회원은_관리자_상품_페이지에_접근할_수_없다() throws Exception {
+
+        /**
+         * GET /admin/products
+         * → Spring SecurityFilterChain
+         * → /admin/**에는 hasRole("ADMIN") 적용
+         * → 일반 회원은 ROLE_USER 보유
+         * → 권한 검사 실패
+         * → AccessDeniedException
+         * → ViewAccessDeniedHandler.handle()
+         * → /security/forbidden으로 forward
+         */
+        // given
+        String email = uniqueEmail("user-admin-products");
+
+        memberService.signup(
+                email,
+                PASSWORD,
+                "일반회원",
+                "010-2222-3333"
+        );
+
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        // when & then
+        mockMvc.perform(get("/admin/products")
+                        .session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(forwardedUrl(
+                        "/security/forbidden"
+                ))
+                .andExpect(request().attribute(
+                        "securityErrorMessage",
+                        "접근 권한이 없습니다."
+                ))
+                .andExpect(request().attribute(
+                        "securityErrorPath",
+                        "/admin/products"
+                ));
+    }
+
+    @Test
+    void Spring_Security_ADMIN_권한만으로_관리자_상품_페이지에_접근할_수_있다() throws Exception {
+
+        // given
+        String email = uniqueEmail("security-only-admin-products");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "상품관리자",
+                "010-1111-2222"
+        );
+
+        memberService.changeRole(memberId, MemberRole.ADMIN);
+
+        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+
+        // 기존 인터셉터 호환용 인증 정보 제거
+        session.removeAttribute(SessionConst.LOGIN_MEMBER_ID);
+        session.removeAttribute(SessionConst.LOGIN_ROLE);
+        session.removeAttribute(SessionConst.LOGIN_MEMBER_NAME);
+
+        // Spring Security 인증 정보만 유지되는지 확인
+        assertThat(
+                session.getAttribute(
+                        HttpSessionSecurityContextRepository
+                                .SPRING_SECURITY_CONTEXT_KEY
+                )
+        ).isNotNull();
+
+        // when & then
+        mockMvc.perform(get("/admin/products")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/products/list"))
+                .andExpect(model().attributeExists(
+                        "products",
+                        "summary"
+                ));
     }
 
     private String uniqueEmail(String prefix) {
@@ -836,18 +1044,46 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
             String email, String password
     ) throws Exception {
 
+        /**
+         * MvcResult
+         * ├─ 요청 정보
+         * ├─ 응답 정보
+         * ├─ 세션 정보
+         * ├─ ModelAndView
+         * ├─ Controller에서 발생한 예외
+         * ├─ 비동기 처리 결과
+         * └─ Handler 정보
+         */
         MvcResult result = mockMvc.perform(
                         post("/login")
                                 .param("email", email)
                                 .param("password", password)
                 )
                 .andExpect(status().is3xxRedirection())
-                .andReturn();
+                .andReturn();       // MockMvc로 실행한 요청의 전체 결과를 MvcResult 객체로 반환한다.
 
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
 
         assertThat(session).isNotNull();
 
         return session;
+    }
+
+    private SessionInformation findSessionInformation(Long memberId) {
+        ShopUserPrincipal principal = sessionRegistry.getAllPrincipals()
+                .stream()
+                .filter(ShopUserPrincipal.class::isInstance)
+                .map(ShopUserPrincipal.class::cast)
+                .filter(item ->
+                        memberId.equals(item.getMemberId()))
+                .findFirst()
+                .orElseThrow();
+
+        return sessionRegistry.getAllSessions(
+                        principal,
+                        false
+                ).stream()
+                .findFirst()
+                .orElseThrow();
     }
 }

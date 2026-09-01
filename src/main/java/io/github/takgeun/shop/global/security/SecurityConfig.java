@@ -65,15 +65,19 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
 
                 /**
-                 * SessionRegistry와 Security FilterChain 연결
-                 * Spring Filter Chain이 SessionRegistry를 사용하게 한다.
-                 *
-                 * -1 : 동시 세션 수는 제한하지 않고
-                 * SessionRegistry: 로그인 세션 추적 및 강제 만료에 사용
+                 * SessionManagementConfigurer 활성화
+                 * → 동시 세션 제어 설정 활성화
+                 * → 사용할 SessionRegistry 지정
+                 * → 로그인 세션 등록 및 제어 전략 준비
+                 * → ConcurrentSessionFilter 생성 : 생성되는 원인은 maximumSessions(-1) 덕분임. 이 호출이 동시 세션 제어 설정을 활성화하기 때문
+                 * → SecurityFilterChain에 필터 추가
                  */
                 .sessionManagement(session -> session
-                        .maximumSessions(-1)
+                        .maximumSessions(-1) // 동시 세션 관리 기능을 사용한다 + 허용할 동시 세션 수는 제한하지 않는다.
                         .sessionRegistry(sessionRegistry)
+                        .expiredUrl(
+                                "/login?reason=SESSION_EXPIRED" // 만료된 세션을 발견했을 때 여기로 이동하도록 설정
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
                         /**

@@ -23,6 +23,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/admin/**",
                         "/api/v1/admin/**")
                 .excludePathPatterns(
+                        "/admin/products",
+                        "/admin/products/**",
                         "/login",
                         "/logout",
                         "/signup",
@@ -39,7 +41,7 @@ public class WebConfig implements WebMvcConfigurer {
         // 유저 전용 : 로그인 필요
         registry.addInterceptor(userAuthInterceptor)
                 .addPathPatterns(
-                        "/orders/**",
+//                        "/orders/**",
                         "/members/me",
                         "/members/me/**"
                 )

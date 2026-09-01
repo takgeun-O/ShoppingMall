@@ -2,18 +2,14 @@ package io.github.takgeun.shop.category.view;
 
 import io.github.takgeun.shop.category.application.AdminCategoryQueryService;
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.application.result.AdminCategoryEditResult;
 import io.github.takgeun.shop.category.application.result.AdminCategoryPageResult;
+import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.view.form.CategoryCreateForm;
 import io.github.takgeun.shop.category.view.form.CategoryEditForm;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
-import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
-import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.view.ViewController;
-import io.github.takgeun.shop.member.domain.MemberRole;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +33,8 @@ public class AdminCategoryViewController {
      * GET /admin/categories
      */
     @GetMapping
-    public String list(Model model, HttpSession session) {
+    public String list(Model model) {
 
-        requireAdmin(session);
         log.info("관리자 카테고리 관리 페이지 진입");
 
         AdminCategoryPageResult pageView = adminCategoryQueryService.getCategoryPage();
@@ -67,10 +62,7 @@ public class AdminCategoryViewController {
     public String create(@ModelAttribute("form") @Validated CategoryCreateForm form,
                          BindingResult bindingResult,
                          RedirectAttributes ra,
-                         Model model,
-                         HttpSession session) {
-
-        requireAdmin(session);
+                         Model model) {
 
         if(bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.getTopCategories());   // 상위 카테고리 목록
@@ -95,10 +87,7 @@ public class AdminCategoryViewController {
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id,
                            Model model,
-                           RedirectAttributes ra,
-                           HttpSession session) {
-
-        requireAdmin(session);
+                           RedirectAttributes ra) {
 
         try {
             AdminCategoryEditResult category = adminCategoryQueryService.getEditResult(id);
@@ -132,10 +121,7 @@ public class AdminCategoryViewController {
                          @Valid @ModelAttribute("form") CategoryEditForm form,
                          BindingResult bindingResult,
                          RedirectAttributes ra,
-                         Model model,
-                         HttpSession session) {
-
-        requireAdmin(session);
+                         Model model) {
 
         if(bindingResult.hasErrors()) {
             AdminCategoryEditResult category = adminCategoryQueryService.getEditResult(id);
@@ -170,10 +156,7 @@ public class AdminCategoryViewController {
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id,
                          @RequestParam(required = false) String returnUrl,
-                         RedirectAttributes ra,
-                         HttpSession session) {
-
-        requireAdmin(session);
+                         RedirectAttributes ra) {
 
         // delete()에 returnUrl 파라미터 받고 성공/실패 시 모두 그 위치로 돌려보내기
         String redirectUrl = resolveDeleteRedirectUrl(returnUrl);
@@ -199,15 +182,5 @@ public class AdminCategoryViewController {
         }
 
         return returnUrl;
-    }
-
-    private void requireAdmin(HttpSession session) {
-        if(session == null) {
-            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
-        }
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        if(!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
-            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
-        }
     }
 }

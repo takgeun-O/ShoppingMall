@@ -114,6 +114,7 @@ public class AuthViewController {
                 case "LOGIN_REQUIRED" -> model.addAttribute("infoMessage", "로그인이 필요한 서비스입니다.");
                 case "ADMIN_REQUIRED" -> model.addAttribute("infoMessage", "관리자만 접근할 수 있습니다.");
                 case "INACTIVE_ACCOUNT" -> model.addAttribute("errorMessage", "비활성 상태이거나 탈퇴한 계정이라 로그아웃되었습니다.");
+                case "SESSION_EXPIRED" -> model.addAttribute("infoMessage", "로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
             }
         }
 

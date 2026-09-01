@@ -105,4 +105,8 @@ public class ShopUserPrincipal implements UserDetails {
         // 비활성 회원을 로그인하지 못하게 하는 역할
         return status == MemberStatus.ACTIVE;
     }
+
+    public String getMemberName() {
+        return name;
+    }
 }

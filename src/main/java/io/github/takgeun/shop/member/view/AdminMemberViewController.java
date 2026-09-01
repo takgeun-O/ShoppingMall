@@ -1,11 +1,8 @@
 package io.github.takgeun.shop.member.view;
 
-import io.github.takgeun.shop.global.error.exception.ForbiddenException;
-import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
 import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.application.AdminMemberService;
-import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.dto.request.AdminMemberStatusUpdateRequest;
 import io.github.takgeun.shop.member.dto.request.AdminMemberUpdateRequest;
 import io.github.takgeun.shop.member.view.dto.admin.AdminMemberDetailView;
@@ -14,7 +11,6 @@ import io.github.takgeun.shop.member.view.dto.admin.AdminMemberPageView;
 import io.github.takgeun.shop.member.view.form.admin.AdminMemberEditForm;
 import io.github.takgeun.shop.member.view.form.admin.AdminMemberSearchCondition;
 import io.github.takgeun.shop.member.view.form.admin.AdminMemberStatusForm;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +39,8 @@ public class AdminMemberViewController {
             @RequestParam(required = false, defaultValue = "ALL") String statusFilter,
             @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer pageSize,      // 뷰에서 안 넘어오는데 사실상 10으로 고정해서 쓸 것
-            Model model,
-            HttpSession session
+            Model model
     ) {
-
-        requireAdmin(session);
 
         log.info("관리자 회원 관리 페이지 진입");
 
@@ -77,10 +70,7 @@ public class AdminMemberViewController {
      */
     @GetMapping("/{memberId}")
     public String memberDetail(@PathVariable Long memberId,
-                               Model model,
-                               HttpSession session) {
-
-        requireAdmin(session);
+                               Model model) {
 
         log.info("관리자 회원 상세 페이지 진입, memberId={}", memberId);
 
@@ -96,10 +86,8 @@ public class AdminMemberViewController {
      */
     @GetMapping("/{memberId}/edit")
     public String editMemberForm(@PathVariable Long memberId,
-                                 Model model,
-                                 HttpSession session) {
+                                 Model model) {
 
-        requireAdmin(session);
 
         log.info("관리자 회원 수정 페이지 진입, memberId={}", memberId);
 
@@ -121,10 +109,7 @@ public class AdminMemberViewController {
                              @Validated(CheckoutValidationSequence.class) @ModelAttribute("form") AdminMemberEditForm form,
                              BindingResult bindingResult,
                              Model model,
-                             HttpSession session,
                              RedirectAttributes ra) {
-
-        requireAdmin(session);
 
         log.info("관리자 회원 수정 처리 memberId={}", memberId);
 
@@ -157,10 +142,7 @@ public class AdminMemberViewController {
             @PathVariable Long memberId,
             @Valid @ModelAttribute("form") AdminMemberStatusForm form,
             BindingResult bindingResult,
-            HttpSession session,
             RedirectAttributes ra) {
-
-        requireAdmin(session);
 
         log.info("관리자 회원 상태 변경 처리, memberId={}, status={}", memberId, form.getStatus());
 
@@ -183,10 +165,7 @@ public class AdminMemberViewController {
     @PostMapping("/{memberId}/withdraw")
     public String withdrawMember(
             @PathVariable Long memberId,
-            HttpSession session,
             RedirectAttributes ra) {
-
-        requireAdmin(session);
 
         log.info("관리자 회원 탈퇴 처리(회원상세정보페이지), memberId={}", memberId);
 
@@ -194,16 +173,5 @@ public class AdminMemberViewController {
 
         ra.addFlashAttribute("success", "회원이 탈퇴 처리되었습니다.");
         return "redirect:/admin/members/" + memberId;
-    }
-
-    private void requireAdmin(HttpSession session) {
-
-        if(session == null) {
-            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
-        }
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        if(!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
-            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
-        }
     }
 }
