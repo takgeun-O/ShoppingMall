@@ -140,7 +140,7 @@ public class MemberViewController {
         Member updatedMember = memberService.findById(memberId);
 
         /**
-         * SessionConst.LOGIN_MEMBER_NAME 갱신을 대체한다.
+         * 기존 세션 기반 헤더 이름 갱신을 대신한다.
          *
          * 다음 요청부터 GlobalViewModelAdvice가
          * 변경된 Principal의 이름을 사용할 수 있다.
