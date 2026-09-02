@@ -1,11 +1,15 @@
 package io.github.takgeun.shop.product.api;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import io.github.takgeun.shop.IntegrationTestSupport;
+import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.product.api.dto.response.ProductDetailResponse;
 import io.github.takgeun.shop.product.api.dto.response.ProductListItemResponse;
+import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +24,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @ActiveProfiles({"test", "mybatis"})
 class ProductApiIntegrationTest extends IntegrationTestSupport {
+
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private CategoryService categoryService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void 공개_상품_목록_조회_성공() throws Exception {

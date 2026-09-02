@@ -2,8 +2,10 @@ package io.github.takgeun.shop.member.view;
 
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
+import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -25,6 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MemberViewControllerIntegrationTest
         extends IntegrationTestSupport {
 
+    @Autowired
+    private MemberService memberService;
+
     private static final String PASSWORD =
             "pw12341234!";
 
@@ -44,7 +49,7 @@ class MemberViewControllerIntegrationTest
     }
 
     /**
-     * 로그인 회원 ID를 SessionConst가 아니라
+     * 로그인 회원 ID를
      * ShopUserPrincipal에서 가져오는지 전체 흐름으로 검증한다.
      */
     @Test

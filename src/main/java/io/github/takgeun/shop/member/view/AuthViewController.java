@@ -2,7 +2,6 @@ package io.github.takgeun.shop.member.view;
 
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
-import io.github.takgeun.shop.global.session.SessionConst;
 import io.github.takgeun.shop.global.validation.LoginValidationSequence;
 import io.github.takgeun.shop.global.validation.SignupValidationSequence;
 import io.github.takgeun.shop.global.view.ViewController;
@@ -142,23 +141,6 @@ public class AuthViewController {
 
         try {
             /**
-             * 기존 세션 기반의 인증
-             */
-//            Long memberId = authService.login(form.getEmail(), form.getPassword());
-//            Member member = memberService.findById(memberId);
-
-            // role 세션 저장
-//            HttpSession session = request.getSession(true); // 세션이 있으면 그 세션을 반환하고 없으면 새로 만들어서 반환
-//
-//            session.setAttribute(SessionConst.LOGIN_MEMBER_ID, memberId);
-//            session.setAttribute(SessionConst.LOGIN_ROLE, member.getRole());
-//            session.setAttribute(SessionConst.LOGIN_MEMBER_NAME, member.getName());
-//
-//            ra.addFlashAttribute("success", "로그인되었습니다.");
-//
-//            return (safeNext != null) ? "redirect:" + safeNext : "redirect:/";
-
-            /**
              * AuthenticationManager 인증으로 교체
              * 여기서 Authentication은 인증 완료 객체임
              * authenticationManager의 역할은 인증 결과를 반환하는 역할만 한다.
@@ -232,28 +214,6 @@ public class AuthViewController {
              * 7. 마지막 로그인 시각 갱신
              */
             memberService.recordSuccessfulLogin(principal.getMemberId());
-
-            /**
-             * 8. 기존 Interceptor와의 임시 호환
-             * 기존 Interceptor용 세션 속성 저장
-             *
-             * SessionAuthenticationStrategy가 필요에 따라
-             * 세션을 생성하거나 ID를 변경한 이후이므로,
-             * 여기서 조회한 세션은 최종 세션이다.
-             */
-            HttpSession session = request.getSession(true); // 세션이 있으면 그 세션을 반환하고 없으면 새로 만들어서 반환
-            session.setAttribute(
-                    SessionConst.LOGIN_MEMBER_ID,
-                    principal.getMemberId()
-            );
-            session.setAttribute(
-                    SessionConst.LOGIN_ROLE,
-                    principal.getRole()
-            );
-            session.setAttribute(
-                    SessionConst.LOGIN_MEMBER_NAME,
-                    principal.getName()
-            );
 
             ra.addFlashAttribute(
                     "success",

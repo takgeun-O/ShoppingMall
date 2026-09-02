@@ -3,6 +3,7 @@ package io.github.takgeun.shop.member;
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.application.AuthService;
+import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ class PasswordEncodingIntegrationTest extends IntegrationTestSupport {
 
     @Autowired private AuthService authService;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private MemberService memberService;
 
     @Test
     void 회원가입한_BCrypt_비밀번호로_로그인한다() {

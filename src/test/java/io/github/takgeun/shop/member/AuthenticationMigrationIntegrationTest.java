@@ -3,7 +3,7 @@ package io.github.takgeun.shop.member;
 import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.global.security.session.MemberSessionService;
-import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +18,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +37,8 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     private SessionRegistry sessionRegistry;
     @Autowired
     private MemberSessionService memberSessionService;
+    @Autowired
+    private MemberService memberService;
 
     /**
      * SessionRegistry는 트랜잭션 롤백 대상이 아님.
@@ -84,14 +87,6 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         );
 
         MockHttpSession session = loginAndGetSession(email, PASSWORD);
-
-        /**
-         * Spring Security 인증 정보는 유지하고,
-         * 기존 Interceptor 호환용 세션 정보만 제거한다.
-         */
-        session.removeAttribute(SessionConst.LOGIN_MEMBER_ID);
-        session.removeAttribute(SessionConst.LOGIN_ROLE);
-        session.removeAttribute(SessionConst.LOGIN_MEMBER_NAME);
 
         // SecurityContext는 살아있는지 확인
         assertThat(session.getAttribute(
@@ -287,22 +282,25 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     }
 
     /**
-     * 마이그레이션 단계의 로그인 성공 결과
-     * <p>
-     * 신규 Spring Security 인증 정보와 기존 Interceptor 호환용 세션 속성이 한 세션에 함께 저장되는지 검증
-     * <p>
-     * 전체 흐름
-     * * POST /login
-     * * -> AuthenticationManager가 인증
-     * * -> DaoAuthenticationProvider가 회원, 비밀번호, 상태 검사
-     * * -> 인증 성공 Authentication 생성
-     * * -> SecurityContext에 Authentication 저장
-     * * -> SecurityContext를 HttpSession에 저장
-     * * -> 기존 인터셉터용 세션 정보도 저장
-     * * -> 테스트에서 두 인증 정보 모두 검증
+     * 로그인 성공 시 인증 정보가 SecurityContext를 통해
+     * HttpSession에 저장되는지 검증한다.
+     *
+     * <p>전체 흐름</p>
+     *
+     * <ol>
+     *     <li>POST /login 요청</li>
+     *     <li>AuthenticationManager가 인증 요청을 처리</li>
+     *     <li>DaoAuthenticationProvider가 UserDetailsService를 통해 회원 조회</li>
+     *     <li>PasswordEncoder를 통해 비밀번호 검증</li>
+     *     <li>인증에 성공한 Authentication 반환</li>
+     *     <li>Authentication을 SecurityContext에 저장</li>
+     *     <li>SecurityContextRepository가 SecurityContext를 HttpSession에 저장</li>
+     *     <li>세션에 저장된 ShopUserPrincipal의 회원 정보와 권한 검증</li>
+     * </ol>
      */
     @Test
-    void 로그인에_성공하면_SecurityContext와_기존_호환_세션정보를_저장한다() throws Exception {
+    void 로그인에_성공하면_SecurityContext에_인증정보를_저장한다()
+            throws Exception {
 
         // given
         String email = uniqueEmail("login");
@@ -314,7 +312,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 "010-1111-2222"
         );
 
-        // when
+        // when: 실제 로그인 요청을 보내고 성공 결과를 받는다.
         MvcResult result = performSuccessfulLogin(
                 email,
                 PASSWORD,
@@ -322,33 +320,37 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 "/"
         );
 
-        /**
-         * 여기서 사용되는 HttpSession의 구조
+        /*
+         * 로그인 성공 후 세션 구조
+         *
          * HttpSession
-         * ├── SPRING_SECURITY_CONTEXT
-         * │   └── SecurityContext
-         * │       └── Authentication
-         * │           └── ShopUserPrincipal
-         * ├── loginMemberId
-         * ├── loginRole
-         * └── loginMemberName
+         * └── SPRING_SECURITY_CONTEXT
+         *     └── SecurityContext
+         *         └── Authentication
+         *             └── ShopUserPrincipal
          */
         MockHttpSession session = getSession(result);
 
-        // then: Spring Security 인증 정보
-        SecurityContext securityContext = getSecurityContext(session);
+        // then: 세션에 저장된 Spring Security 인증 정보를 조회한다.
+        SecurityContext securityContext =
+                getSecurityContext(session);
 
-        Authentication authentication = securityContext.getAuthentication();
+        Authentication authentication =
+                securityContext.getAuthentication();
 
+        // 인증이 완료된 Authentication인지 검증한다.
         assertThat(authentication).isNotNull();
         assertThat(authentication.isAuthenticated())
                 .isTrue();
 
+        // 인증 주체가 애플리케이션의 사용자 객체인지 검증한다.
         assertThat(authentication.getPrincipal())
                 .isInstanceOf(ShopUserPrincipal.class);
 
-        ShopUserPrincipal principal = (ShopUserPrincipal) authentication.getPrincipal();
+        ShopUserPrincipal principal =
+                (ShopUserPrincipal) authentication.getPrincipal();
 
+        // Principal에 인증된 회원 정보가 정확히 저장됐는지 검증한다.
         assertThat(principal.getMemberId())
                 .isEqualTo(memberId);
 
@@ -361,19 +363,10 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         assertThat(principal.getRole())
                 .isEqualTo(MemberRole.USER);
 
+        // hasRole("USER")에서 사용할 ROLE_USER 권한이 있는지 검증한다.
         assertThat(principal.getAuthorities())
-                .extracting(
-                        GrantedAuthority::getAuthority
-                )
+                .extracting(GrantedAuthority::getAuthority)
                 .containsExactly("ROLE_USER");
-
-        // then: 기존 Interceptor 호환 세션 정보
-        assertLegacySession(
-                session,
-                memberId,
-                MemberRole.USER,
-                "로그인회원"
-        );
     }
 
     /**
@@ -474,10 +467,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(view().name("auth/login"))
                 .andExpect(model().attributeHasErrors("form"))
                 .andExpect(request().sessionAttributeDoesNotExist(
-                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                        SessionConst.LOGIN_MEMBER_ID,
-                        SessionConst.LOGIN_ROLE,
-                        SessionConst.LOGIN_MEMBER_NAME
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
                 ));
     }
 
@@ -506,10 +496,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 ))
                 .andExpect(request().sessionAttributeDoesNotExist(
                         HttpSessionSecurityContextRepository
-                                .SPRING_SECURITY_CONTEXT_KEY,
-                        SessionConst.LOGIN_MEMBER_ID,
-                        SessionConst.LOGIN_ROLE,
-                        SessionConst.LOGIN_MEMBER_NAME
+                                .SPRING_SECURITY_CONTEXT_KEY
                 ));
     }
 
@@ -539,10 +526,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .andExpect(model().attributeHasErrors("form"))
                 .andExpect(request().sessionAttributeDoesNotExist(
                         HttpSessionSecurityContextRepository
-                                .SPRING_SECURITY_CONTEXT_KEY,
-                        SessionConst.LOGIN_MEMBER_ID,
-                        SessionConst.LOGIN_ROLE,
-                        SessionConst.LOGIN_MEMBER_NAME
+                                .SPRING_SECURITY_CONTEXT_KEY
                 ));
     }
 
@@ -594,76 +578,102 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     }
 
     /**
-     * 기존에 AdminAuthInterceptor가 DB 상태를 다시 확인하는지 보는 기준선
-     * <p>
-     * 세션에는 관리자 정보가 남아 있어도 DB에서 비활성화되었다면
-     * 세션을 폐기하고 로그인 페이지로 이동해야 한다.
-     * <p>
-     * TODO: Security 전환 완료 후에는 Principal 갱신 및 비활성화 정책 테스트로 교체한다.
+     * 테스트 자체는 트랜잭션 없음
+     * → memberService.deactivate()가 자체 트랜잭션 시작
+     * → 메서드 종료 시 실제 커밋
+     * → AFTER_COMMIT 리스너 실행
+     * → SessionInformation 만료
+     * → 다음 /admin 요청에서 ConcurrentSessionFilter가 만료 감지
      */
     @Test
-    void 로그인_후_비활성화된_관리자가_접근하면_세션을_무효화한다()
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void 로그인_후_비활성화된_관리자는_만료된_세션으로_관리자_페이지에_접근할_수_없다()
             throws Exception {
 
         /**
-         * 1. ACTIVE + ADMIN 회원 생성
-         * 2. 로그인 성공
-         * 3. 세션의 SecurityContext에 ROLE_ADMIN 저장
-         * 4. DB 회원 상태를 INACTIVE로 변경
-         * 5. GET /admin 요청
-         * 6. Spring Security는 기존 ROLE_ADMIN을 보고 접근 허용
-         * 7. AdminAuthInterceptor가 DB 상태 재조회
-         * 8. INACTIVE 확인
-         * 9. 세션 무효화
-         * 10. /login?...reason=INACTIVE_ACCOUNT 리다이렉트
+         * ACTIVE + ADMIN 로그인
+         * → SecurityContext와 SessionRegistry에 로그인 세션 등록
+         * → memberService.deactivate()
+         * → 세션 만료 이벤트 발행
+         * → 회원 비활성화 트랜잭션 커밋
+         * → MemberSessionExpirationListener 실행
+         * → SessionInformation.expireNow()
+         * → 만료된 세션으로 GET /admin
+         * → ConcurrentSessionFilter가 만료 감지
+         * → 세션 무효화
+         * → /login?reason=SESSION_EXPIRED 리다이렉트
          */
         // given
-        String email = uniqueEmail("inactive-admin");
+        String email =
+                uniqueEmail("inactive-admin");
 
-        Long memberId = memberService.signup(
-                email,
-                PASSWORD,
-                "비활성관리자",
-                "010-1111-2222"
+        Long memberId =
+                memberService.signup(
+                        email,
+                        PASSWORD,
+                        "비활성관리자",
+                        "010-1111-2222"
+                );
+
+        memberService.changeRole(
+                memberId,
+                MemberRole.ADMIN
         );
 
-        memberService.changeRole(memberId, MemberRole.ADMIN);
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
 
-        // 로그인 시점에는 ACTIVE + ADMIN이므로
-        // SecurityContext에는 ROLE_ADMIN 인증 정보가 저장된다.
-        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+        SecurityContext securityContext =
+                getSecurityContext(session);
 
-        SecurityContext securityContext = getSecurityContext(session);
-
-        assertThat(securityContext
-                .getAuthentication()
-                .isAuthenticated()
+        assertThat(
+                securityContext.getAuthentication()
+                        .isAuthenticated()
         ).isTrue();
 
         assertThat(
-                securityContext
-                        .getAuthentication()
+                securityContext.getAuthentication()
                         .getAuthorities()
         )
-                .extracting(GrantedAuthority::getAuthority)
+                .extracting(
+                        GrantedAuthority::getAuthority
+                )
                 .contains("ROLE_ADMIN");
 
-        /**
-         * 로그인 이후 DB 회원 상태 변경
-         *
-         * 기존 SecurityContext의 ROLE_ADMIN 권한은
-         * 여기서 자동으로 갱신되지 않는다.
-         */
+        SessionInformation sessionInformation =
+                findSessionInformation(memberId);
+
+        assertThat(sessionInformation)
+                .as("관리자 로그인 세션이 등록되어야 한다.")
+                .isNotNull();
+
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
+
+        // when
         memberService.deactivate(memberId);
 
-        // when & then
+        /*
+         * deactivate() 트랜잭션이 커밋된 후
+         * MemberSessionExpirationListener가 실행되어야 한다.
+         */
+        assertThat(sessionInformation.isExpired())
+                .as("회원 비활성화 커밋 후 세션이 만료되어야 한다.")
+                .isTrue();
+
+        // then
         mockMvc.perform(get("/admin")
                         .session(session))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?next=/admin&reason=INACTIVE_ACCOUNT"
+                .andExpect(redirectedUrl(
+                        "/login?reason=SESSION_EXPIRED"
                 ));
 
-        assertThat(session.isInvalid()).isTrue();
+        assertThat(session.isInvalid())
+                .isTrue();
     }
 
     @Test
@@ -953,11 +963,6 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
 
         MockHttpSession session = loginAndGetSession(email, PASSWORD);
 
-        // 기존 인터셉터 호환용 인증 정보 제거
-        session.removeAttribute(SessionConst.LOGIN_MEMBER_ID);
-        session.removeAttribute(SessionConst.LOGIN_ROLE);
-        session.removeAttribute(SessionConst.LOGIN_MEMBER_NAME);
-
         // Spring Security 인증 정보만 유지되는지 확인
         assertThat(
                 session.getAttribute(
@@ -1024,20 +1029,6 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .isInstanceOf(SecurityContext.class);
 
         return (SecurityContext) value;
-    }
-
-    private void assertLegacySession(MockHttpSession session, Long memberId, MemberRole role, String memberName) {
-        assertThat(session.getAttribute(
-                SessionConst.LOGIN_MEMBER_ID
-        )).isEqualTo(memberId);
-
-        assertThat(session.getAttribute(
-                SessionConst.LOGIN_ROLE
-        )).isEqualTo(role);
-
-        assertThat(session.getAttribute(
-                SessionConst.LOGIN_MEMBER_NAME
-        )).isEqualTo(memberName);
     }
 
     private MockHttpSession loginAndGetSession(

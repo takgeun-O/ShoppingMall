@@ -9,6 +9,8 @@ import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -18,13 +20,15 @@ class MemberServiceTest {
 
     private MemberService memberService;
     private PasswordEncoder passwordEncoder;
+    private ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         MemoryMemberRepository memberRepository = new MemoryMemberRepository();
         passwordEncoder = new BCryptPasswordEncoder(4);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
 
-        memberService = new MemberService(memberRepository, passwordEncoder);
+        memberService = new MemberService(memberRepository, passwordEncoder, eventPublisher);
     }
 
     @Test

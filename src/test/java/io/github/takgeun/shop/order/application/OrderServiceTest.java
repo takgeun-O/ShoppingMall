@@ -22,6 +22,8 @@ import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
@@ -44,11 +46,17 @@ class OrderServiceTest {
         MemoryCategoryRepository categoryRepository = new MemoryCategoryRepository();
         MemoryProductRepository productRepository = new MemoryProductRepository();
         MemoryMemberRepository memberRepository = new MemoryMemberRepository();
+        /**
+         * 이 테스트에서 MemberService를 사용하는 케이스는 회원가입과 회원 조회뿐임.
+         * 회원가입과 회원 조회에 일반적으로 세션 만료 이벤트를 발행하지 않으므로 Publisher가 실제로 작동할 필요 없음
+         * 따라서 eventPublisher는 Mockito Mock으로 충분
+         */
+        ApplicationEventPublisher eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
 
         this.orderRepository = orderRepository;
         this.categoryService = new CategoryService(categoryRepository, productRepository);
         this.productService = new ProductService(productRepository, categoryService);
-        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4));
+        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4),eventPublisher);
         this.orderService = new OrderService(orderRepository, productService, memberService);
     }
 

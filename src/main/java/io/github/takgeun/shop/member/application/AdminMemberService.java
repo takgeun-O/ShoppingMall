@@ -2,6 +2,7 @@ package io.github.takgeun.shop.member.application;
 
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEvent;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.member.domain.MemberStatus;
@@ -12,6 +13,7 @@ import io.github.takgeun.shop.member.view.form.admin.AdminMemberSearchCondition;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class AdminMemberService {
 
     private final MemberRepository memberRepository;
     private final OrderRepository orderRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 관리자 회원 목록 + 검색 + 페이징 + 통계
@@ -115,35 +118,69 @@ public class AdminMemberService {
 
         Member member = findMember(memberId);
 
+        /**
+         * 이름이나 상태는 ShopUserPrincipal과 인증 가능 여부에 영향을 주므로
+         * 세션을 만료하고
+         * 전화번호만 변경됐다면 세션을 만료할 필요 없음
+         */
+        boolean memberChanged = false;      // DB에 저장할 변경사항이 있는가?
+        boolean sessionAffectingChange = false; // 기존 Principal이나 로그인 상태에 영향을 주는가?
+
         // 불필요한 업데이트 방지
         if(!member.getName().equals(request.getName())) {
             member.changeName(request.getName());
+
+            memberChanged = true;
+            sessionAffectingChange = true;
         }
+
         if(!member.getPhone().equals(request.getPhone())) {
             member.changePhone(request.getPhone());
 
+            memberChanged = true;
         }
         if(!member.getStatus().equals(request.getStatus())) {
             member.changeStatus(request.getStatus());
 
+            memberChanged = true;
+            sessionAffectingChange = true;
+        }
+
+        if(!memberChanged) {
+            return;
         }
 
         memberRepository.save(member);      // 메모리 리포지토리에선 필요 없으나 JPA 변환 시 필요할 것.
+
+        if(sessionAffectingChange) {
+            publishSessionExpiration(memberId);
+        }
     }
 
     /**
      * 관리자 회원 상태 수정 처리 (회원 상세정보 페이지에서 수정 처리)
+     *
+     * 상태가 실제로 달라질 때만 저장하고 세션을 만료시킨다.
      */
     @Transactional
-    public void changeMemberStatus(Long memberId, AdminMemberStatusUpdateRequest request) {
+    public void changeMemberStatus(
+            Long memberId,
+            AdminMemberStatusUpdateRequest request
+    ) {
 
         Member member = findMember(memberId);
 
-        if(!member.getStatus().equals(request.getStatus())) {
-            member.changeStatus(request.getStatus());
+        MemberStatus newStatus = request.getStatus();
+
+        if(member.getStatus() == newStatus) {
+            return;
         }
 
+        member.changeStatus(newStatus);
         memberRepository.save(member);
+
+        // 모든 상태 변경에서 기존 세션 만료
+        publishSessionExpiration(memberId);
     }
 
     /**
@@ -160,8 +197,9 @@ public class AdminMemberService {
         }
 
         member.changeStatus(MemberStatus.WITHDRAWN);
-
         memberRepository.save(member);
+
+        publishSessionExpiration(memberId);
     }
 
 
@@ -220,5 +258,42 @@ public class AdminMemberService {
             return false;
         }
         return member.getCreatedAt().toLocalDate().isEqual(LocalDate.now());
+    }
+
+    /**
+     * AdminMemberService.withdrawMember() 호출
+     *         ↓
+     * @Transactional 프록시가 트랜잭션 시작
+     *         ↓
+     * 회원 상태를 WITHDRAWN으로 변경
+     *         ↓
+     * memberRepository.save(member)
+     *         ↓
+     * publishSessionExpiration(memberId)
+     *         ↓
+     * ApplicationEventPublisher.publishEvent(event)
+     *         ↓
+     * Spring이 해당 이벤트를 받는 리스너 검색
+     *         ↓
+     * @TransactionalEventListener 발견
+     *         ↓
+     * 즉시 실행하지 않고 트랜잭션 완료 시점까지 대기
+     *         ↓
+     * withdrawMember() 정상 종료
+     *         ↓
+     * 트랜잭션 커밋
+     *         ↓
+     * AFTER_COMMIT 리스너 실행
+     *         ↓
+     * MemberSessionExpirationListener.handle()
+     *         ↓
+     * MemberSessionService.expireAllByMemberId()
+     *         ↓
+     * 해당 회원의 모든 로그인 세션 만료 표시
+     */
+    private void publishSessionExpiration(Long memberId) {
+        eventPublisher.publishEvent(
+                new MemberSessionExpirationEvent(memberId)
+        );
     }
 }

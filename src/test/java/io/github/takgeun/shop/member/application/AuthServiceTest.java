@@ -5,6 +5,8 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -20,12 +22,14 @@ class AuthServiceTest {
 
     private MemberService memberService;
     private AuthService authService;
+    private ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         MemoryMemberRepository memberRepository = new MemoryMemberRepository();
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
-        memberService = new MemberService(memberRepository, passwordEncoder);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        memberService = new MemberService(memberRepository, passwordEncoder, eventPublisher);
         authService = new AuthService(memberRepository, passwordEncoder);
     }
 

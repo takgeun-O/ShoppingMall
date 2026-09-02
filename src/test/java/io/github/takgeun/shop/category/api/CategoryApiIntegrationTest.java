@@ -1,9 +1,11 @@
 package io.github.takgeun.shop.category.api;
 
 import io.github.takgeun.shop.IntegrationTestSupport;
+import io.github.takgeun.shop.category.application.CategoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional      // 실제 DB에 카테고리 저장하기 때문에 사용 + 각 테스트 끝날 때 해당 테스트에서 생성한 데이터 롤백
 @ActiveProfiles({"test", "mybatis"})
 public class CategoryApiIntegrationTest extends IntegrationTestSupport {
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Test
     void 공개_카테고리_목록_조회_통합_성공() throws Exception {
