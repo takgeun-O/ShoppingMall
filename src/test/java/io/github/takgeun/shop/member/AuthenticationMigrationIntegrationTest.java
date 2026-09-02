@@ -567,11 +567,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(post("/logout")
                         .session(loginSession))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/"))
-                .andExpect(flash().attribute(
-                        "success",
-                        "로그아웃되었습니다."
-                ));
+                .andExpect(redirectedUrl("/"));
 
         assertThat(loginSession.isInvalid())
                 .isTrue();

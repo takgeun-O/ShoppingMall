@@ -36,12 +36,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AuthViewController {
 
     /**
-     * 기존 세션 인증, 인가 방식의 의존성
-     */
-//    private final AuthService authService;
-//    private final MemberService memberService;
-
-    /**
      * Spring Security 전환하면서 의존성 변경
      *
      * 참고) Spring Security 로그인 시 작동 방식
@@ -250,18 +244,6 @@ public class AuthViewController {
             model.addAttribute("next", safeNext);
             return "auth/login";
         }
-    }
-
-    // 로그아웃
-    @PostMapping("/logout")
-    public String logout(HttpServletRequest request, RedirectAttributes ra) {
-
-        HttpSession session = request.getSession(false);    // 세션 없으면 null 반환
-        if (session != null) {
-            session.invalidate();
-        }
-        ra.addFlashAttribute("success", "로그아웃되었습니다.");
-        return "redirect:/";
     }
 
     // 로그인 후 next가 POST전용 URL일 경우 안전한 페이지로 바꾸기 위해

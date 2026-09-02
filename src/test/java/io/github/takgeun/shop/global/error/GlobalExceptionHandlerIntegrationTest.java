@@ -5,6 +5,7 @@ import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.view.ViewController;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -24,8 +25,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 실제 ApplicationContext에 등록된 API/View 예외 처리기가
  * Controller 종류에 따라 올바르게 분리되는지 검증한다.
+ *
+ * 이 테스트의 관심사는 Spring MVC 예외 처리이므로
+ * MockMvc의 Security Filter는 적용하지 않는다.
+ *
+ * Spring Security에서 발생하는 인증·인가 예외는
+ * AuthenticationMigrationIntegrationTest에서 검증한다.
  */
 @ActiveProfiles({"test", "mybatis"})
+/**
+ * MockMvc 요청
+ * → SecurityFilterChain 생략
+ * → DispatcherServlet
+ * → 테스트 Controller
+ * → 예외 발생
+ * → 실제 GlobalExceptionHandler
+ * → 응답 검증
+ */
+@AutoConfigureMockMvc(addFilters = false)   // MockMvc 요청에서 Servlet Filter를 적용하지 않겠다
 @Import({
         GlobalExceptionHandlerIntegrationTest.TestApiController.class,
         GlobalExceptionHandlerIntegrationTest.TestViewController.class

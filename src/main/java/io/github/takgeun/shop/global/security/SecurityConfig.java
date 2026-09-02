@@ -59,10 +59,25 @@ public class SecurityConfig {
 
         http
                 // TODO(security-migration): SecurityContext 전환 후 CSRF, logout, URL 권한 규칙을 활성화한다.
-                // 기존 세션/Interceptor 기반 POST 화면 흐름을 Security 전환 중에도 유지한다.
                 .csrf(csrf -> csrf.disable())
-                // 기존 AuthViewController가 세션 무효화와 성공 메시지를 계속 담당한다.
-                .logout(logout -> logout.disable())
+
+                /**
+                 * POST /logout
+                 * → Spring Security 필터가 요청 감지
+                 * → 컨트롤러로 보내지 않고 로그아웃 처리
+                 * → SecurityContext 인증정보 제거
+                 * → HttpSession 무효화
+                 * → JSESSIONID 쿠키 삭제
+                 * → 홈(/)으로 리다이렉트
+                 */
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")    // 세션 쿠키 삭제 명령 Cookie: JSESSIONID=ABC123
+                        .permitAll()
+                )
 
                 /**
                  * SessionManagementConfigurer 활성화
@@ -88,6 +103,7 @@ public class SecurityConfig {
                                 "/login",
                                 "/signup",
                                 "/products/**",
+                                "/cart/**",
                                 "/api/v1/categories/**",
                                 "/api/v1/products/**",
                                 "/security/forbidden",
@@ -123,10 +139,15 @@ public class SecurityConfig {
                         ).authenticated()
 
                         /**
-                         * 아직 권한 계약을 정하지 않은 경로는
-                         * 이번 마이그레이션 단계에서 기준 동작을 유지
+                         * 위에서 명시하지 않은 경로는 기본 차단
+                         *
+                         * authenticated()를 쓰지 않은 이유
+                         * 새 URL을 만들고 SecurityConfig에 등록해야 하는데 그걸 깜빡했을 때
+                         * 공개되지 않아야 할 게 공개되는 경우가 있음.
+                         *
+                         * denyAll()을 쓰면 명시적으로 권한을 정하기 전까지 접근하지 못하도록 막을 수 있음.
                          */
-                        .anyRequest().permitAll()
+                        .anyRequest().denyAll()
                 )
 
                 // SecurityConfig에 처리기 연결
