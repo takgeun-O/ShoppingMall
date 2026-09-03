@@ -1,70 +1,78 @@
 package io.github.takgeun.shop.global.view;
 
 import io.github.takgeun.shop.category.application.CategoryService;
-import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.domain.MemberRole;
-import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-@ControllerAdvice
+@ControllerAdvice(annotations = ViewController.class)
+@RequiredArgsConstructor
 public class GlobalViewModelAdvice {
 
     private final CategoryService categoryService;
 
-    public GlobalViewModelAdvice(CategoryService categoryService) {
-        this.categoryService = categoryService;
-    }
-
     /**
-     * @ModelAttribute : 클래스 레벨에서 쓰면 컨트롤러 실행 전에 Model에 값을 자동으로 추가
+     * @ViewController가 붙은 컨트롤러 실행 전에
+     * 화면 공통 Model 속성을 추가한다. (노가다 방지)
+     *
+     * @ModelAttribute 메서드는 대상 컨트롤러 메서드 실행 전에 호출되어
+     * 공통 Model 속성을 추가한다.
      */
     @ModelAttribute
-    public void global(HttpSession session, Model model) {
-        Long loginMemberId = getLoginMemberId(session);
-        String loginMemberName = getLoginMemberName(session);
-        MemberRole loginRole = getLoginRole(session);
-        boolean isAdmin = (loginRole == MemberRole.ADMIN);
-        String treeMode = isAdmin ? "admin" : "public";
+    public void global(
+            Authentication authentication,
+            Model model
+    ) {
+
+        /**
+         * Spring Security 전환 후 Principal 방식
+         */
+        ShopUserPrincipal principal = extractPrincipal(authentication);
+
+        boolean loggedIn = principal != null;
+
+        Long loginMemberId = loggedIn
+                ? principal.getMemberId()
+                : null;
+
+        String loginMemberName = loggedIn
+                ? principal.getMemberName()
+                : null;
+
+        MemberRole loginRole = loggedIn
+                ? principal.getRole()
+                : null;
+
+        // 여기에 있는 isAdmin은 접근 권한을 검사할 때 쓰는 목적이 아니라
+        // 헤더에서 관리자 메뉴를 보여줄지 결정하는 화면 표시용 값이므로
+        // Spring Security 전환 후에도 여기서는 유지시키자.
+        boolean isAdmin = loginRole == MemberRole.ADMIN;
+
 
         model.addAttribute("loginMemberId", loginMemberId);
         model.addAttribute("loginMemberName", loginMemberName);
         model.addAttribute("loginRole", loginRole);
         model.addAttribute("isAdmin", isAdmin);
-        model.addAttribute("treeMode", treeMode);
-        model.addAttribute("categoryTree",
-                isAdmin
-                        ? categoryService.getAllAdmin()
-                        : categoryService.getAllPublic());
+        model.addAttribute("treeMode", isAdmin ? "admin" : "public");
 
         // 헤더 드롭다운용 루트 카테고리 (이건 항상 public 전용으로 할 것. 어차피 대표 카테고리는 admin이 의미 없음)
+        // TODO: 이건 매 화면 요청마다 호출됨. -> 최적화 문제 발생할 수 있음. 나중에 생각해보기
         model.addAttribute("rootCategories", categoryService.getTopCategories());
     }
 
-
-
-    private Long getLoginMemberId(HttpSession session) {
-        if (session == null) {
-            return null;
+    private ShopUserPrincipal extractPrincipal(Authentication authentication) {
+        if(authentication == null) {
+            return null;        // 로그인하지 않은 사용자가 공개 페이지에 접근했을 때
         }
-        Object value = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        return (value instanceof Long memberId) ? memberId : null;
-    }
 
-    private String getLoginMemberName(HttpSession session) {
-        if (session == null) {
-            return null;
+        if(authentication.getPrincipal() instanceof ShopUserPrincipal principal) {
+            return principal;
         }
-        Object value = session.getAttribute(SessionConst.LOGIN_MEMBER_NAME);
-        return (value instanceof String memberName) ? memberName : null;
-    }
 
-    private MemberRole getLoginRole(HttpSession session) {
-        if (session == null) {
-            return null;
-        }
-        Object value = session.getAttribute(SessionConst.LOGIN_ROLE);
-        return (value instanceof MemberRole role) ? role : null;
+        return null;        // 익명의 인증 객체일 때를 대비해서 구현
     }
 }

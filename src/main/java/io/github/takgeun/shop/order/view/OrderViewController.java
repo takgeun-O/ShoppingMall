@@ -3,8 +3,9 @@ package io.github.takgeun.shop.order.view;
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
-import io.github.takgeun.shop.global.session.SessionConst;
+import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.order.application.OrderCheckoutService;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.view.dto.CheckoutItemView;
@@ -14,23 +15,29 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * 이 경로는 인터셉터측에서 로그인 체크해줌
+ * 기존 세션 방식 : 이 경로는 인터셉터측에서 로그인 체크해줌
+ *
+ *
+ * Spring Security 전환 후)
+ *
+ * /orders/** 경로의 인증 여부는
+ * Spring Security가 검사한다.
+ * 로그인 회원 정보는 ShopUserPrincipal에서 조회하고,
+ * HttpSession은 장바구니 저장 용도로만 사용한다.
  */
 @Slf4j
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/orders")
 public class OrderViewController {
@@ -43,19 +50,22 @@ public class OrderViewController {
      * GET /orders/checkout
      */
     @GetMapping("/checkout")
-    public String checkout(HttpServletRequest request,
-                           Model model,
-                           RedirectAttributes ra
+    public String checkout(
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+            HttpServletRequest request,
+            Model model,
+            RedirectAttributes ra
     ) {
+
+//        Long memberId = getRequiredLoginMemberId(session);        // 기존 세션 기반 인증 정보
+        Long memberId = principal.getMemberId();        // Spring Security 인증 정보
 
         // 인터셉터에서 이미 막아주고 있긴 하나 방어적 코딩
         // 로그인 안한 사용자가 접근하면 새 세션을 생성하게 되면 불필요한 세션이 증가하니 생성하지 않게 막기
-        HttpSession session = request.getSession(false);
-
-        Long memberId = getRequiredLoginMemberId(session);
+        HttpSession session = request.getSession(false);        // 장바구니 정보(비로그인 장바구니를 세션에 저장해야 하니까 세션 기반 유지)
 
         CartViewResult cartView = getCartViewOrEmpty(session);
-        if(cartView.getItems().isEmpty()) {
+        if (cartView.getItems().isEmpty()) {
             // 빈 카트면 checkout 페이지 대신 cart로 보내기
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";
@@ -63,7 +73,7 @@ public class OrderViewController {
 
         attachCartModel(model, cartView);
 
-        if(!model.containsAttribute("checkoutForm")) {
+        if (!model.containsAttribute("checkoutForm")) {
             CheckoutForm form = new CheckoutForm();
             form.setRequestKey(memberId + ":" + UUID.randomUUID());
             model.addAttribute("checkoutForm", form);
@@ -77,45 +87,61 @@ public class OrderViewController {
      * GET /orders 경로로 요청이 들어오는거라 매핑을 안하면 에러 발생
      * 이러한 상황을 막고자 안전장치용으로 만들음.
      * GET /orders 랜딩 시 장바구니로 보내기
+     * <p>
+     * 이 놈은 Principal을 반드시 받을 필요 없음. 재로그인해서 리다이렉트로 /orders로 들어오는 경우를 생각해보면
+     * /orders가 .authenticated()로 보호되고 있으니 Spring Security가 이미 로그인 여부를 검사함.
      */
     @GetMapping
     public String orderRoot(HttpServletRequest request, RedirectAttributes ra) {
         HttpSession session = request.getSession(false);
 
-        CartViewResult cartView = (session == null) ? CartViewResult.empty() : cartService.getCartView(session);
-        if(cartView.getItems().isEmpty()) {
+        CartViewResult cartView = getCartViewOrEmpty(session);
+        if (cartView.getItems().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";
         }
+
         return "redirect:/orders/checkout";
     }
 
     /**
      * 결제하기(=주문 생성)
      * POST /orders
-     *
+     * <p>
      * 검증 실패 --> checkout 화면 재렌더링
      * 비즈니스 충돌(재고 부족 등) -> checkout 화면 재렌더링
      * 성공 --> /orders/{orderId} 로 redirect
      */
     @PostMapping
-    public String createOrder(@Validated(CheckoutValidationSequence.class) @ModelAttribute("checkoutForm") CheckoutForm form,
-                              BindingResult bindingResult,
-                              HttpServletRequest request,
-                              Model model,
-                              RedirectAttributes ra) {
+    public String createOrder(
+            @Validated(CheckoutValidationSequence.class) @ModelAttribute("checkoutForm") CheckoutForm form,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+            HttpServletRequest request,
+            Model model,
+            RedirectAttributes ra) {
 
-        HttpSession session = request.getSession(false);    // 이미 인터셉터에서 "/orders" 경로는 세션이 있음을 보장하므로 null 체크 안해도 됨.
-        Long memberId = getRequiredLoginMemberId(session);          // 그럼에도 불구하고 방어적 코드로 작성하고 memberId 추출
+        /** Spring Security 전환 전
+         * 기존 세션 기반으로 memberID 추출
+         */
+//        HttpSession session = request.getSession(false);    // 이미 인터셉터에서 "/orders" 경로는 세션이 있음을 보장하므로 null 체크 안해도 됨.
+//        Long memberId = getRequiredLoginMemberId(session);          // 그럼에도 불구하고 방어적 코드로 작성하고 memberId 추출
+
+        /** Spring Security 전환 후
+         * principal 기반으로 memberID 추출
+         */
+        Long memberId = principal.getMemberId();
+        HttpSession session = request.getSession(false);
 
         CartViewResult cartView = getCartViewOrEmpty(session);
-        if(cartView.getItems().isEmpty()) {
+
+        if (cartView.getItems().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";        // 장바구니로 리다이렉트
         }
 
         // 폼 검증
-        if(bindingResult.hasErrors()) {
+        if (bindingResult.hasErrors()) {
             attachCartModel(model, cartView);       // 폼 검증 실패 시 장바구니에 담아놨던 아이템 뷰 정보를 모델에 저장
             return "public/orders/checkout";        // 같은 요청 안에서 model 넘겨주기 (같은 요청은 model 유지됨) -> 리다이렉트해버리면 model 사라짐 + BindingResult 사라짐 -> 폼 에러 표시 불가
         }
@@ -156,12 +182,24 @@ public class OrderViewController {
      */
     @GetMapping("/{orderId:\\d+}/complete")
     public String complete(@PathVariable Long orderId,
+                           @AuthenticationPrincipal ShopUserPrincipal principal,
                            HttpServletRequest request,
-                           RedirectAttributes ra,
                            Model model) {
 
+        /**
+         * Spring Security 전환 전
+         * 기존 세션 기반 방식
+         */
+//        HttpSession session = request.getSession(false);
+//        Long memberId = getRequiredLoginMemberId(session);
+
+        /**
+         * Spring Security 전환 후
+         * Principal 기반 방식
+         */
+        Long memberId = principal.getMemberId();
+
         HttpSession session = request.getSession(false);
-        Long memberId = getRequiredLoginMemberId(session);
 
         OrderCompleteView view = orderCheckoutService.getOrderCompleteView(session, memberId, orderId);
 
@@ -174,7 +212,7 @@ public class OrderViewController {
 
 
     private CartViewResult getCartViewOrEmpty(HttpSession session) {
-        if(session == null) {
+        if (session == null) {
             return CartViewResult.empty();
         }
         return cartService.getCartView(session);
@@ -188,35 +226,5 @@ public class OrderViewController {
 
         model.addAttribute("items", checkoutItems);
         model.addAttribute("summary", cartView.getSummary());
-    }
-
-    private String redirectToLogin(String next) {
-        return UriComponentsBuilder
-                .fromPath("/login")
-                .queryParam("reason", "LOGIN_REQUIRED")
-                .queryParam("next", next)
-                .build()
-                .encode(StandardCharsets.UTF_8)
-                .toUriString();
-    }
-
-    private Long getLoginMemberId(HttpSession session) {
-        if(session == null) return null;
-
-        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        return (idObj instanceof  Long id) ? id : null;
-    }
-
-    private Long getRequiredLoginMemberId(HttpSession session) {
-        if(session == null) {
-            throw new IllegalArgumentException("로그인 세션이 존재하지 않습니다. 인터셉터 설정을 확인해주세요.");
-        }
-
-        Object idObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        if(!(idObj instanceof Long memberId)) {
-            throw new IllegalArgumentException("로그인 회원 정보가 세션에 없습니다. 인터셉터 또는 로그인 처리를 확인해주세요.");
-        }
-
-        return memberId;
     }
 }

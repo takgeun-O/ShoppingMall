@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class Member {
     private Long id;
     private String email;
-    private String password;    // v1 에서는 평문 저장, 추후 DB 붙일 때 password encoder 적용 예정
+    private String password;    // 저장용으로 인코딩된 비밀번호
     private String name;
     private String phone;
     private MemberRole role;
@@ -76,15 +76,10 @@ public class Member {
             throw new IllegalArgumentException("password는 필수입니다.");
         }
 
-        // password 길이 제한 --> IllegalArgumentException 400 Bad Request
-        if(password.length() < 8) {
-            throw new IllegalArgumentException("password 길이는 8자 이상이어야 합니다.");
+        // 인코딩 방식과 무관하게 DB 컬럼 크기 이내의 저장 비밀번호만 허용한다.
+        if(password.length() > 255) {
+            throw new IllegalArgumentException("password 길이는 255자 이하이어야 합니다.");
         }
-        if(password.length() > 20) {
-            throw new IllegalArgumentException("password 길이는 20자 이하이어야 합니다.");
-        }
-
-        // 특수문자 및 대소문자 포함 등등 규칙은 나중에
 
         this.password = password;
     }
@@ -156,10 +151,6 @@ public class Member {
 
     public boolean isActive() {
         return this.status == MemberStatus.ACTIVE;
-    }
-
-    public boolean isAdmin() {
-        return this.role == MemberRole.ADMIN;
     }
 
     public void updateLastLoginAt() {

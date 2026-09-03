@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(
+          '409 - 요청 충돌이 발생했습니다',
+          ~{error/error :: content(
+              409,
+              '요청을 처리할 수 없습니다',
+              '현재 리소스 상태와 요청이 충돌합니다.<br/>상태를 확인한 후 다시 시도해주세요.'
+          )},
+          null,
+          null
+      )}">
+</html>

@@ -2,59 +2,34 @@ package io.github.takgeun.shop.admin.view;
 
 import io.github.takgeun.shop.admin.application.AdminDashboardQueryService;
 import io.github.takgeun.shop.admin.view.dto.AdminDashboardView;
-import io.github.takgeun.shop.global.error.exception.ForbiddenException;
-import io.github.takgeun.shop.global.session.SessionConst;
-import io.github.takgeun.shop.member.application.MemberService;
-import io.github.takgeun.shop.member.domain.Member;
-import io.github.takgeun.shop.member.domain.MemberRole;
-import io.github.takgeun.shop.member.domain.MemberStatus;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import io.github.takgeun.shop.global.view.ViewController;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/admin")
 public class AdminDashboardViewController {
 
     private final AdminDashboardQueryService adminDashboardQueryService;
-    private final MemberService memberService;
 
+    /**
+     * 관리자 대시보드
+     *
+     * 접근 권한은 SecurityConfig에서 처리한다.
+     * - 비로그인 사용자: 로그인 화면으로 리다이렉트
+     * - 일반 사용자: 403 오류 확인
+     * - ROLE_ADMIN: 컨트롤러 진입 허용
+     */
     @GetMapping
-    public String dashboard(Model model,
-                            HttpServletRequest request
+    public String dashboard(
+            Model model
     ) {
-
-        HttpSession session = request.getSession(false);
-        requireAdmin(session);
 
         AdminDashboardView dashboard = adminDashboardQueryService.getDashboard();
         model.addAttribute("dashboard", dashboard);
         return "admin/dashboard";
-    }
-
-    private void requireAdmin(HttpSession session) {
-        if (session == null) {
-            throw new ForbiddenException("로그인이 필요합니다.");
-        }
-
-        Object loginMemberIdObj = session.getAttribute(SessionConst.LOGIN_MEMBER_ID);
-        if(!(loginMemberIdObj instanceof Long memberId)) {
-            throw new ForbiddenException("로그인이 필요합니다.");
-        }
-
-        Object roleObj = session.getAttribute(SessionConst.LOGIN_ROLE);
-        if (!(roleObj instanceof MemberRole role) || role != MemberRole.ADMIN) {
-            throw new ForbiddenException("관리자만 접근할 수 있습니다.");
-        }
-
-        Member loginMember = memberService.findById(memberId);
-        if(loginMember.getStatus() != MemberStatus.ACTIVE) {
-            throw new ForbiddenException("비활성 상태의 계정입니다.");
-        }
     }
 }

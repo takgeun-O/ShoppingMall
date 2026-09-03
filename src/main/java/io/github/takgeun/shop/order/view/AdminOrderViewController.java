@@ -2,6 +2,7 @@ package io.github.takgeun.shop.order.view;
 
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.order.application.AdminOrderService;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.view.dto.admin.AdminOrderDetailView;
@@ -11,7 +12,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
 @Slf4j
-@Controller
+@ViewController
 @RequiredArgsConstructor
 @RequestMapping("/admin/orders")
 public class AdminOrderViewController {

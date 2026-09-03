@@ -21,25 +21,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * ApiGlobalExceptionHandlerTest
- * -> @WebMvcTest 컨텍스트 생성
- * -> WebConfig 로딩
- * -> AdminAuthInterceptor 주입 필요
- * -> MemberService 주입 필요
- * -> @WebMvcTest에는 MemberService Bean이 없음
- * -> 테스트 시작 전 실패
- * -> ApiGlobalExceptionHandler 검증만 필요하니까 WebConfig 아예 그냥 제외시키기
- * <p>
- * --> 그래도 AdminAuthInterceptor 빈을 찾을 수 없다고 뜸...
- * --> ApiGlobalExceptionHandler를 독립형 MockMvc로 검증 시도 (Spring ApplicationContext를 생성하지 않도록)
+ * {@link ApiGlobalExceptionHandler} 단위 테스트.
+ *
+ * Spring ApplicationContext와 SecurityFilterChain을 구성하지 않고
+ * standalone MockMvc를 사용해 API 예외 처리와 JSON 응답 계약만 검증한다.
+ *
+ * Spring Security 필터에서 발생하는 인증·인가 예외는
+ * AuthenticationMigrationIntegrationTest에서 별도로 검증한다.
  */
-
 class ApiGlobalExceptionHandlerTest {
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
+        /*
+         * @Valid와 Bean Validation이 standalone MockMvc에서도
+         * 작동하도록 Validator를 직접 등록한다.
+         */
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
 
@@ -53,15 +52,9 @@ class ApiGlobalExceptionHandlerTest {
     @Test
     void 비즈니스_예외는_ErrorCode에_정의된_응답을_반환한다() throws Exception {
 
-        /**
-         * POST /test/validation
-         * → TestController.validation() 매핑 발견
-         * → JSON을 TestRequest로 변환
-         * → @Valid 실행
-         * → name, price 검증 실패
-         * → MethodArgumentNotValidException
-         * → ApiGlobalExceptionHandler 실행
-         * → 400 + INVALID_INPUT 응답
+        /*
+         * BusinessException의 ErrorCode를 기준으로
+         * HTTP 상태와 표준 오류 응답이 생성되는지 검증한다.
          */
         mockMvc.perform(get("/test/business"))
                 .andExpect(status().isNotFound())
@@ -80,6 +73,13 @@ class ApiGlobalExceptionHandlerTest {
     @Test
     void RequestBody_검증_실패_시_모든_필드_오류를_반환한다() throws Exception {
 
+        /*
+         * JSON 역직렬화
+         * → TestRequest 생성
+         * → @Valid 검증
+         * → MethodArgumentNotValidException 발생
+         * → ApiGlobalExceptionHandler가 400 응답 생성
+         */
         String requestBody = """
                 {
                     "name": "",
@@ -127,15 +127,11 @@ class ApiGlobalExceptionHandlerTest {
         String malformedJson = """
                 {
                     "name":
-                """;        // 잘못된 문법 + 네임에 값 없음
+                """;
 
-        /**
-         * JSON 읽기
-         * -> TestRequest로 역직렬화 시도
-         * -> JSON 문법 오류
-         * -> HttpMessageNotReadableException 발생
-         * -> Controller 메서드 실행되지 않음
-         * -> 예외 처리기 (ApiGlobalExceptionHandler)에서 생성된 ApiErrorResponse 객체가 JSON으로 변환되어 반환
+        /*
+         * 잘못된 JSON은 DTO로 역직렬화되지 못하므로
+         * HttpMessageNotReadableException이 발생한다.
          */
         mockMvc.perform(post("/test/validation")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -155,17 +151,13 @@ class ApiGlobalExceptionHandlerTest {
     @Test
     void 지원하지_않는_ContentType이면_415를_반환한다() throws Exception {
 
-        /**
-         * Controller 메서드 선택
-         * -> @RequestBody 변환 시도
-         * -> text/plain을 TestRequest로 변환 불가
-         * -> HttpMediaTypeNotSupportedException
-         * -> 컨트롤러가 @RestController니까 이걸 타겟해주는 ApiGlobalExceptionHandler에 의해 JSON 오류 응답 반환
+        /*
+         * JSON을 요구하는 엔드포인트에 text/plain을 보내면
+         * HttpMediaTypeNotSupportedException이 발생한다.
          */
         mockMvc.perform(post("/test/validation")
                         .contentType(MediaType.TEXT_PLAIN)
-                        .content("plain text"))     // 이 부분
-//                .andDo(print())
+                        .content("plain text"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.timestamp").exists())
                 .andExpect(jsonPath("$.status").value(415))

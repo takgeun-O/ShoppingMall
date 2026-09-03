@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.List;
 import java.util.Optional;
 
+import static io.github.takgeun.shop.TestPasswordFixtures.BCRYPT_PASSWORD;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,7 +64,7 @@ class MybatisOrderRepositoryTest {
         // 회원 생성
         Member member = Member.create(
                 "test@test.com",
-                "test1234!",
+                BCRYPT_PASSWORD,
                 "테스트유저",
                 "010-1234-5555"
         );

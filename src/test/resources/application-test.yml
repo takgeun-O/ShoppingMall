@@ -25,5 +25,6 @@ logging:
         org.mybatis: DEBUG
         org.mybatis.spring: DEBUG
         org.springframework.jdbc: DEBUG
+        org.springframework.security: TRACE
         jdbc.sqlonly: DEBUG
         com.zaxxer.hikari: DEBUG

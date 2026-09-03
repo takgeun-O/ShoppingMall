@@ -14,6 +14,8 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static io.github.takgeun.shop.TestPasswordFixtures.BCRYPT_PASSWORD;
+import static io.github.takgeun.shop.TestPasswordFixtures.matchesTestPassword;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,7 +38,7 @@ class MemberMapperTest {
         // given
         Member member = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원",
                 "010-1234-5555"
         );
@@ -51,7 +53,8 @@ class MemberMapperTest {
         Member found = memberMapper.findById(member.getId());
         assertThat(found).isNotNull();
         assertThat(found.getEmail()).isEqualTo("test1@test.com");
-        assertThat(found.getPassword()).isEqualTo("pw12341234!");
+        assertThat(found.getPassword()).isEqualTo(BCRYPT_PASSWORD);
+        assertThat(matchesTestPassword(found.getPassword())).isTrue();
         assertThat(found.getName()).isEqualTo("테스트회원");
         assertThat(found.getPhone()).isEqualTo("010-1234-5555");
         assertThat(found.getRole()).isEqualTo(MemberRole.USER);
@@ -66,7 +69,7 @@ class MemberMapperTest {
         // given
         Member member = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원",
                 "010-1234-5555"
         );
@@ -88,7 +91,7 @@ class MemberMapperTest {
         // given
         Member member = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원",
                 "010-1234-5555"
         );
@@ -110,7 +113,7 @@ class MemberMapperTest {
         // given
         Member member = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원",
                 "010-1234-5555"
         );
@@ -139,13 +142,13 @@ class MemberMapperTest {
         // given
         Member member1 = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원1",
                 "010-1234-5555"
         );
         Member member2 = Member.create(
                 "test2@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원2",
                 "010-1234-2225"
         );
@@ -168,7 +171,7 @@ class MemberMapperTest {
         // given
         Member member = Member.create(
                 "test1@test.com",
-                "pw12341234!",
+                BCRYPT_PASSWORD,
                 "테스트회원",
                 "010-1234-5555"
         );
@@ -193,7 +196,7 @@ class MemberMapperTest {
         assertThat(found.getLastLoginAt()).isEqualTo(LocalDateTime.of(2026, 3, 28, 12, 30));
 
         // password는 추후 변경 페이지 만들 예정 (지금은 변경 X)
-        assertThat(found.getPassword()).isEqualTo("pw12341234!");
+        assertThat(found.getPassword()).isEqualTo(BCRYPT_PASSWORD);
 
     }
 }

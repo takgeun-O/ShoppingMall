@@ -9,18 +9,26 @@ import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class MemberServiceTest {
 
     private MemberService memberService;
+    private PasswordEncoder passwordEncoder;
+    private ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         MemoryMemberRepository memberRepository = new MemoryMemberRepository();
+        passwordEncoder = new BCryptPasswordEncoder(4);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
 
-        memberService = new MemberService(memberRepository);
+        memberService = new MemberService(memberRepository, passwordEncoder, eventPublisher);
     }
 
     @Test
@@ -39,7 +47,8 @@ class MemberServiceTest {
         // then
         assertNotNull(memberId);
         assertEquals(email, member.getEmail());
-        assertEquals(password, member.getPassword());
+        assertNotEquals(password, member.getPassword());
+        assertTrue(passwordEncoder.matches(password, member.getPassword()));
         assertEquals(name, member.getName());
         assertEquals(phone, member.getPhone());
         assertEquals(MemberRole.USER, member.getRole());
@@ -56,7 +65,7 @@ class MemberServiceTest {
         String phone = "010-1111-2222";
 
         // when
-        Long memberId = memberService.signup(email, password, name, phone);
+        memberService.signup(email, password, name, phone);
 
         // then
         ConflictException e = assertThrows(ConflictException.class,
@@ -135,6 +144,7 @@ class MemberServiceTest {
         String name = "테스트";
         String phone = "010-1111-2222";
         Long memberId = memberService.signup(email, password, name, phone);
+        String encodedPassword = memberService.findById(memberId).getPassword();
 
         MemberUpdateRequest request = MemberUpdateRequest.of(
                 "테스트2",
@@ -153,7 +163,7 @@ class MemberServiceTest {
         Member updated = memberService.findById(memberId);
         assertEquals("테스트2", updated.getName());
         assertEquals("010-2222-3333", updated.getPhone());
-        assertEquals("123123123", updated.getPassword());   // 비번 변경 X
+        assertEquals(encodedPassword, updated.getPassword());   // 비번 변경 X
     }
 
     @Test
