@@ -16,10 +16,10 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 /**
  * 회원 상태나 권한 변경 트랜잭션이
@@ -242,6 +242,7 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
 
         MvcResult result = mockMvc.perform(
                         post("/login")
+                                .with(csrf())
                                 .param("email", email)
                                 .param("password", password)
                 )

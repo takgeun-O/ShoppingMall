@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 class MemberViewControllerIntegrationTest
         extends IntegrationTestSupport {
@@ -184,6 +185,7 @@ class MemberViewControllerIntegrationTest
 
         // when
         mockMvc.perform(post("/members/me/edit")
+                        .with(csrf())
                         .session(session)
                         .param(
                                 "name",
@@ -272,6 +274,7 @@ class MemberViewControllerIntegrationTest
 
         // when & then
         mockMvc.perform(post("/members/me/edit")
+                        .with(csrf())
                         .session(session)
                         .param("name", "")
                         .param(
@@ -327,6 +330,7 @@ class MemberViewControllerIntegrationTest
 
         // when
         mockMvc.perform(post("/members/me/deactivate")
+                        .with(csrf())
                         .session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/"));
@@ -361,6 +365,7 @@ class MemberViewControllerIntegrationTest
 
         MvcResult result =
                 mockMvc.perform(post("/login")
+                                .with(csrf())
                                 .param("email", email)
                                 .param(
                                         "password",

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -58,9 +59,15 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                // TODO(security-migration): SecurityContext 전환 후 CSRF, logout, URL 권한 규칙을 활성화한다.
-                .csrf(csrf -> csrf.disable())
-
+                /**
+                 * POST 요청
+                 * → Spring Security CSRF 필터
+                 * → CSRF 토큰 검사
+                 * → 토큰이 유효하면 권한 검사
+                 * → Controller 실행
+                 *      - 이 때 토큰이 유효하지 않으면 컨트롤러에 도달하지 않고 403으로 끝남
+                 */
+                .csrf(Customizer.withDefaults())    // CSRF 사용 명시
                 /**
                  * POST /logout
                  * → Spring Security 필터가 요청 감지

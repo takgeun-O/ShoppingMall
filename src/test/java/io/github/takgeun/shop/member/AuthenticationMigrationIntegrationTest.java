@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -461,6 +462,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         );
 
         mockMvc.perform(post("/login")
+                        .with(csrf())
                         .param("email", email)
                         .param("password", "wrong-password"))
                 .andExpect(status().isOk())
@@ -479,6 +481,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
             throws Exception {
 
         mockMvc.perform(post("/login")
+                        .with(csrf())
                         .param(
                                 "email",
                                 uniqueEmail("unknown")
@@ -519,6 +522,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         memberService.deactivate(memberId);
 
         mockMvc.perform(post("/login")
+                        .with(csrf())
                         .param("email", email)
                         .param("password", PASSWORD))
                 .andExpect(status().isOk())
@@ -565,6 +569,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .isNotNull();
 
         mockMvc.perform(post("/logout")
+                        .with(csrf())
                         .session(loginSession))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/"));
@@ -978,6 +983,26 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 ));
     }
 
+    @Test
+    void CSRF_토큰이_없는_POST_요청은_403을_반환한다() throws Exception {
+        mockMvc.perform(post("/login")
+                // CSRF 방어가 잘 작동하는지 확인하는 테스트라서 .with(csrf()) 를 뻈음.
+                        .param("email", "member@test.com")
+                        .param("password", "password123!"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void CSRF_토큰이_있는_POST_요청은_보안필터를_통과한다() throws Exception {
+        mockMvc.perform(post("/login")
+                        // 브라우저는 Thymeleaf 폼 제출 시 토큰이 자동으로 포함되지만
+                        // MockMvc는 브라우저가 아니기 때문에 토큰을 명시적으로 추가
+                        .with(csrf())
+                        .param("email", "unknown@test.com")
+                        .param("password", "password123!"))
+                .andExpect(status().isOk());
+    }
+
     private String uniqueEmail(String prefix) {
         return prefix + System.nanoTime() + "@test.com";
     }
@@ -990,6 +1015,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
     ) throws Exception {
 
         var requestBuilder = post("/login")
+                .with(csrf())
                 .param("email", email)
                 .param("password", password);
 
@@ -1043,6 +1069,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
          */
         MvcResult result = mockMvc.perform(
                         post("/login")
+                                .with(csrf())
                                 .param("email", email)
                                 .param("password", password)
                 )
