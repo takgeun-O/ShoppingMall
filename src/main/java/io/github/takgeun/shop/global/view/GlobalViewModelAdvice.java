@@ -29,15 +29,6 @@ public class GlobalViewModelAdvice {
     ) {
 
         /**
-         * 기존 세션 방식
-         */
-//        Long loginMemberId = getLoginMemberId(session);
-//        String loginMemberName = getLoginMemberName(session);
-//        MemberRole loginRole = getLoginRole(session);
-//        boolean isAdmin = (loginRole == MemberRole.ADMIN);
-//        String treeMode = isAdmin ? "admin" : "public";
-
-        /**
          * Spring Security 전환 후 Principal 방식
          */
         ShopUserPrincipal principal = extractPrincipal(authentication);
@@ -56,6 +47,9 @@ public class GlobalViewModelAdvice {
                 ? principal.getRole()
                 : null;
 
+        // 여기에 있는 isAdmin은 접근 권한을 검사할 때 쓰는 목적이 아니라
+        // 헤더에서 관리자 메뉴를 보여줄지 결정하는 화면 표시용 값이므로
+        // Spring Security 전환 후에도 여기서는 유지시키자.
         boolean isAdmin = loginRole == MemberRole.ADMIN;
 
 

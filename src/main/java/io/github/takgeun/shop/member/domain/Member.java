@@ -153,10 +153,6 @@ public class Member {
         return this.status == MemberStatus.ACTIVE;
     }
 
-    public boolean isAdmin() {
-        return this.role == MemberRole.ADMIN;
-    }
-
     public void updateLastLoginAt() {
         this.lastLoginAt = LocalDateTime.now();
     }

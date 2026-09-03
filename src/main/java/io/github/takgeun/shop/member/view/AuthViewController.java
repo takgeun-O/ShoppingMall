@@ -10,7 +10,6 @@ import io.github.takgeun.shop.member.view.form.LoginForm;
 import io.github.takgeun.shop.member.view.form.SignupForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
