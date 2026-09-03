@@ -6,8 +6,8 @@ import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEve
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.member.domain.MemberStatus;
-import io.github.takgeun.shop.member.dto.request.AdminMemberStatusUpdateRequest;
-import io.github.takgeun.shop.member.dto.request.AdminMemberUpdateRequest;
+import io.github.takgeun.shop.member.application.command.AdminMemberStatusChangeCommand;
+import io.github.takgeun.shop.member.application.command.AdminMemberUpdateCommand;
 import io.github.takgeun.shop.member.view.dto.admin.*;
 import io.github.takgeun.shop.member.view.form.admin.AdminMemberSearchCondition;
 import io.github.takgeun.shop.order.domain.Order;
@@ -114,7 +114,7 @@ public class AdminMemberService {
      * 관리자 회원 수정 처리 (회원 수정 페이지에서 수정 처리)
      */
     @Transactional
-    public void updateMember(Long memberId, AdminMemberUpdateRequest request) {
+    public void updateMember(Long memberId, AdminMemberUpdateCommand request) {
 
         Member member = findMember(memberId);
 
@@ -165,7 +165,7 @@ public class AdminMemberService {
     @Transactional
     public void changeMemberStatus(
             Long memberId,
-            AdminMemberStatusUpdateRequest request
+            AdminMemberStatusChangeCommand request
     ) {
 
         Member member = findMember(memberId);

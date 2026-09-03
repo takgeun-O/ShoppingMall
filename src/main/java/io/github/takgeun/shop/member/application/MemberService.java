@@ -3,7 +3,6 @@ package io.github.takgeun.shop.member.application;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEvent;
-import io.github.takgeun.shop.global.security.session.MemberSessionService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
 import io.github.takgeun.shop.member.domain.MemberRole;
@@ -102,7 +101,7 @@ public class MemberService {
         memberRepository.save(member);
 
         if(sessionAffectingChange) {
-            publishSessionExpiration(memberId);;
+            publishSessionExpiration(memberId);
         }
     }
 

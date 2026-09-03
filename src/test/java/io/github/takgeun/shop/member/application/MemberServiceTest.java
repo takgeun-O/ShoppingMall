@@ -146,17 +146,15 @@ class MemberServiceTest {
         Long memberId = memberService.signup(email, password, name, phone);
         String encodedPassword = memberService.findById(memberId).getPassword();
 
-        MemberUpdateRequest request = MemberUpdateRequest.of(
-                "테스트2",
-                "010-2222-3333"
-        );
+        String updatedName = "테스트2";
+        String updatedPhone = "010-2222-3333";
 
         // when
         memberService.updateProfile(
                 memberId,
-                request.getName(),
+                updatedName,
                 null,
-                request.getPhone()
+                updatedPhone
         );
 
         // then
@@ -170,18 +168,17 @@ class MemberServiceTest {
     void 회원_수정_실패_회원_없음() {
 
         // given
-        MemberUpdateRequest request = MemberUpdateRequest.of(
-                "업데이트테스트",
-                "010-1111-2222"
-        );
+        String updatedName = "업데이트테스트";
+        String updatedPhone = "010-1111-2222";
 
         // when
         NotFoundException e = assertThrows(NotFoundException.class,
                 () -> memberService.updateProfile(
                         999L,
-                        request.getName(),
+                        updatedName,
                         null,
-                        request.getPhone())
+                        updatedPhone
+                )
         );
 
         // then

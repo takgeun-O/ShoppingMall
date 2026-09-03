@@ -1,6 +1,5 @@
 package io.github.takgeun.shop.member.view.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
