@@ -77,60 +77,6 @@ class PasswordEncodingIntegrationTest extends IntegrationTestSupport {
                 .isEqualTo(email);
     }
 
-    @Test
-    void 비밀번호를_변경하면_새_비밀번호만_인증할_수_있다() {
-
-        // given
-        String email = uniqueEmail("bcrypt-change");
-
-        Long memberId = memberService.signup(
-                email,
-                INITIAL_PASSWORD,
-                "변경회원",
-                "010-2222-3333"
-        );
-
-        // when
-        memberService.updateProfile(
-                memberId,
-                null,
-                CHANGED_PASSWORD,
-                null
-        );
-
-        // then: 변경된 비밀번호가 BCrypt로 저장됐는지 확인
-        Member updatedMember =
-                memberService.findById(memberId);
-
-        assertThat(updatedMember.getPassword())
-                .isNotEqualTo(CHANGED_PASSWORD);
-
-        assertThat(passwordEncoder.matches(
-                CHANGED_PASSWORD,
-                updatedMember.getPassword()
-        )).isTrue();
-
-        // 이전 비밀번호로 인증할 수 없음
-        assertThatThrownBy(() ->
-                authenticate(email, INITIAL_PASSWORD)
-        ).isInstanceOf(BadCredentialsException.class);
-
-        // 새 비밀번호로 인증 성공
-        Authentication authentication = authenticate(
-                email,
-                CHANGED_PASSWORD
-        );
-
-        assertThat(authentication.isAuthenticated())
-                .isTrue();
-
-        ShopUserPrincipal principal =
-                (ShopUserPrincipal) authentication.getPrincipal();
-
-        assertThat(principal.getMemberId())
-                .isEqualTo(memberId);
-    }
-
     private String uniqueEmail(String prefix) {
         return prefix + System.nanoTime() + "@test.com";
     }

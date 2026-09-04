@@ -3,6 +3,7 @@ package io.github.takgeun.shop.category.api;
 import io.github.takgeun.shop.category.api.dto.response.CategoryResponse;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.category.domain.Category;
+import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.error.api.ApiErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +30,7 @@ import java.util.List;
 // @Validated AOP 검증 방식의 경우 주로 ConstraintViolationException 예외가 발생하며
 // 이번에 바꾼 Spring MVC 기본 검증은 HandlerMethodValidationException 예외가 주로 발생한다.
 //@Validated
-@RestController
+@ApiController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/categories")
 public class CategoryApiController {

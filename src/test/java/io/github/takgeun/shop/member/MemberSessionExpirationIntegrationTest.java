@@ -173,43 +173,6 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
         );
     }
 
-    @Test
-    void 비밀번호가_변경되면_기존_로그인_세션이_만료된다() throws Exception {
-
-        // given
-        String email = uniqueEmail("password-session");
-
-        Long memberId = memberService.signup(
-                email,
-                PASSWORD,
-                "비밀번호변경회원",
-                "010-1111-2222"
-        );
-
-        MockHttpSession session = loginAndGetSession(email, PASSWORD);
-
-        SessionInformation sessionInformation = getSessionInformation(session);
-
-        assertThat(sessionInformation.isExpired()).isFalse();
-
-        // when
-        memberService.updateProfile(
-                memberId,
-                null,
-                NEW_PASSWORD,
-                null
-        );
-
-        // then
-        assertThat(sessionInformation.isExpired()).isTrue();
-
-        assertExpiredSessionIsRejected(
-                session,
-                "/members/me"
-        );
-
-    }
-
     private ShopUserPrincipal getPrincipal(MockHttpSession session) {
 
         SecurityContext securityContext = getSecurityContext(session);

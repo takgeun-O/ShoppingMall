@@ -2,6 +2,7 @@ package io.github.takgeun.shop.member.application;
 
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEvent;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRepository;
@@ -55,54 +56,74 @@ public class MemberService {
     // 내 정보 수정 (패스워드 변경은 다른 곳에서 할 예정)
 
     /**
-     * 비밀번호 변경 : 보안을 위해 전체 세션 만료
      * 이름 변경 : ShopUserPrincipal에 이름이 있으므로 세션 갱신 또는 만료
      */
     @Transactional
     public void updateProfile(
             Long memberId,
             String name,
-            String password,
             String phone
     ) {
 
         Member member = findMember(memberId);
 
         boolean memberChanged = false;
-        boolean sessionAffectingChange = false;
 
-        if(password != null) {
-            validateRawPassword(password);
-            member.changePassword(
-                    passwordEncoder.encode(password)
-            );
-
-            memberChanged = true;
-            sessionAffectingChange = true;
-        }
-
-        if(name != null && !name.equals(member.getName())) {
+        if (name != null && !name.equals(member.getName())) {
             member.changeName(name);
 
             memberChanged = true;
-            sessionAffectingChange = true;
         }
 
-        if(phone != null && !phone.equals(member.getPhone())) {
+        if (phone != null && !phone.equals(member.getPhone())) {
             member.changePhone(phone);
 
             memberChanged = true;
         }
 
-        if(!memberChanged){
+        if (!memberChanged) {
             return;
         }
 
         memberRepository.save(member);
+    }
 
-        if(sessionAffectingChange) {
-            publishSessionExpiration(memberId);
+    @Transactional
+    public void changePassword(
+            Long memberId,
+            String currentPassword,
+            String newPassword
+    ) {
+        Member member = findMember(memberId);
+
+        if (!passwordEncoder
+                .matches(
+                        currentPassword,
+                        member.getPassword())
+        ) {
+            throw new UnauthorizedException(
+                    "현재 비밀번호가 일치하지 않습니다."
+            );
         }
+
+        validateRawPassword(newPassword);
+
+        if(passwordEncoder.matches(
+                newPassword,
+                member.getPassword()
+        )) {
+            throw new ConflictException(
+                    "새 비밀번호는 기존 비밀번호와 달라야 합니다."
+            );
+        }
+
+        member.changePassword(
+                passwordEncoder.encode(newPassword)
+        );
+
+        memberRepository.save(member);
+
+        publishSessionExpiration(memberId);
     }
 
     // 회원 탈퇴
@@ -118,18 +139,18 @@ public class MemberService {
 
     @Transactional
     public void changeRole(Long memberId, MemberRole newRole) {
-        if(memberId == null) {
+        if (memberId == null) {
             throw new IllegalArgumentException("회원 ID는 필수입니다.");
         }
 
-        if(newRole == null) {
+        if (newRole == null) {
             throw new IllegalArgumentException("변경할 권한은 필수입니다.");
         }
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("회원이 존재하지 않습니다."));
 
-        if(member.getRole() == newRole) {
+        if (member.getRole() == newRole) {
             return;
         }
 
@@ -141,17 +162,17 @@ public class MemberService {
 
     @Transactional
     public void changeStatus(Long memberId, MemberStatus newStatus) {
-        if(memberId == null || memberId <= 0) {
+        if (memberId == null || memberId <= 0) {
             throw new IllegalArgumentException("memberId는 양수여야 합니다.");
         }
-        if(newStatus == null) {
+        if (newStatus == null) {
             throw new IllegalArgumentException("newStatus는 필수입니다.");
         }
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다."));
 
-        if(member.getStatus() == newStatus) {
+        if (member.getStatus() == newStatus) {
             return;
         }
 
@@ -182,19 +203,19 @@ public class MemberService {
 
 
     private void validateDuplicateEmail(String normalizedEmail) {
-        if(memberRepository.existsByEmail(normalizedEmail)) {
+        if (memberRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("이미 사용 중인 이메일입니다.");
         }
     }
 
     private void validateRawPassword(String password) {
-        if(password == null || password.trim().isEmpty()) {
+        if (password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException("password는 필수입니다.");
         }
-        if(password.length() < 8) {
+        if (password.length() < 8) {
             throw new IllegalArgumentException("password 길이는 8자 이상이어야 합니다.");
         }
-        if(password.length() > 20) {
+        if (password.length() > 20) {
             throw new IllegalArgumentException("password 길이는 20자 이하이어야 합니다.");
         }
     }
@@ -206,7 +227,7 @@ public class MemberService {
 
     // 이메일 정규화
     private String normalizeEmail(String email) {
-        if(email == null || email.trim().isBlank()) {
+        if (email == null || email.trim().isBlank()) {
             throw new IllegalArgumentException("이메일은 필수입니다.");
         }
         return email.trim().toLowerCase();

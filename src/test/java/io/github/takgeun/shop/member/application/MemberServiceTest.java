@@ -5,7 +5,6 @@ import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
-import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,7 +117,7 @@ class MemberServiceTest {
         Member member = memberService.findByEmail(email);
 
         // then
-        assertEquals(1, member.getId());
+        assertEquals(memberId, member.getId());
         assertEquals("aaa@abc.com", member.getEmail());
     }
 
@@ -136,7 +135,7 @@ class MemberServiceTest {
     }
 
     @Test
-    void 회원_수정_성공_이름_패스워드_전화번호() {
+    void 회원_수정_성공_이름과_전화번호() {
 
         // given
         String email = "aaa@abc.com";
@@ -153,7 +152,6 @@ class MemberServiceTest {
         memberService.updateProfile(
                 memberId,
                 updatedName,
-                null,
                 updatedPhone
         );
 
@@ -176,7 +174,6 @@ class MemberServiceTest {
                 () -> memberService.updateProfile(
                         999L,
                         updatedName,
-                        null,
                         updatedPhone
                 )
         );
@@ -215,5 +212,132 @@ class MemberServiceTest {
 
         // then
         assertEquals("회원이 존재하지 않습니다.", e.getMessage());
+    }
+
+    @Test
+    void 회원_수정_성공_이름만_변경() {
+
+        // given
+        Long memberId = memberService.signup(
+                "name@test.com",
+                "pw123123!",
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.updateProfile(
+                memberId,
+                "변경된이름",
+                null
+        );
+
+        // then
+        Member updatedMember = memberService.findById(memberId);
+
+        assertEquals("변경된이름", updatedMember.getName());
+        assertEquals("010-1111-2222", updatedMember.getPhone());
+    }
+
+    @Test
+    void 회원_수정_성공_전화번호만_변경() {
+
+        // given
+        Long memberId = memberService.signup(
+                "phone@test.com",
+                "pw123123!",
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.updateProfile(
+                memberId,
+                null,
+                "010-9999-9999"
+        );
+
+        // then
+        Member updatedMember = memberService.findById(memberId);
+
+        assertEquals("기존이름", updatedMember.getName());
+        assertEquals("010-9999-9999", updatedMember.getPhone());
+    }
+
+    @Test
+    void 회원_수정값이_모두_null이면_기존정보를_유지한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "null@test.com",
+                "pw123123!",
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        Member originalMember = memberService.findById(memberId);
+        String originalPassword = originalMember.getPassword();
+
+        // when
+        memberService.updateProfile(
+                memberId,
+                null,
+                null
+        );
+
+        // then
+        Member updatedMember = memberService.findById(memberId);
+
+        assertEquals("기존이름", updatedMember.getName());
+        assertEquals("010-1111-2222", updatedMember.getPhone());
+        assertEquals(originalPassword, originalMember.getPassword());
+    }
+
+    @Test
+    void 회원_수정값이_기존값과_같으면_정보를_유지한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "same@test.com",
+                "123123123",
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.updateProfile(
+                memberId,
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        // then
+        Member unchanged =
+                memberService.findById(memberId);
+
+        assertEquals("기존이름", unchanged.getName());
+        assertEquals("010-1111-2222", unchanged.getPhone());
+    }
+
+    @Test
+    void 회원_수정은_세션만료_이벤트를_발행하지_않는다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "session@test.com",
+                "123123123",
+                "기존이름",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.updateProfile(
+                memberId,
+                "변경된이름",
+                "010-2222-2222"
+        );
+
+        // then
+        Mockito.verifyNoInteractions(eventPublisher);
     }
 }

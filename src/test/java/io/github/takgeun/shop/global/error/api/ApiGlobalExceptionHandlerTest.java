@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.global.error.api;
 
+import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.BusinessException;
 import jakarta.validation.Valid;
@@ -212,7 +213,7 @@ class ApiGlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
-    @RestController
+    @ApiController
     @RequestMapping("/test")
     static class TestController {
 

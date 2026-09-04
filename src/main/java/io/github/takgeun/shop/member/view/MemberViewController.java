@@ -96,6 +96,8 @@ public class MemberViewController {
 
     /**
      * 마이페이지 수정 처리
+     * 참고로 HTML의 <form></form>은 기본적으로 GET, POST 방식만 지원한다.
+     *
      * 수정 성공 후 redirect:/members/me/edit (수정페이지로 이동)
      * 수정 실패 시 public/members/edit 제자리로 포워드
      */
@@ -131,7 +133,6 @@ public class MemberViewController {
         memberService.updateProfile(
                 memberId,
                 form.getName(),
-                null,
                 form.getPhone()
         );
 
@@ -170,7 +171,8 @@ public class MemberViewController {
             Authentication authentication,
             HttpServletRequest request,
             HttpServletResponse response,
-            RedirectAttributes ra) {
+            RedirectAttributes ra
+    ) {
 
         Long memberId = principal.getMemberId();
 

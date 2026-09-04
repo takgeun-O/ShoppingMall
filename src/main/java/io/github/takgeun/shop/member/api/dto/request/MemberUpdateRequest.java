@@ -5,7 +5,15 @@ import jakarta.validation.constraints.Size;
 
 public record MemberUpdateRequest(
 
-        @Size(min = 1, max = 50, message = "이름은 1자 이상 50자 이하입니다.")
+        @Size(
+                min = 1,
+                max = 50,
+                message = "이름은 1자 이상 50자 이하입니다."
+        )
+        @Pattern(
+                regexp = ".*\\S.*",
+                message = "이름은 공백일 수 없습니다."
+        )
         String name,
 
         @Pattern(
