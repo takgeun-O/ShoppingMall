@@ -192,7 +192,7 @@ class MemberServiceTest {
     }
 
     @Test
-    void 회원_탈퇴_성공() {
+    void 관리자_이용_정지() {
 
         // given
         String email = "aaa@abc.com";
@@ -207,10 +207,14 @@ class MemberServiceTest {
 
         // then
         assertEquals(MemberStatus.INACTIVE, member.getStatus());
+
+        verify(eventPublisher).publishEvent(
+                new MemberSessionExpirationEvent(memberId)
+        );
     }
 
     @Test
-    void 회원_탈퇴_실패_회원_없음() {
+    void 존재하지_않는_회원은_이용_정지할_수_없다() {
 
         // given
 
@@ -467,6 +471,136 @@ class MemberServiceTest {
                 currentPassword,
                 findMember.getPassword()
         )).isTrue();
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하면_회원이_탈퇴한다() {
+
+        // given
+        String currentPassword = "current-password";
+
+        Long memberId = memberService.signup(
+                "withdraw@test.com",
+                currentPassword,
+                "회원",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.withdraw(
+                memberId,
+                currentPassword
+        );
+
+        // then
+        Member withdrawnMember = memberService.findById(memberId);
+
+        assertThat(withdrawnMember.getStatus())
+                .isEqualTo(MemberStatus.WITHDRAWN);
+
+        verify(eventPublisher).publishEvent(
+                new MemberSessionExpirationEvent(memberId)
+        );
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하지_않으면_탈퇴하지_않는다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "wrong-password-withdraw@test.com",
+                "current-password",
+                "회원",
+                "010-1111-2222"
+        );
+
+        // when
+        BusinessException exception =
+                catchThrowableOfType(
+                        () -> memberService.withdraw(
+                                memberId,
+                                "wrong-password"
+                        ),
+                        BusinessException.class
+                );
+
+        // then
+        assertThat(exception.getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_CURRENT_PASSWORD
+                );
+
+        Member member = memberService.findById(memberId);
+
+        assertThat(member.getStatus())
+                .isEqualTo(MemberStatus.ACTIVE);
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+    @Test
+    void 이미_탈퇴한_회원은_다시_탈퇴할_수_없다() {
+
+        // given
+        String currentPassword = "current-password";
+
+        Long memberId = memberService.signup(
+                "already_withdrawn@test.com",
+                currentPassword,
+                "회원",
+                "010-1111-2222"
+        );
+
+        memberService.withdraw(
+                memberId,
+                currentPassword
+        );
+
+        /**
+         * 첫 번째 탈퇴에서 발생한 이벤트 호출 기록을 지운다.
+         * 그래야 두 번째 호출에서 이벤트가 발생하지 않았는지만
+         * 독립적으로 확인 가능!
+         */
+        Mockito.clearInvocations(eventPublisher);
+
+        // when
+        BusinessException exception =
+                catchThrowableOfType(
+                        () -> memberService.withdraw(
+                                memberId,
+                                currentPassword
+                        ),
+                        BusinessException.class
+                );
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.MEMBER_ALREADY_WITHDRAWN
+                );
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+    @Test
+    void 존재하지_않는_회원은_탈퇴할_수_없다() {
+
+        // when
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> memberService.withdraw(
+                                999L,
+                                "current-password"
+                        )
+                );
+
+        // then
+        assertThat(exception.getMessage())
+                .isEqualTo("회원이 존재하지 않습니다.");
 
         verify(eventPublisher, never())
                 .publishEvent(any());

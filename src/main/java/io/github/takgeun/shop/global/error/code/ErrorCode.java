@@ -68,6 +68,12 @@ public enum ErrorCode {
             "요청이 현재 리소스 상태와 충돌합니다."
     ),
 
+    MEMBER_ALREADY_WITHDRAWN(
+            HttpStatus.CONFLICT,
+            "MEMBER_ALREADY_WITHDRAWN",
+            "이미 탈퇴한 회원입니다."
+    ),
+
     // Category
     CATEGORY_NOT_FOUND(
             HttpStatus.NOT_FOUND,

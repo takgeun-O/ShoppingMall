@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.member.application;
 
+import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
@@ -94,19 +95,14 @@ public class MemberService {
     ) {
         Member member = findMember(memberId);
 
-        if (!passwordEncoder
-                .matches(
-                        currentPassword,
-                        member.getPassword())
-        ) {
-            throw new UnauthorizedException(
-                    INVALID_CURRENT_PASSWORD
-            );
-        }
+        validateCurrentPassword(
+                currentPassword,
+                member.getPassword()
+        );
 
         validateRawPassword(newPassword);
 
-        if(passwordEncoder.matches(
+        if (passwordEncoder.matches(
                 newPassword,
                 member.getPassword()
         )) {
@@ -124,12 +120,37 @@ public class MemberService {
         publishSessionExpiration(memberId);
     }
 
-    // 회원 탈퇴
+    // 관리자의 이용 정지
     @Transactional
     public void deactivate(Long memberId) {
         Member member = findMember(memberId);
 
         member.deactivate();
+        memberRepository.save(member);
+
+        publishSessionExpiration(memberId);
+    }
+
+    // 회원 본인 탈퇴
+    @Transactional
+    public void withdraw(
+            Long memberId,
+            String currentPassword
+    ) {
+        Member member = findMember(memberId);
+
+        if (member.getStatus() == MemberStatus.WITHDRAWN) {
+            throw new ConflictException(
+                    ErrorCode.MEMBER_ALREADY_WITHDRAWN
+            );
+        }
+
+        validateCurrentPassword(
+                currentPassword,
+                member.getPassword()
+        );
+
+        member.withdraw();
         memberRepository.save(member);
 
         publishSessionExpiration(memberId);
@@ -166,6 +187,11 @@ public class MemberService {
         if (newStatus == null) {
             throw new IllegalArgumentException("newStatus는 필수입니다.");
         }
+        if(newStatus == MemberStatus.WITHDRAWN) {
+            throw new IllegalArgumentException(
+                    "관리자 상태 변경으로 회원 탈퇴를 처리할 수 없습니다."
+            );
+        }
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("회원을 찾을 수 없습니다."));
@@ -187,7 +213,7 @@ public class MemberService {
 
     /**
      * 인증 성공 후 최근 로그인 시각을 갱신한다.
-     *
+     * <p>
      * 비밀번호 검증은 AuthenticationManager와
      * DaoAuthenticationProvider가 담당한다.
      */
@@ -258,5 +284,21 @@ public class MemberService {
         eventPublisher.publishEvent(
                 new MemberSessionExpirationEvent(memberId)
         );
+    }
+
+    private void validateCurrentPassword(
+            String currentPassword,
+            String encodedPassword
+    ) {
+        if (currentPassword == null
+                || currentPassword.isBlank()
+                || !passwordEncoder.matches(
+                currentPassword,
+                encodedPassword
+        )) {
+            throw new UnauthorizedException(
+                    INVALID_CURRENT_PASSWORD
+            );
+        }
     }
 }

@@ -28,8 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.TEXT_PLAIN;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -868,5 +867,329 @@ public class MemberApiControllerTest {
         );
     }
 
+    @Test
+    void 로그인한_회원은_현재_비밀번호를_확인하고_탈퇴할_수_있다() throws Exception {
 
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(APPLICATION_JSON)
+
+                                /**
+                                 * 이 테스트에서 현재 비밀번호가 실제로 password123!인지는 알지 못함.
+                                 * MemberService를 mock으로 만들었기 때문에 실제 DB나 BCrypt 비교가 실행되지 않음.
+                                 *
+                                 * Mock객체의 withdraw()는 별도 설정 없으면 아무 동작 없이 정상 종료함.
+                                 *
+                                 * 이 테스트에서 확인하고자 하는 것은 다음과 같음.
+                                 * JSON의 currentPassword
+                                 * → Controller가 읽음
+                                 * → memberService.withdraw(memberId, currentPassword)에 전달
+                                 * → Controller가 204 반환
+                                 */
+                                .content("""
+                                        {
+                                            "currentPassword": "password123!"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        /*
+         * @AuthenticationPrincipal에서 얻은 회원 ID와
+         * 요청 JSON의 현재 비밀번호가 Service로 전달됐는지 검증
+         */
+        verify(memberService).withdraw(
+                memberId,
+                "password123!"
+        );
+
+        /*
+         * 회원 탈퇴 후에는 세션이 만료되므로
+         * principal 갱신은 실행하지 않는다.
+         */
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 회원탈퇴_현재_비밀번호가_null이면_400을_반환한다() throws Exception {
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                delete("/api/v1/members/me")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "currentPassword": null
+                                }
+                                """)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("currentPassword")));
+
+        verify(memberService, never()).withdraw(
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 회원탈퇴_현재_비밀번호가_공백이면_400을_반환한다() throws Exception {
+        /**
+         * 참고)
+         * @NotBlank는 다음 값을 모두 거절함.
+         * - null
+         * - ""
+         * - " "
+         */
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "   "
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("currentPassword")))
+                .andExpect(jsonPath("$.fieldErrors[*].reason")
+                        .value(hasItem(
+                                "현재 비밀번호는 필수입니다."
+                        )));
+
+        verify(memberService, never()).withdraw(
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 회원탈퇴_현재_비밀번호가_누락되면_400을_반환한다() throws Exception {
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(APPLICATION_JSON)
+                                /**
+                                 * 필드가 누락되면 Jackson이 currentPassword를 null로 역직렬화하고,
+                                 * 그 다음 @NotBlank 검증에서 거절된다.
+                                 */
+                                .content("""
+                                    {
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("currentPassword")));
+
+        verify(memberService, never()).withdraw(
+                any(),
+                any()
+        );
+    }
+
+    @Test
+    void 회원탈퇴_JSON_문법이_잘못되면_400을_반환한다()
+            throws Exception {
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(APPLICATION_JSON)
+
+                                /**
+                                 * 이 경우 DTO 검증까지 도달하지 못한다
+                                 * JSON 파싱 실패
+                                 * → HttpMessageNotReadableException
+                                 * → ApiGlobalExceptionHandler
+                                 * → MALFORMED_JSON
+                                 */
+                                .content("""
+                                    {
+                                      "currentPassword":
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("MALFORMED_JSON"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+
+        verify(memberService, never()).withdraw(
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void JSON이_아닌_회원탈퇴_요청은_415를_반환한다()
+            throws Exception {
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        /**
+         * DELETE /api/v1/members/me
+         * Content-Type: text/plain
+         *         ↓
+         * MockMvc가 요청 전달
+         *         ↓
+         * 회원탈퇴 Controller 메서드 검색
+         *         ↓
+         * 경로와 HTTP 메서드는 일치
+         *         ↓
+         * consumes = application/json 검사
+         *         ↓
+         * text/plain은 application/json과 불일치
+         *         ↓
+         * HttpMediaTypeNotSupportedException 발생
+         *         ↓
+         * ApiGlobalExceptionHandler가 예외 처리
+         *         ↓
+         * 415 UNSUPPORTED_MEDIA_TYPE JSON 반환
+         */
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(TEXT_PLAIN)
+                                .content(
+                                        "currentPassword=password123!"
+                                )
+                )
+                .andExpect(status().isUnsupportedMediaType());
+
+        verify(memberService, never()).withdraw(
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 회원탈퇴_현재_비밀번호가_일치하지_않으면_400을_반환한다()
+            throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        doThrow(new BusinessException(
+                ErrorCode.INVALID_CURRENT_PASSWORD
+        ))
+                .when(memberService)
+                .withdraw(
+                        memberId,
+                        "wrong-password"
+                );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "wrong-password"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_CURRENT_PASSWORD"))
+                .andExpect(jsonPath("$.message")
+                        .value("현재 비밀번호가 올바르지 않습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+
+        verify(memberService).withdraw(
+                memberId,
+                "wrong-password"
+        );
+    }
 }

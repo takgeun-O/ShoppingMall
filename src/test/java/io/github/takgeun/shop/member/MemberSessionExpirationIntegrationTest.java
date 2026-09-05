@@ -94,18 +94,19 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
     }
 
     @Test
-    void 회원이_탈퇴하면_기존_로그인_세션이_만료된다() throws Exception {
+    void 회원이_이용정지되면_기존_로그인_세션이_만료된다() throws Exception {
 
         // given
-        String email = uniqueEmail("withdraw-session");
+        String email = uniqueEmail("inactive-session");
 
         Long memberId = memberService.signup(
                 email,
                 PASSWORD,
-                "탈퇴회원",
+                "이용정지회원",
                 "010-2222-3333"
         );
 
+        // 실제 로그인 후 SessionRegistry에 등록된 세션 획득
         MockHttpSession session = loginAndGetSession(email, PASSWORD);
 
         SessionInformation sessionInformation = getSessionInformation(session);
@@ -237,6 +238,71 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
         assertThat(sessionInformation.isExpired())
                 .isTrue();
 
+        assertExpiredSessionIsRejected(
+                session,
+                "/members/me"
+        );
+    }
+
+    @Test
+    void 회원이_API로_탈퇴하면_기존_로그인_세션이_만료된다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail(
+                "withdraw-session"
+        );
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "탈퇴회원",
+                "010-3333-4444"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
+
+        SessionInformation sessionInformation =
+                getSessionInformation(session);
+
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
+
+        assertThat(
+                memberService.findById(memberId)
+                        .getStatus()
+        ).isEqualTo(MemberStatus.ACTIVE);
+
+        // when: 회원 본인이 REST API를 통해 탈퇴
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "%s"
+                                    }
+                                    """.formatted(PASSWORD))
+                )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // then: 회원 상태가 탈퇴로 변경됨
+        assertThat(
+                memberService.findById(memberId)
+                        .getStatus()
+        ).isEqualTo(MemberStatus.WITHDRAWN);
+
+        // 커밋 후 세션 만료 이벤트가 실행됨
+        assertThat(sessionInformation.isExpired())
+                .isTrue();
+
+        // 기존 세션으로 다시 접근할 수 없음
         assertExpiredSessionIsRejected(
                 session,
                 "/members/me"

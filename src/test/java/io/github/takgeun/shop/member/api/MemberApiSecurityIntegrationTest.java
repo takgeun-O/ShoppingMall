@@ -4,6 +4,7 @@ import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
+import io.github.takgeun.shop.member.domain.MemberStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
@@ -659,6 +660,213 @@ public class MemberApiSecurityIntegrationTest extends IntegrationTestSupport {
                         .value(hasItem(
                                 "newPassword"
                         )));
+    }
+
+    @Test
+    void 비로그인_사용자가_회원탈퇴를_요청하면_401을_반환한다() throws Exception {
+
+        // when
+        mockMvc.perform(
+                delete("/api/v1/members/me")
+                /**
+                 * CSRF 토큰을 제공해야 CsrfFilter를 통과하고
+                 * 인증 여부 검사까지 도달한다.
+                 *
+                 * 만약 빼면 CsrfFilter에서 차단되어 403 Forbidden이 나옴
+                 */
+                        .with(csrf())
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "currentPassword": "password123!"
+                                }
+                                """)
+        )
+                .andExpect(status().isUnauthorized())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(
+                                APPLICATION_JSON
+                        ))
+                .andExpect(jsonPath("$.timestamp")
+                        .exists())
+                .andExpect(jsonPath("$.status")
+                        .value(401))
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.message")
+                        .value("로그인이 필요합니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+    }
+
+    @Test
+    void 로그인한_회원이_CSRF_토큰_없이_탈퇴를_요청하면_403을_반환한다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail(
+                "withdraw-csrf"
+        );
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "회원",
+                "010-1111-2222"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "password123!"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isForbidden());
+
+        /*
+         * CSRF 단계에서 요청이 차단됐으므로
+         * 실제 회원 상태는 바뀌지 않아야 한다.
+         */
+        Member member =
+                memberService.findById(memberId);
+
+        assertThat(member.getStatus())
+                .isEqualTo(MemberStatus.ACTIVE);
+    }
+
+    @Test
+    void 로그인한_회원이_정상적으로_탈퇴하면_204를_반환하고_WITHDRAWN으로_변경된다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail(
+                "withdraw-success"
+        );
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "탈퇴회원",
+                "010-2222-3333"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
+
+        Member beforeWithdrawMember =
+                memberService.findById(memberId);
+
+        assertThat(beforeWithdrawMember.getStatus())
+                .isEqualTo(MemberStatus.ACTIVE);
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "%s"
+                                    }
+                                    """.formatted(PASSWORD))
+                )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        /*
+         * MemberApiController
+         * → MemberService.withdraw()
+         * → Member.withdraw()
+         * → Repository 저장
+         */
+        Member withdrawnMember =
+                memberService.findById(memberId);
+
+        assertThat(withdrawnMember.getStatus())
+                .isEqualTo(MemberStatus.WITHDRAWN);
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하지_않으면_400을_반환하고_ACTIVE를_유지한다() throws Exception {
+
+        // given
+        String email = uniqueEmail(
+                "withdraw-wrong-password"
+        );
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "탈퇴실패회원",
+                "010-3333-4444"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
+
+        // when & then
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "wrong-password"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(
+                                APPLICATION_JSON
+                        ))
+                .andExpect(jsonPath("$.timestamp")
+                        .exists())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_CURRENT_PASSWORD"))
+                .andExpect(jsonPath("$.message")
+                        .value("현재 비밀번호가 올바르지 않습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+
+        /*
+         * 비밀번호 확인에 실패했으므로
+         * 회원 상태가 변경되지 않아야 한다.
+         */
+        Member unchangedMember =
+                memberService.findById(memberId);
+
+        assertThat(unchangedMember.getStatus())
+                .isEqualTo(MemberStatus.ACTIVE);
     }
 
     private MockHttpSession loginAndGetSession(String email, String password) throws Exception {

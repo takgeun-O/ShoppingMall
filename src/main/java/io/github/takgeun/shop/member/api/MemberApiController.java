@@ -4,6 +4,7 @@ import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.security.SecurityContextService;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
+import io.github.takgeun.shop.member.api.dto.request.MemberWithdrawalRequest;
 import io.github.takgeun.shop.member.api.dto.request.PasswordChangeRequest;
 import io.github.takgeun.shop.member.api.dto.response.MemberMeResponse;
 import io.github.takgeun.shop.member.application.MemberService;
@@ -36,7 +37,7 @@ public class MemberApiController {
 
     /**
      * 로그인한 회원의 프로필을 수정한다.
-     *
+     * <p>
      * 요청 본문은 JSON을 통해 MemberUpdateRequest로 역직렬화된다.
      * 지원하지 않는 Content-Type 요청은
      * HttpMediaTypeNotSupportedException으로 처리한다.
@@ -90,6 +91,22 @@ public class MemberApiController {
                 principal.getMemberId(),
                 request.currentPassword(),
                 request.newPassword()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping(
+            value = "/me",
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<Void> withdrawMe(
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+            @Valid @RequestBody MemberWithdrawalRequest request
+    ) {
+        memberService.withdraw(
+                principal.getMemberId(),
+                request.currentPassword()
         );
 
         return ResponseEntity.noContent().build();
