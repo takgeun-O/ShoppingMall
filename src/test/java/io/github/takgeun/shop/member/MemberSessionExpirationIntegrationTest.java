@@ -16,8 +16,8 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
@@ -94,18 +94,19 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
     }
 
     @Test
-    void 회원이_탈퇴하면_기존_로그인_세션이_만료된다() throws Exception {
+    void 회원이_이용정지되면_기존_로그인_세션이_만료된다() throws Exception {
 
         // given
-        String email = uniqueEmail("withdraw-session");
+        String email = uniqueEmail("inactive-session");
 
         Long memberId = memberService.signup(
                 email,
                 PASSWORD,
-                "탈퇴회원",
+                "이용정지회원",
                 "010-2222-3333"
         );
 
+        // 실제 로그인 후 SessionRegistry에 등록된 세션 획득
         MockHttpSession session = loginAndGetSession(email, PASSWORD);
 
         SessionInformation sessionInformation = getSessionInformation(session);
@@ -174,40 +175,138 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
     }
 
     @Test
-    void 비밀번호가_변경되면_기존_로그인_세션이_만료된다() throws Exception {
+    void 비밀번호를_변경하면_기존_로그인_세션이_만료된다()
+            throws Exception {
 
         // given
         String email = uniqueEmail("password-session");
 
-        Long memberId = memberService.signup(
+        memberService.signup(
                 email,
                 PASSWORD,
                 "비밀번호변경회원",
-                "010-1111-2222"
+                "010-3333-4444"
         );
 
-        MockHttpSession session = loginAndGetSession(email, PASSWORD);
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
 
-        SessionInformation sessionInformation = getSessionInformation(session);
+        SessionInformation sessionInformation =
+                getSessionInformation(session);
 
-        assertThat(sessionInformation.isExpired()).isFalse();
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
 
         // when
-        memberService.updateProfile(
-                memberId,
-                null,
-                NEW_PASSWORD,
-                null
-        );
+        /**
+         * PATCH 요청
+         * → CSRF 검증
+         * → 세션 인증 확인
+         * → @AuthenticationPrincipal
+         * → MemberApiController
+         * → MemberService.changePassword()
+         * → DB 변경 커밋
+         * → AFTER_COMMIT 이벤트
+         * → SessionRegistry 만료
+         * → 기존 세션 차단
+         */
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "currentPassword": "%s",
+                                  "newPassword": "%s"
+                                }
+                                """.formatted(
+                                        PASSWORD,
+                                        NEW_PASSWORD
+                                ))
+                )
+                .andExpect(status().isNoContent());
+
+        /*
+         * changePassword() 트랜잭션 커밋
+         * → MemberSessionExpirationEvent 발행
+         * → AFTER_COMMIT Listener 실행
+         * → SessionInformation.expireNow()
+         */
 
         // then
-        assertThat(sessionInformation.isExpired()).isTrue();
+        assertThat(sessionInformation.isExpired())
+                .isTrue();
 
         assertExpiredSessionIsRejected(
                 session,
                 "/members/me"
         );
+    }
 
+    @Test
+    void 회원이_API로_탈퇴하면_기존_로그인_세션이_만료된다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail(
+                "withdraw-session"
+        );
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "탈퇴회원",
+                "010-3333-4444"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(
+                        email,
+                        PASSWORD
+                );
+
+        SessionInformation sessionInformation =
+                getSessionInformation(session);
+
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
+
+        assertThat(
+                memberService.findById(memberId)
+                        .getStatus()
+        ).isEqualTo(MemberStatus.ACTIVE);
+
+        // when: 회원 본인이 REST API를 통해 탈퇴
+        mockMvc.perform(
+                        delete("/api/v1/members/me")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "currentPassword": "%s"
+                                    }
+                                    """.formatted(PASSWORD))
+                )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // then: 회원 상태가 탈퇴로 변경됨
+        assertThat(
+                memberService.findById(memberId)
+                        .getStatus()
+        ).isEqualTo(MemberStatus.WITHDRAWN);
+
+        // 커밋 후 세션 만료 이벤트가 실행됨
+        assertThat(sessionInformation.isExpired())
+                .isTrue();
+
+        // 기존 세션으로 다시 접근할 수 없음
+        assertExpiredSessionIsRejected(
+                session,
+                "/members/me"
+        );
     }
 
     private ShopUserPrincipal getPrincipal(MockHttpSession session) {

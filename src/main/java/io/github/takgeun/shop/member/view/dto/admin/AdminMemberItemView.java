@@ -6,7 +6,6 @@ import io.github.takgeun.shop.member.domain.MemberStatus;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Getter
 public class AdminMemberItemView {

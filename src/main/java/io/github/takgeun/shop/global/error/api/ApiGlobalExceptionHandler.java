@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.global.error.api;
 
+import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,7 +32,7 @@ import java.util.List;
 // @ResponseStatus(HttpStatus.BAD_REQUEST)를 사용하는 방법도 있으나, 이러한 방식은 HTTP 제어가 static하다. (상태코드가 컴파일 시점에 고정되므로 추후 조건에 따른 변경이 어려움)
 @Slf4j
 @RestControllerAdvice(
-        annotations = RestController.class  // @RestController가 붙은 컨트롤러만 대상
+        annotations = ApiController.class  // @Api 컨트롤러만 대상
 )
 public class ApiGlobalExceptionHandler {
 
@@ -196,12 +197,7 @@ public class ApiGlobalExceptionHandler {
                 .body(response);
     }
 
-    private FieldErrorResponse toFieldErrorResponse(FieldError error) {
-        return new FieldErrorResponse(
-                error.getField(),
-                error.getDefaultMessage()
-        );
-    }
+
 
     /**
      * 기존 도메인 코드에서 발생하는 잘못된 인자 예외
@@ -288,6 +284,13 @@ public class ApiGlobalExceptionHandler {
         return new FieldErrorResponse(
                 field,
                 violation.getMessage()
+        );
+    }
+
+    private FieldErrorResponse toFieldErrorResponse(FieldError error) {
+        return new FieldErrorResponse(
+                error.getField(),
+                error.getDefaultMessage()
         );
     }
 }

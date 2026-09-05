@@ -3,8 +3,8 @@ package io.github.takgeun.shop.member.view;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
 import io.github.takgeun.shop.global.view.ViewController;
 import io.github.takgeun.shop.member.application.AdminMemberService;
-import io.github.takgeun.shop.member.dto.request.AdminMemberStatusUpdateRequest;
-import io.github.takgeun.shop.member.dto.request.AdminMemberUpdateRequest;
+import io.github.takgeun.shop.member.application.command.AdminMemberStatusChangeCommand;
+import io.github.takgeun.shop.member.application.command.AdminMemberUpdateCommand;
 import io.github.takgeun.shop.member.view.dto.admin.AdminMemberDetailView;
 import io.github.takgeun.shop.member.view.dto.admin.AdminMemberEditView;
 import io.github.takgeun.shop.member.view.dto.admin.AdminMemberPageView;
@@ -121,7 +121,7 @@ public class AdminMemberViewController {
         }
 
         // 서비스 호출용 DTO (이름, 폰번호, 상태만 변경)
-        AdminMemberUpdateRequest request = AdminMemberUpdateRequest.of(
+        AdminMemberUpdateCommand request = AdminMemberUpdateCommand.of(
                 form.getName(),
                 form.getPhone(),
                 form.getStatus()
@@ -151,7 +151,7 @@ public class AdminMemberViewController {
             return "redirect:/admin/members/" + memberId;
         }
 
-        AdminMemberStatusUpdateRequest request = AdminMemberStatusUpdateRequest.of(form.getStatus());
+        AdminMemberStatusChangeCommand request = AdminMemberStatusChangeCommand.of(form.getStatus());
         adminMemberService.changeMemberStatus(memberId, request);
 
         ra.addFlashAttribute("success", "회원 상태가 변경되었습니다.");

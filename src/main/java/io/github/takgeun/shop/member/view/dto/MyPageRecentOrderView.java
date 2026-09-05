@@ -3,12 +3,9 @@ package io.github.takgeun.shop.member.view.dto;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.view.support.OrderStatusView;
-import io.github.takgeun.shop.order.view.support.OrderStatusViewMapper;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 public class MyPageRecentOrderView {

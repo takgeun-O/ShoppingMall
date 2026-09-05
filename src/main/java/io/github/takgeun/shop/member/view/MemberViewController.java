@@ -37,7 +37,6 @@ public class MemberViewController {
     private final MemberService memberService;
     private final MyPageQueryService myPageQueryService;
     private final SecurityContextService securityContextService;
-    private final MemberSessionService memberSessionService;
 
     private final SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
 
@@ -96,6 +95,8 @@ public class MemberViewController {
 
     /**
      * 마이페이지 수정 처리
+     * 참고로 HTML의 <form></form>은 기본적으로 GET, POST 방식만 지원한다.
+     *
      * 수정 성공 후 redirect:/members/me/edit (수정페이지로 이동)
      * 수정 실패 시 public/members/edit 제자리로 포워드
      */
@@ -131,7 +132,6 @@ public class MemberViewController {
         memberService.updateProfile(
                 memberId,
                 form.getName(),
-                null,
                 form.getPhone()
         );
 
@@ -162,7 +162,11 @@ public class MemberViewController {
     /**
      * 회원 탈퇴
      *
-     * 현재 세션뿐만 아니라 해당 회원의 다른 로그인 세션도 모두 만료 상태로 변경
+     * 회원 비활성화 트랜잭션이 커밋되면
+     * MemberSessionExpirationEvent의 AFTER_COMMIT 리스너가
+     * 해당 회원의 모든 로그인 세션을 만료 처리한다.
+     *
+     * 현재 요청에서 사용 중인 세션은 즉시 로그아웃 처리한다.
      */
     @PostMapping("/deactivate")
     public String deactivate(
@@ -170,22 +174,25 @@ public class MemberViewController {
             Authentication authentication,
             HttpServletRequest request,
             HttpServletResponse response,
-            RedirectAttributes ra) {
+            RedirectAttributes ra
+    ) {
 
         Long memberId = principal.getMemberId();
 
+        /**
+         * 회원 상태 변경
+         * -> 트랜잭션 커밋
+         * -> MemberSessionExpirationEvent 처리
+         * -> 해당 회원의 모든 SessionInformation 만료
+         */
         memberService.deactivate(memberId);
 
-        /**
-         * 다른 브라우저와 기기에서 로그인한 세션도 만료시킨다.
-         * TODO: 회원 비활성화 트랜잭션이 성공한 뒤 세션을 만료하도록 개선 예정
-         */
-        memberSessionService.expireAllByMemberId(memberId);
-
 
         /**
-         * 현재 요청의 SecurityContext를 제거하고
-         * 현재 HttpSession을 즉시 무효화한다.
+         * expireNow()는 SessionInformation만 만료 상태로 표시한다.
+         *
+         * 그렇기 때문에 현재 요청의 SecurityContext와 HttpSession은
+         * 바로 정리하기 위해 명시적으로 로그아웃 처리한다.
          */
         logoutHandler.logout(
                 request,

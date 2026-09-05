@@ -1,6 +1,7 @@
 package io.github.takgeun.shop.global.error;
 
 import io.github.takgeun.shop.IntegrationTestSupport;
+import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.view.ViewController;
@@ -173,10 +174,7 @@ class GlobalExceptionHandlerIntegrationTest extends IntegrationTestSupport {
                 ));
     }
 
-    /**
-     * 테스트 ApplicationContext에만 등록되는 REST Controller.
-     */
-    @RestController
+    @ApiController
     @RequestMapping("/test/global-exception/api")
     static class TestApiController {
 

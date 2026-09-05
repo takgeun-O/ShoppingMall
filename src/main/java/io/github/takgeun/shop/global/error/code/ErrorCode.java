@@ -44,6 +44,18 @@ public enum ErrorCode {
             "접근 권한이 없습니다."
     ),
 
+    // 회원 비밀번호 변경 도메인 오류
+    INVALID_CURRENT_PASSWORD(
+            HttpStatus.BAD_REQUEST,
+            "INVALID_CURRENT_PASSWORD",
+            "현재 비밀번호가 올바르지 않습니다."
+    ),
+    PASSWORD_REUSE_NOT_ALLOWED(
+            HttpStatus.BAD_REQUEST,
+            "PASSWORD_REUSE_NOT_ALLOWED",
+            "새 비밀번호는 현재 비밀번호와 달라야 합니다."
+    ),
+
     // 기존 예외 호환용
     RESOURCE_NOT_FOUND(
             HttpStatus.NOT_FOUND,
@@ -54,6 +66,12 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "RESOURCE_CONFLICT",
             "요청이 현재 리소스 상태와 충돌합니다."
+    ),
+
+    MEMBER_ALREADY_WITHDRAWN(
+            HttpStatus.CONFLICT,
+            "MEMBER_ALREADY_WITHDRAWN",
+            "이미 탈퇴한 회원입니다."
     ),
 
     // Category

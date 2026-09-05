@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.product.api;
 
+import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.error.api.ApiErrorResponse;
 import io.github.takgeun.shop.product.api.dto.response.ProductDetailResponse;
 import io.github.takgeun.shop.product.api.dto.response.ProductListItemResponse;
@@ -29,7 +30,7 @@ import java.util.List;
 // 이번에 바꾼 Spring MVC 기본 검증은 HandlerMethodValidationException 예외가 주로 발생한다.
 // 즉 ApiGlobalExceptionHandler에 HandlerMethodValidationException을 처리할 처리기가 있어야 공통 JSON으로 400 반환할 것
 //@Validated
-@RestController
+@ApiController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/products")
 public class ProductApiController {
