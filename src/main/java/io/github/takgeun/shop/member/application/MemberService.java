@@ -4,15 +4,17 @@ import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEvent;
-import io.github.takgeun.shop.member.domain.Member;
-import io.github.takgeun.shop.member.domain.MemberRepository;
-import io.github.takgeun.shop.member.domain.MemberRole;
-import io.github.takgeun.shop.member.domain.MemberStatus;
+import io.github.takgeun.shop.member.domain.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
+
+import static io.github.takgeun.shop.global.error.code.ErrorCode.INVALID_CURRENT_PASSWORD;
+import static io.github.takgeun.shop.global.error.code.ErrorCode.PASSWORD_REUSE_NOT_ALLOWED;
 
 @Service
 @RequiredArgsConstructor
@@ -54,10 +56,6 @@ public class MemberService {
     }
 
     // 내 정보 수정 (패스워드 변경은 다른 곳에서 할 예정)
-
-    /**
-     * 이름 변경 : ShopUserPrincipal에 이름이 있으므로 세션 갱신 또는 만료
-     */
     @Transactional
     public void updateProfile(
             Long memberId,
@@ -102,7 +100,7 @@ public class MemberService {
                         member.getPassword())
         ) {
             throw new UnauthorizedException(
-                    "현재 비밀번호가 일치하지 않습니다."
+                    INVALID_CURRENT_PASSWORD
             );
         }
 
@@ -113,7 +111,7 @@ public class MemberService {
                 member.getPassword()
         )) {
             throw new ConflictException(
-                    "새 비밀번호는 기존 비밀번호와 달라야 합니다."
+                    PASSWORD_REUSE_NOT_ALLOWED
             );
         }
 
@@ -188,9 +186,10 @@ public class MemberService {
     }
 
     /**
-     * AuthService.login() 에서 담당하는 역할 중 하나인
-     * 최근 로그인 시각 갱신을 MemberService 책임으로 옮김.
-     * (Spring Security 전환하면서 AuthService는 끌꺼니까)
+     * 인증 성공 후 최근 로그인 시각을 갱신한다.
+     *
+     * 비밀번호 검증은 AuthenticationManager와
+     * DaoAuthenticationProvider가 담당한다.
      */
     @Transactional
     public void recordSuccessfulLogin(Long memberId) {
@@ -208,14 +207,18 @@ public class MemberService {
         }
     }
 
+    /**
+     * DTO 검증 : 잘못된 HTTP 요청을 빠르게 400으로 거부
+     * Service 검증 : 다른 Controller나 Initializer가 호출해도 정책 보호
+     */
     private void validateRawPassword(String password) {
         if (password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException("password는 필수입니다.");
         }
-        if (password.length() < 8) {
+        if (password.length() < PasswordPolicy.MIN_LENGTH) {
             throw new IllegalArgumentException("password 길이는 8자 이상이어야 합니다.");
         }
-        if (password.length() > 20) {
+        if (password.length() > PasswordPolicy.MAX_LENGTH) {
             throw new IllegalArgumentException("password 길이는 20자 이하이어야 합니다.");
         }
     }
@@ -230,7 +233,7 @@ public class MemberService {
         if (email == null || email.trim().isBlank()) {
             throw new IllegalArgumentException("이메일은 필수입니다.");
         }
-        return email.trim().toLowerCase();
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private void publishSessionExpiration(Long memberId) {

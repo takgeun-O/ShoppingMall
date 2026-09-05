@@ -4,6 +4,7 @@ import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.security.SecurityContextService;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.api.dto.request.MemberUpdateRequest;
+import io.github.takgeun.shop.member.api.dto.request.PasswordChangeRequest;
 import io.github.takgeun.shop.member.api.dto.response.MemberMeResponse;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,5 +77,21 @@ public class MemberApiController {
         );
 
         return MemberMeResponse.from(updatedMember);
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+
+            @Valid @RequestBody
+            PasswordChangeRequest request
+    ) {
+        memberService.changePassword(
+                principal.getMemberId(),
+                request.currentPassword(),
+                request.newPassword()
+        );
+
+        return ResponseEntity.noContent().build();
     }
 }

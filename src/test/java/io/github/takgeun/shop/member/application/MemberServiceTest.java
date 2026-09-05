@@ -1,7 +1,10 @@
 package io.github.takgeun.shop.member.application;
 
+import io.github.takgeun.shop.global.error.code.ErrorCode;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
+import io.github.takgeun.shop.global.security.session.MemberSessionExpirationEvent;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
@@ -13,7 +16,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import static io.github.takgeun.shop.global.error.code.ErrorCode.PASSWORD_REUSE_NOT_ALLOWED;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class MemberServiceTest {
 
@@ -339,5 +348,127 @@ class MemberServiceTest {
 
         // then
         Mockito.verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하면_새_비밀번호로_변경한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "member@test.com",
+                "current-password",
+                "회원",
+                "010-1111-2222"
+        );
+
+        // when
+        memberService.changePassword(
+                memberId,
+                "current-password",
+                "changed-password"
+        );
+
+        // then
+        Member findMember = memberService.findById(memberId);
+
+        assertThat(passwordEncoder.matches(
+                "changed-password",
+                findMember.getPassword()
+        )).isTrue();
+
+        assertThat(passwordEncoder.matches(
+                "current-password",
+                findMember.getPassword()
+        )).isFalse();
+
+        verify(eventPublisher).publishEvent(
+                any(MemberSessionExpirationEvent.class)
+        );
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하지_않으면_변경하지_않는다() {
+
+        // given
+        String currentPassword = "current-password";
+        String newPassword = "changed-password";
+
+        Long memberId = memberService.signup(
+                "member@test.com",
+                currentPassword,
+                "회원",
+                "010-1111-2222"
+        );
+
+        // when
+        BusinessException exception =
+                catchThrowableOfType(
+                        () -> memberService.changePassword(
+                                memberId,
+                                "wrong-password",
+                                newPassword
+                        ),
+                        BusinessException.class
+                );
+
+        // then : 오류 코드
+        assertThat(exception.getErrorCode())
+                .isEqualTo(
+                        ErrorCode.INVALID_CURRENT_PASSWORD
+                );
+
+        // then : 기존 비밀번호 유지
+        Member member = memberService.findById(memberId);
+
+        assertThat(passwordEncoder.matches(
+                currentPassword,
+                member.getPassword()
+        )).isTrue();
+
+        assertThat(passwordEncoder.matches(
+                newPassword,
+                member.getPassword()
+        )).isFalse();
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+    @Test
+    void 새_비밀번호가_현재_비밀번호와_같으면_변경_실패() {
+
+        // given
+        String currentPassword = "current-password";
+
+        Long memberId = memberService.signup(
+                "member@test.com",
+                currentPassword,
+                "회원",
+                "010-1111-2222"
+        );
+
+        // when & then
+        BusinessException exception =
+                catchThrowableOfType(
+                        () -> memberService.changePassword(
+                                memberId,
+                                currentPassword,
+                                currentPassword
+                        ),
+                        BusinessException.class
+                );
+
+        Member findMember = memberService.findById(memberId);
+
+        assertThat(exception.getErrorCode())
+                .isEqualTo(PASSWORD_REUSE_NOT_ALLOWED);
+
+        assertThat(passwordEncoder.matches(
+                currentPassword,
+                findMember.getPassword()
+        )).isTrue();
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
     }
 }

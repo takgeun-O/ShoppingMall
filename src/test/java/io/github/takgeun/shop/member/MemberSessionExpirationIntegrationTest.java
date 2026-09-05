@@ -16,8 +16,8 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
@@ -170,6 +170,76 @@ public class MemberSessionExpirationIntegrationTest extends IntegrationTestSuppo
         assertExpiredSessionIsRejected(
                 session,
                 "/admin"
+        );
+    }
+
+    @Test
+    void 비밀번호를_변경하면_기존_로그인_세션이_만료된다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail("password-session");
+
+        memberService.signup(
+                email,
+                PASSWORD,
+                "비밀번호변경회원",
+                "010-3333-4444"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        SessionInformation sessionInformation =
+                getSessionInformation(session);
+
+        assertThat(sessionInformation.isExpired())
+                .isFalse();
+
+        // when
+        /**
+         * PATCH 요청
+         * → CSRF 검증
+         * → 세션 인증 확인
+         * → @AuthenticationPrincipal
+         * → MemberApiController
+         * → MemberService.changePassword()
+         * → DB 변경 커밋
+         * → AFTER_COMMIT 이벤트
+         * → SessionRegistry 만료
+         * → 기존 세션 차단
+         */
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "currentPassword": "%s",
+                                  "newPassword": "%s"
+                                }
+                                """.formatted(
+                                        PASSWORD,
+                                        NEW_PASSWORD
+                                ))
+                )
+                .andExpect(status().isNoContent());
+
+        /*
+         * changePassword() 트랜잭션 커밋
+         * → MemberSessionExpirationEvent 발행
+         * → AFTER_COMMIT Listener 실행
+         * → SessionInformation.expireNow()
+         */
+
+        // then
+        assertThat(sessionInformation.isExpired())
+                .isTrue();
+
+        assertExpiredSessionIsRejected(
+                session,
+                "/members/me"
         );
     }
 

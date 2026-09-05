@@ -1,6 +1,8 @@
 package io.github.takgeun.shop.member.api;
 
 import io.github.takgeun.shop.global.error.api.ApiGlobalExceptionHandler;
+import io.github.takgeun.shop.global.error.code.ErrorCode;
+import io.github.takgeun.shop.global.error.exception.BusinessException;
 import io.github.takgeun.shop.global.security.SecurityContextService;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.application.MemberService;
@@ -12,13 +14,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,9 +68,19 @@ public class MemberApiControllerTest {
 
         MemberApiController controller = new MemberApiController(memberService, securityContextService);    // 테스트 환경에서는 Spring ApplicationContext를 사용하지 않아 Bean으로 끌어올 수 없으니 직접 만듦
 
+        /**
+         * standaloneSetup() 에 Validator가 등록되어 있지 않아
+         * @Valid 검증이 제대로 작동하지 않을 수 있음. -> Validator 등록하기
+         */
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+
+        validator.afterPropertiesSet();
+
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
-                .setControllerAdvice(new ApiGlobalExceptionHandler())
+                .setControllerAdvice(
+                        new ApiGlobalExceptionHandler()
+                )
 
                 /**
                  * standaloneSetup은 Spring Security MVC 설정을
@@ -77,6 +89,7 @@ public class MemberApiControllerTest {
                 .setCustomArgumentResolvers(
                         new AuthenticationPrincipalArgumentResolver()
                 )
+                .setValidator(validator)        // 이렇게 해야 PasswordChangeRequest에 선언된 @NotBlank 등 검증이 실행됨
                 .build();
     }
 
@@ -564,10 +577,10 @@ public class MemberApiControllerTest {
 
                                 // 마지막 쉼표 문법 잘못
                                 .content("""
-                                    {
-                                      "name": "변경된회원",
-                                    }
-                                    """)
+                                        {
+                                          "name": "변경된회원",
+                                        }
+                                        """)
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status")
@@ -581,4 +594,279 @@ public class MemberApiControllerTest {
                 any()
         );
     }
+
+    @Test
+    void 로그인한_회원은_비밀번호를_변경할_수_있다() throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "current-password",
+                                            "newPassword": "changed-password"
+                                        }
+                                        """)
+                )
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(memberService).changePassword(
+                memberId,
+                "current-password",
+                "changed-password"
+        );
+
+        // 비밀번호 변경 후에는 모든 세션을 만료시키니
+        // securityContextService.refreshPrincipal()이 호출되면 안된다.
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 현재_비밀번호가_공백이면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "   ",
+                                            "newPassword": "changed-password"
+                                        }
+                                        """)
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me/password"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+
+                // 응답 JSON의 fieldErrors 배열 안에 field 값이 "currentPassword"인 항목이 하나 이상 있는지 검증
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("currentPassword")));
+
+        /**
+         * memberService가 Mock 객체인지 확인하고
+         * 이후 지정한 메서드가 0번 호출됐는지 검사한다.
+         *
+         * Bean Validation 단계에서 거절되므로 컨트롤러 본문이 실행되지 않을 것이며
+         * 결국 memberService도 호출되지 않음.
+         */
+        verify(memberService, never()).changePassword(
+                any(),  // 어떤 값이든 상관없다.
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 새_비밀번호가_8자보다_짧으면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "current-password",
+                                            "newPassword": "short"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("newPassword")));
+
+        verify(memberService, never()).changePassword(
+                any(),
+                any(),
+                any()
+        );
+
+        verifyNoInteractions(securityContextService);
+    }
+
+    @Test
+    void 현재_비밀번호가_일치하지_않으면_오류응답을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        doThrow(new BusinessException(
+                ErrorCode.INVALID_CURRENT_PASSWORD
+        ))
+                .when(memberService)
+                .changePassword(
+                        memberId,
+                        "wrong-password",
+                        "changed-password"
+                );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "wrong-password",
+                                            "newPassword": "changed-password"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_CURRENT_PASSWORD"))
+                .andExpect(jsonPath("$.message")
+                        .value("현재 비밀번호가 올바르지 않습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me/password"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+
+        verify(memberService).changePassword(
+                memberId,
+                "wrong-password",
+                "changed-password"
+        );
+    }
+
+    @Test
+    void 새_비밀번호가_현재_비밀번호와_같으면_오류응답을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 1L;
+
+        setAuthentication(
+                memberId,
+                "member@test.com",
+                "회원"
+        );
+
+        doThrow(new BusinessException(
+                ErrorCode.PASSWORD_REUSE_NOT_ALLOWED
+        ))
+                .when(memberService)
+                .changePassword(
+                        memberId,
+                        "current-password",
+                        "current-password"
+                );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "current-password",
+                                            "newPassword": "current-password"
+                                        }
+                                        """)
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("PASSWORD_REUSE_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.message")
+                        .value("새 비밀번호는 현재 비밀번호와 달라야 합니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me/password"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+
+        verify(memberService).changePassword(
+                memberId,
+                "current-password",
+                "current-password"
+        );
+    }
+
+    @Test
+    void 비밀번호_변경_JSON_문법이_잘못되면_400을_반환한다() throws Exception {
+
+        // given
+        setAuthentication(
+                1L,
+                "member@test.com",
+                "회원"
+        );
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/members/me/password")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "currentPassword": "current-password",
+                                            "newPassword":
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("MALFORMED_JSON"))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/members/me/password"));
+
+        verify(memberService, never()).changePassword(
+                any(),
+                any(),
+                any()
+        );
+    }
+
+
 }

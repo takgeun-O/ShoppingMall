@@ -143,7 +143,7 @@ public class SecurityConfig {
                                 "/orders/**",
                                 "/members/me",
                                 "/members/me/**",
-                                "/api/v1/members/me"
+                                "/api/v1/members/**"
                         ).authenticated()
 
                         /**
