@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.order.application;
 
+import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
@@ -13,7 +14,6 @@ import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.dto.request.CheckoutItem;
-import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
@@ -61,7 +61,7 @@ public class OrderService {
         requireActiveMember(member);
 
         // 이미 처리된 requestKey인지 먼저 확인
-        orderRepository.findByRequestKey(cmd.getRequestKey())
+        orderRepository.findByRequestKey(cmd.requestKey())
                 .ifPresent(existing -> {
                     throw new ConflictException("이미 처리된 주문 요청입니다.");
                 });
@@ -74,16 +74,16 @@ public class OrderService {
             if(checkoutItem == null) {
                 continue;
             }
-            if(checkoutItem.getQuantity() <= 0) {
+            if(checkoutItem.quantity() <= 0) {
                 continue;
             }
 
-            Product product = productService.getForOrder(checkoutItem.getProductId());
+            Product product = productService.getForOrder(checkoutItem.productId());
             requireOnSale(product);
 
             // 트랜잭션 주의
             // 재고를 먼저 줄이고 주문 저장
-            product.decreaseStock(checkoutItem.getQuantity());  // 여기서 예외 발생 시 롤백
+            product.decreaseStock(checkoutItem.quantity());  // 여기서 예외 발생 시 롤백
             productService.save(product);
 
             OrderItem orderItem = OrderItem.of(
@@ -91,7 +91,7 @@ public class OrderService {
                     product.getName(),
                     product.getPrice(),
                     product.getOriginalPrice(),
-                    checkoutItem.getQuantity(),
+                    checkoutItem.quantity(),
                     product.getImageUrl()
             );
 
@@ -109,14 +109,14 @@ public class OrderService {
         Order order = Order.create(
                 memberId,
                 orderNumber,
-                cmd.getRequestKey(),
+                cmd.requestKey(),
                 orderItems,
-                cmd.getRecipientName(),
-                cmd.getPhoneNumber(),
-                cmd.getZipCode(),
-                cmd.getAddress(),
-                cmd.getAddressDetail(),
-                cmd.getRequestMessage(),
+                cmd.recipientName(),
+                cmd.phoneNumber(),
+                cmd.zipCode(),
+                cmd.address(),
+                cmd.addressDetail(),
+                cmd.requestMessage(),
                 shippingFee
         );
 
@@ -129,7 +129,7 @@ public class OrderService {
                 savedOrder.getId(),
                 savedOrder.getOrderNumber(),
                 memberId,
-                cmd.getRequestKey(),
+                cmd.requestKey(),
                 orderItems.size(),
                 subtotal,
                 shippingFee,
@@ -143,13 +143,13 @@ public class OrderService {
         return orderRepository.findAllByMemberId(memberId);     // 각 주문에 orderItems를 붙인 주문을 반환
     }
 
-    public OrderResponse getDetail(Long memberId, Long orderId) {
+    public Order getDetail(Long memberId, Long orderId) {
         requireAuthenticated(memberId);
 
         Order order = getOrderOrThrow(orderId);
         requireOwner(memberId, order);
 
-        return OrderResponse.from(order);
+        return order;
     }
 
     @Transactional
@@ -206,12 +206,12 @@ public class OrderService {
     private Order getOrderOrThrow(Long orderId) {
         if(orderId == null || orderId <= 0) throw new IllegalArgumentException("orderId는 양수여야 합니다.");
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND));
     }
 
     private void requireOwner(Long memberId, Order order) {
         if(!memberId.equals(order.getMemberId())) {
-            throw new ForbiddenException("본인 주문만 처리할 수 있습니다.");
+            throw new ForbiddenException(ErrorCode.ORDER_ACCESS_DENIED);
         }
     }
 
@@ -233,7 +233,7 @@ public class OrderService {
         if(cmd == null) {
             throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
         }
-        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+        if(cmd.requestKey() == null || cmd.requestKey().isBlank()) {
             throw new IllegalArgumentException("requestKey는 필수입니다.");
         }
     }

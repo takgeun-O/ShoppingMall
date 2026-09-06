@@ -15,7 +15,6 @@ import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import io.github.takgeun.shop.order.dto.request.CheckoutItem;
-import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.order.infra.memory.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -56,7 +55,7 @@ class OrderServiceTest {
         this.orderRepository = orderRepository;
         this.categoryService = new CategoryService(categoryRepository, productRepository);
         this.productService = new ProductService(productRepository, categoryService);
-        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4),eventPublisher);
+        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4), eventPublisher);
         this.orderService = new OrderService(orderRepository, productService, memberService);
     }
 
@@ -97,13 +96,13 @@ class OrderServiceTest {
         assertEquals(3000, saved.getShippingFee());
         assertEquals(1000 * quantity + 3000, saved.getTotalPrice());
 
-        assertEquals(cmd.getRecipientName(), saved.getRecipientName());
-        assertEquals(cmd.getPhoneNumber(), saved.getRecipientPhone());
-        assertEquals(cmd.getZipCode(), saved.getShippingZipCode());
-        assertEquals(cmd.getAddress(), saved.getShippingAddress());
-        assertEquals(cmd.getAddressDetail(), saved.getShippingAddressDetail());
-        assertEquals(cmd.getRequestMessage(), saved.getRequestMessage());
-        assertEquals(cmd.getRequestKey(), saved.getRequestKey());
+        assertEquals(cmd.recipientName(), saved.getRecipientName());
+        assertEquals(cmd.phoneNumber(), saved.getRecipientPhone());
+        assertEquals(cmd.zipCode(), saved.getShippingZipCode());
+        assertEquals(cmd.address(), saved.getShippingAddress());
+        assertEquals(cmd.addressDetail(), saved.getShippingAddressDetail());
+        assertEquals(cmd.requestMessage(), saved.getRequestMessage());
+        assertEquals(cmd.requestKey(), saved.getRequestKey());
 
         assertEquals(beforeStock - quantity, afterStock);
     }
@@ -224,19 +223,31 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
 
-        Long orderId = createOrder(memberId, productId, 2);
+        CreateOrderCommand command = defaultCreateOrderCommand();
 
-        OrderResponse response = orderService.getDetail(memberId, orderId);
+        Long orderId = createOrder(memberId, productId, 2, command);
 
-        assertNotNull(response);
-        assertEquals(orderId, response.getOrderId());
-        assertEquals(OrderStatus.PAYMENT_COMPLETED, response.getStatus());
-        assertNotNull(response.getItems());
-        assertEquals(1, response.getItems().size());
-        assertEquals(2000, response.getSubtotal());
-        assertEquals(3000, response.getShippingFee());
-        assertEquals(5000, response.getTotalPrice());
-        assertEquals("테스트", response.getRecipientName());
+        Order order = orderService.getDetail(memberId, orderId);
+
+        assertNotNull(order);
+        assertEquals(orderId, order.getId());
+        assertEquals(memberId, order.getMemberId());
+        assertEquals(OrderStatus.PAYMENT_COMPLETED, order.getStatus());
+
+        assertNotNull(order.getOrderItems());
+        assertEquals(1, order.getOrderItems().size());
+
+        assertEquals(2000, order.getSubtotal());
+        assertEquals(3000, order.getShippingFee());
+        assertEquals(5000, order.getTotalPrice());
+
+        assertEquals(command.recipientName(), order.getRecipientName());
+        assertEquals(command.phoneNumber(), order.getRecipientPhone());
+        assertEquals(command.zipCode(), order.getShippingZipCode());
+        assertEquals(command.address(), order.getShippingAddress());
+        assertEquals(command.addressDetail(), order.getShippingAddressDetail());
+        assertEquals(command.requestMessage(), order.getRequestMessage());
+        assertEquals(command.requestKey(), order.getRequestKey());
     }
 
     @Test
@@ -281,6 +292,16 @@ class OrderServiceTest {
     }
 
     @Test
+    void 주문_상세조회_실패_주문ID가_양수가_아님() {
+        Long memberId = memberService.signup(
+                "invalid-order-id@test.com", "pw12341234!", "테스트", "010-1111-2222"
+        );
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.getDetail(memberId, 0L));
+    }
+
+    @Test
     void 주문_생성_실패_동일_requestKey_중복_제출() {
         Long memberId = memberService.signup(
                 "dup@test.com", "pw12341234!", "중복테스트", "010-9999-8888"
@@ -292,11 +313,8 @@ class OrderServiceTest {
 
         String requestKey = "duplicate-key-1";
 
-        CreateOrderCommand firstCmd = defaultCreateOrderCommand();
-        firstCmd.setRequestKey(requestKey);
-
-        CreateOrderCommand secondCmd = defaultCreateOrderCommand();
-        secondCmd.setRequestKey(requestKey);
+        CreateOrderCommand firstCmd = defaultCreateOrderCommand(requestKey);
+        CreateOrderCommand secondCmd = defaultCreateOrderCommand(requestKey);
 
         Long firstOrderId = orderService.checkout(memberId, checkoutItems, firstCmd);
 
@@ -309,6 +327,21 @@ class OrderServiceTest {
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
         return orderService.checkout(memberId, checkoutItems, cmd);
+    }
+
+    private Long createOrder(
+            Long memberId,
+            Long productId,
+            int quantity,
+            CreateOrderCommand command
+    ) {
+        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+
+        return orderService.checkout(
+                memberId,
+                checkoutItems,
+                command
+        );
     }
 
     private Long createProduct(Long categoryId, String name, int price, int stock, ProductStatus status) {
@@ -325,38 +358,41 @@ class OrderServiceTest {
     }
 
     private CreateOrderCommand defaultCreateOrderCommand() {
-        return createOrderCommand(
-                "테스트",
-                "010-1234-5678",
-                "12345",
-                "서울시 영등포구",
-                "101동 202호",
-                "문 앞"
+        return defaultCreateOrderCommand(
+                "test-request-" + UUID.randomUUID()
         );
     }
 
-    private CreateOrderCommand createOrderCommand(String recipientName,
-                                                  String phoneNumber,
-                                                  String zipCode,
-                                                  String address,
-                                                  String addressDetail,
-                                                  String requestMessage) {
-        CreateOrderCommand cmd = new CreateOrderCommand(
+    private CreateOrderCommand createOrderCommand(
+            String recipientName,
+            String phoneNumber,
+            String zipCode,
+            String address,
+            String addressDetail,
+            String requestMessage,
+            String requestKey
+    ) {
+
+        return new CreateOrderCommand(
                 recipientName,
                 phoneNumber,
                 zipCode,
                 address,
                 addressDetail,
                 requestMessage,
-                "test-request-" + UUID.randomUUID()
+                requestKey
         );
-        cmd.setRequestKey("test-request-" + UUID.randomUUID());
-        cmd.setRecipientName(recipientName);
-        cmd.setPhoneNumber(phoneNumber);
-        cmd.setZipCode(zipCode);
-        cmd.setAddress(address);
-        cmd.setAddressDetail(addressDetail);
-        cmd.setRequestMessage(requestMessage);
-        return cmd;
+    }
+
+    private CreateOrderCommand defaultCreateOrderCommand(String requestKey) {
+        return new CreateOrderCommand(
+                "주문회원",
+                "010-1111-2222",
+                "12345",
+                "서울시",
+                "101호",
+                "문앞",
+                requestKey
+        );
     }
 }

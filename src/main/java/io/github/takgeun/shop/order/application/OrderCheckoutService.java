@@ -70,7 +70,7 @@ public class OrderCheckoutService {
         requireActiveMember(member);        // 주문할 수 있는 회원 상태인지 검증
 
         // 이미 요청한 주문이면 예외 처리 -> ConflictException
-        ensureNotProcessedRequest(cmd.getRequestKey());
+        ensureNotProcessedRequest(cmd.requestKey());
 
         CartViewResult cartView = cartService.getCartView(session);
         if(cartView.getItems().isEmpty()) {
@@ -90,14 +90,14 @@ public class OrderCheckoutService {
         Order order = Order.create(
                 memberId,
                 orderNumber,
-                cmd.getRequestKey(),
+                cmd.requestKey(),
                 orderItems,
-                cmd.getRecipientName(),
-                cmd.getPhoneNumber(),
-                cmd.getZipCode(),
-                cmd.getAddress(),
-                cmd.getAddressDetail(),
-                cmd.getRequestMessage(),
+                cmd.recipientName(),
+                cmd.phoneNumber(),
+                cmd.zipCode(),
+                cmd.address(),
+                cmd.addressDetail(),
+                cmd.requestMessage(),
                 shippingFee
         );
 
@@ -274,7 +274,7 @@ public class OrderCheckoutService {
         if(cmd == null) {
             throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
         }
-        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+        if(cmd.requestKey() == null || cmd.requestKey().isBlank()) {
             throw new IllegalArgumentException("requestKey는 필수입니다.");
         }
     }

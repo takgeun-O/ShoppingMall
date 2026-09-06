@@ -40,7 +40,7 @@ public class CartService {
 
         return cart.entrySet().stream()
                 .map(e -> CheckoutItem.of(e.getKey(), e.getValue()))
-                .filter(i -> i.getQuantity() > 0)
+                .filter(i -> i.quantity() > 0)
                 .toList();
     }
 

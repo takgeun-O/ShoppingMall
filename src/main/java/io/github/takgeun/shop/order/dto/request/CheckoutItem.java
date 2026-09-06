@@ -4,22 +4,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 
-@Getter
-public class CheckoutItem {
+public record CheckoutItem(
+        @NotNull @Positive
+        Long productId,
 
-    @NotNull
-    @Positive
-    private final Long productId;
+        @Positive
+        int quantity
+) {
 
-    @Positive
-    private final int quantity;
-
-    private CheckoutItem(Long productId, int quantity) {
-        this.productId = productId;
-        this.quantity = quantity;
-    }
-
-    public static CheckoutItem of(Long productId, int quantity) {
+    public static CheckoutItem of(
+            Long productId,
+            int quantity
+    ) {
         int resolvedQty = Math.max(quantity, 0);
         return new CheckoutItem(productId, resolvedQty);
     }
