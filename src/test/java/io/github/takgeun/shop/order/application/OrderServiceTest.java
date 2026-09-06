@@ -9,12 +9,12 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.order.infra.memory.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -74,7 +74,7 @@ class OrderServiceTest {
         int quantity = 2;
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         Long orderId = orderService.checkout(memberId, checkoutItems, cmd);
@@ -118,7 +118,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(UnauthorizedException.class,
@@ -139,7 +139,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getAdminDetail(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ForbiddenException.class,
@@ -158,7 +158,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.DISCONTINUED);
         int beforeStock = productService.getAdminDetail(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ConflictException.class,
@@ -177,10 +177,10 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 0));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 0));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
-        assertThrows(ConflictException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
         int afterStock = productService.getForOrder(productId).getStock();
@@ -196,7 +196,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 11));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 11));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ConflictException.class,
@@ -212,7 +212,7 @@ class OrderServiceTest {
                 "userTest@test.com", "pw12341234!", "테스트", "010-1111-2222"
         );
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(999L, 2));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(999L, 2));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(NotFoundException.class,
@@ -313,7 +313,7 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
 
         String requestKey = "duplicate-key-1";
 
@@ -361,8 +361,57 @@ class OrderServiceTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    @Test
+    void 주문_항목에_잘못된_수량이_포함되면_주문을_생성하지_않는다() {
+        // given
+        Long memberId = memberService.signup(
+                "mixed-items@test.com",
+                "pw12341234!",
+                "테스트",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        Long validProductId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        Long invalidProductId = createProduct(
+                categoryId,
+                "마우스",
+                500,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        List<CheckoutItemCommand> checkoutItems = List.of(
+                new CheckoutItemCommand(validProductId, 2),
+                new CheckoutItemCommand(invalidProductId, 0)
+        );
+
+        CreateOrderCommand command = defaultCreateOrderCommand();
+
+        int validProductStockBefore =
+                productService.getForOrder(validProductId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.checkout(memberId, checkoutItems, command)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("주문 수량은 1 이상이어야 합니다.");
+
+        assertThat(productService.getForOrder(validProductId).getStock())
+                .isEqualTo(validProductStockBefore);
+    }
+
     private Long createOrder(Long memberId, Long productId, int quantity) {
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
         return orderService.checkout(memberId, checkoutItems, cmd);
     }
@@ -373,7 +422,7 @@ class OrderServiceTest {
             int quantity,
             CreateOrderCommand command
     ) {
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
 
         return orderService.checkout(
                 memberId,

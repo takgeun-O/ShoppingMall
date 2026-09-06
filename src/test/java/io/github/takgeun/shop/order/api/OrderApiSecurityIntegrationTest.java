@@ -4,8 +4,8 @@ import io.github.takgeun.shop.IntegrationTestSupport;
 import io.github.takgeun.shop.category.application.CategoryService;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -488,7 +488,7 @@ public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
 
     private Long createOrder(Long memberId, Long productId, int quantity) {
 
-        CheckoutItem checkoutItem = createCheckoutItem(productId, quantity);
+        CheckoutItemCommand checkoutItem = createCheckoutItem(productId, quantity);
 
         CreateOrderCommand command = createOrderCommand();
 
@@ -523,11 +523,11 @@ public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
         return product.getId();
     }
 
-    private CheckoutItem createCheckoutItem(
+    private CheckoutItemCommand createCheckoutItem(
             Long productId,
             int quantity
     ) {
-        return new CheckoutItem(productId, quantity);
+        return new CheckoutItemCommand(productId, quantity);
     }
 
     private CreateOrderCommand createOrderCommand() {

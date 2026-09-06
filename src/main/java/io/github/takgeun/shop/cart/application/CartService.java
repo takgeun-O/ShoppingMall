@@ -6,7 +6,7 @@ import io.github.takgeun.shop.cart.view.dto.CartSummaryView;
 import io.github.takgeun.shop.cart.view.dto.CartViewResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -31,7 +31,7 @@ public class CartService {
     /**
      * 주문 생성용 최소 데이터
      */
-    public List<CheckoutItem> getCheckoutItems(HttpSession session) {
+    public List<CheckoutItemCommand> getCheckoutItems(HttpSession session) {
         Map<Long, Integer> cart = cartRepository.findAll(session);
 
         if(cart == null || cart.isEmpty()) {
@@ -39,7 +39,7 @@ public class CartService {
         }
 
         return cart.entrySet().stream()
-                .map(e -> CheckoutItem.of(e.getKey(), e.getValue()))
+                .map(e -> new CheckoutItemCommand(e.getKey(), e.getValue()))
                 .filter(i -> i.quantity() > 0)
                 .toList();
     }
