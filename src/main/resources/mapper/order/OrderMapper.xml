@@ -122,7 +122,7 @@
             <include refid="ordersColumns"/>
         from orders
         where member_id = #{memberId}
-        order by id desc
+        order by ordered_at, id desc
     </select>
 
     <select id="countByMemberId" resultType="int">

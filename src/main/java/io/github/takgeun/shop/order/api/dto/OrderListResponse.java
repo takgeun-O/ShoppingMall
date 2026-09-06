@@ -6,17 +6,24 @@ import lombok.Getter;
 
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
-public class OrderListResponse {
+public record OrderListResponse(
+        List<OrderSummaryResponse> orders
+) {
 
-    private List<OrderSummaryResponse> orders;
+    public static OrderListResponse from(
+            List<Order> orders
+    ) {
 
-    public static OrderListResponse from(List<Order> orders) {
+        if(orders == null) {
+            throw new IllegalArgumentException(
+                    "orders는 필수입니다."
+            );
+        }
         return new OrderListResponse(
                 orders.stream()
                         .map(OrderSummaryResponse::from)
                         .toList()
         );
     }
+
 }

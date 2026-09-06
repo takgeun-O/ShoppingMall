@@ -1,12 +1,15 @@
 package io.github.takgeun.shop.order.api;
 
 import io.github.takgeun.shop.global.error.api.ApiGlobalExceptionHandler;
+import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
+import io.github.takgeun.shop.order.domain.OrderRepository;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -88,23 +92,55 @@ class OrderApiControllerTest {
         verifyNoInteractions(orderService);
     }
 
-    private void authenticate(Long memberId) {
-        ShopUserPrincipal principal = new ShopUserPrincipal(
-                memberId,
-                "member@test.com",
-                "encoded-password",
-                "테스트회원",
-                MemberRole.USER,
-                MemberStatus.ACTIVE
-        );
+    @Test
+    void 로그인_회원의_주문_목록을_조회한다() throws Exception {
 
-        SecurityContextHolder.getContext().setAuthentication(
-                UsernamePasswordAuthenticationToken.authenticated(
-                        principal,
-                        null,
-                        principal.getAuthorities()
-                )
-        );
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        Order firstOrder = order(memberId, 42L);
+        Order secondOrder = order(memberId, 41L);
+
+        when(orderService.getMyOrders(memberId))
+                .thenReturn(List.of(firstOrder, secondOrder));
+
+        mockMvc.perform(
+                        get("/api/v1/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orders").isArray())
+                .andExpect(jsonPath("$.orders.length()").value(2))
+                .andExpect(jsonPath("$.orders[0].orderId").value(42L))
+                .andExpect(jsonPath("$.orders[0].status")
+                        .value("PAYMENT_COMPLETED"))
+                .andExpect(jsonPath(
+                        "$.orders[0].representativeProductName"
+                ).value("주문 당시 상품명"))
+                .andExpect(jsonPath("$.orders[0].itemCount").value(1))
+                .andExpect(jsonPath("$.orders[0].totalPrice")
+                        .value(40_000));
+
+        verify(orderService).getMyOrders(memberId);
+    }
+
+    @Test
+    void 주문이_없으면_빈_목록을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        // when
+        when(orderService.getMyOrders(memberId))
+                .thenReturn(List.of());
+
+        // then
+        mockMvc.perform(
+                        get("/api/v1/orders"))
+                .andExpect(status().isOk())     // 주문 결과가 없는 건 오류가 아니니 200 반환이 맞음. (404 아님!)
+                .andExpect(jsonPath("$.orders").isArray())
+                .andExpect(jsonPath("$.orders").isEmpty());
+
+        verify(orderService).getMyOrders(memberId);
     }
 
     private Order order(Long memberId, Long orderId) {
@@ -133,5 +169,25 @@ class OrderApiControllerTest {
         order.assignId(orderId);
         order.markPaymentCompleted();
         return order;
+    }
+
+    private void authenticate(Long memberId) {
+        ShopUserPrincipal principal = new ShopUserPrincipal(
+                memberId,
+                "member@test.com",
+                "encoded-password",
+                "테스트회원",
+                MemberRole.USER,
+                MemberStatus.ACTIVE
+        );
+
+        // 아래와 같이 인증을 완료시키고, 해당 사용자를 SecurityContext에 직접 설정
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        principal,
+                        null,
+                        principal.getAuthorities()
+                )
+        );
     }
 }

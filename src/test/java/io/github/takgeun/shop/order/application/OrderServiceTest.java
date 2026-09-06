@@ -19,6 +19,7 @@ import io.github.takgeun.shop.order.infra.memory.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,7 +29,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class OrderServiceTest {
 
@@ -323,6 +327,40 @@ class OrderServiceTest {
                 () -> orderService.checkout(memberId, checkoutItems, secondCmd));
     }
 
+    @Test
+    void 회원의_주문_목록을_조회한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "test@test.com",
+                "pw12341234!",
+                "테스트",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
+
+        Long orderId1 = createOrder(memberId, productId, 1);
+        Long orderId2 = createOrder(memberId, productId, 2);
+
+        // when
+        List<Order> result = orderService.getMyOrders(memberId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(Order::getId)
+                .containsExactlyInAnyOrder(orderId1, orderId2);
+    }
+
+    @Test
+    void 회원ID가_null이면_주문_목록을_조회할_수_없다() {
+        assertThatThrownBy(
+                () -> orderService.getMyOrders(null))
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
     private Long createOrder(Long memberId, Long productId, int quantity) {
         List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
@@ -394,5 +432,19 @@ class OrderServiceTest {
                 "문앞",
                 requestKey
         );
+    }
+
+    private Order order(
+            Long memberId,
+            Long orderId
+    ) {
+        Order order = mock(Order.class);
+
+        when(order.getId())
+                .thenReturn(orderId);
+        when(order.getMemberId())
+                .thenReturn(memberId);
+
+        return order;
     }
 }
