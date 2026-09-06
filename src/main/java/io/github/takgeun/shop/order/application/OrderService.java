@@ -73,7 +73,10 @@ public class OrderService {
 
         for (CheckoutItemCommand checkoutItem : checkoutItems) {
 
+            validateCheckoutItem(checkoutItem);
+
             Product product = productService.getForOrder(checkoutItem.productId());
+
             requireOnSale(product);
 
             // 트랜잭션 주의
@@ -94,11 +97,11 @@ public class OrderService {
             subtotal += orderItem.lineTotal();
         }
 
-        if (orderItems.isEmpty()) {
-            throw new ConflictException("유효한 주문 상품이 없습니다.");
-        }
+        int shippingFee =
+                (subtotal >= FREE_SHIPPING_THRESHOLD)
+                        ? 0
+                        : SHIPPING_FEE;
 
-        int shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_FEE;
         String orderNumber = generateOrderNumber();
 
         Order order = Order.create(
@@ -245,6 +248,30 @@ public class OrderService {
         }
         if (cmd.requestKey() == null || cmd.requestKey().isBlank()) {
             throw new IllegalArgumentException("requestKey는 필수입니다.");
+        }
+    }
+
+    private void validateCheckoutItem(
+            CheckoutItemCommand checkoutItem
+    ) {
+
+        if (checkoutItem == null) {
+            throw new IllegalArgumentException(
+                    "주문 상품 정보는 필수입니다."
+            );
+        }
+
+        if (checkoutItem.productId() == null
+                || checkoutItem.productId() <= 0) {
+            throw new IllegalArgumentException(
+                    "productId는 양수여야 합니다."
+            );
+        }
+
+        if (checkoutItem.quantity() <= 0) {
+            throw new IllegalArgumentException(
+                    "주문 수량은 1개 이상이어야 합니다."
+            );
         }
     }
 }
