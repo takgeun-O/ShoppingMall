@@ -14,7 +14,6 @@ import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -177,27 +176,6 @@ public class OrderService {
     private void validateCheckoutItems(List<CheckoutItemCommand> checkoutItems) {
         if (checkoutItems == null || checkoutItems.isEmpty()) {
             throw new ConflictException("주문 상품이 없습니다.");
-        }
-
-        for (CheckoutItemCommand item : checkoutItems) {
-            if (item == null) {
-                throw new IllegalArgumentException(
-                        "주문 상품 정보는 필수입니다."
-                );
-            }
-
-            if (item.productId() == null ||
-                    item.productId() <= 0) {
-                throw new IllegalArgumentException(
-                        "상품 ID는 양수여야 합니다."
-                );
-            }
-
-            if (item.quantity() <= 0) {
-                throw new IllegalArgumentException(
-                        "주문 수량은 1 이상이어야 합니다."
-                );
-            }
         }
     }
 

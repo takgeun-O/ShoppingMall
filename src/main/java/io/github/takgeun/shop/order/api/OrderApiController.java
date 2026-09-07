@@ -2,17 +2,22 @@ package io.github.takgeun.shop.order.api;
 
 import io.github.takgeun.shop.global.api.ApiController;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
-import io.github.takgeun.shop.order.api.dto.OrderDetailResponse;
-import io.github.takgeun.shop.order.api.dto.OrderListResponse;
+import io.github.takgeun.shop.order.api.dto.request.CreateOrderRequest;
+import io.github.takgeun.shop.order.api.dto.response.CreateOrderResponse;
+import io.github.takgeun.shop.order.api.dto.response.OrderDetailResponse;
+import io.github.takgeun.shop.order.api.dto.response.OrderListResponse;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
+import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @ApiController
@@ -55,5 +60,63 @@ public class OrderApiController {
         );
 
         return OrderDetailResponse.from(order);
+    }
+
+    /**
+     * POST /api/v1/orders
+     * → Spring Security 인증
+     * → @Valid 요청 검증
+     * → CreateOrderItemRequest를 CheckoutItemCommand로 변환
+     * → CreateOrderRequest를 CreateOrderCommand로 변환
+     * → OrderService.checkout()
+     * → 주문 ID 반환
+     * → 201 Created + Location 헤더
+     */
+    @PostMapping
+    public ResponseEntity<CreateOrderResponse> createOrder(
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+            @Valid @RequestBody CreateOrderRequest request
+    ) {
+        List<CheckoutItemCommand> checkoutItems =
+                request.items().stream()
+                        .map(item -> new CheckoutItemCommand(
+                                item.productId(),
+                                item.quantity()
+                        ))
+                        .toList();
+
+        CreateOrderCommand command =
+                new CreateOrderCommand(
+                        request.recipientName(),
+                        request.phoneNumber(),
+                        request.zipCode(),
+                        request.address(),
+                        request.addressDetail(),
+                        request.requestMessage(),
+                        request.requestKey()
+                );
+
+        Long orderId = orderService.checkout(
+                principal.getMemberId(),
+                checkoutItems,
+                command
+        );
+
+        // 서버가 새로 생성한 주문 리소스의 주소를 클라이언트에게 알려주기 위해 만든다.
+        URI location = URI.create(
+                "/api/v1/orders/" + orderId
+        );
+
+        return ResponseEntity
+                // 서버가 새로 생성한 주문 리소스의 주소를 클라이언트에게 알려주기 위해 만든다.
+                // 여기서 created의 location은 리다이렉트가 아님을 주의!
+                /**
+                 * | 응답               | 의미                 |
+                 * | ---------------- | ------------------ |
+                 * | `201 + Location` | 새 리소스의 위치 안내       |
+                 * | `302 + Location` | 해당 주소로 이동하라는 리다이렉트 |
+                 */
+                .created(location)
+                .body(new CreateOrderResponse(orderId));
     }
 }

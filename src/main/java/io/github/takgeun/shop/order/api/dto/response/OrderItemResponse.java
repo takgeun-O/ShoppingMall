@@ -1,4 +1,4 @@
-package io.github.takgeun.shop.order.api.dto;
+package io.github.takgeun.shop.order.api.dto.response;
 
 import io.github.takgeun.shop.order.domain.OrderItem;
 

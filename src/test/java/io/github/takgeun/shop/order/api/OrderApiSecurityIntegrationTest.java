@@ -6,6 +6,8 @@ import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.order.application.OrderService;
 import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
+import io.github.takgeun.shop.order.domain.Order;
+import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -20,11 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+import static io.github.takgeun.shop.order.domain.OrderStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -49,6 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - 응답 DTO 직렬화 오류
  * - API 예외 응답 코드 오류
  */
+// 주문 중 중간 실패 시 전체 재고가 원복되는 테스트는 나중에 별도의 비트랜잭션 통합 테스트 클래스에서 진행해야함.
+// 테스트가 시작한 외부 트랜잭션에 OrderService.checkout()이 참여하기 때문에 정확한 롤백 테스트 확인 불가
 @Transactional
 public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
 
@@ -483,6 +489,321 @@ public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.orders").isEmpty());
     }
 
+    @Test
+    void 비로그인_사용자가_주문을_생셩하면_401을_반환한다() throws Exception {
+
+        /**
+         * POST /api/v1/orders
+         * → SecurityFilterChain
+         * → CSRF 검사 통과
+         * → 인증 정보 확인
+         * → 로그인 정보 없음
+         * → API용 AuthenticationEntryPoint 실행
+         * → 401 AUTHENTICATION_REQUIRED JSON 반환
+         */
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .with(csrf())
+                                .contentType(APPLICATION_JSON)
+                                .content(createOrderJson(
+                                        1L,
+                                        1,
+                                        "unauthenticated-request"
+                                ))
+                )
+                .andExpect(status().isUnauthorized())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.status")
+                        .value(401))
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.message")
+                        .value("로그인이 필요합니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/orders"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isEmpty());
+    }
+
+    @Test
+    void 로그인_회원이_주문을_생성하면_주문을_저장하고_재고를_차감한다() throws Exception {
+
+        // given
+        String email = uniqueEmail("order-create");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "주문생성회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create(
+                "주문생성 카테고리",
+                null
+        );
+
+        Long productId = createProduct(
+                categoryId,
+                "주문생성 상품",
+                10_000,
+                10
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        String requestKey =
+                "create-order-" + UUID.randomUUID();
+
+        // when
+        MvcResult result = mockMvc.perform(
+                        post("/api/v1/orders")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content(createOrderJson(
+                                        productId,
+                                        2,
+                                        requestKey
+                                ))
+                )
+                .andExpect(status().isCreated())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.orderId").isNumber())
+                .andReturn();
+
+        // then
+        // 서버가 새로 생성한 주문 리소스의 주소
+        String location =
+                result.getResponse().getHeader("Location");
+
+        assertThat(location).isNotNull();
+        assertThat(location)
+                .startsWith("/api/v1/orders/");
+
+        // 마지막 슬래시 뒤가 orderId
+        Long orderId = extractOrderId(location);
+
+        assertThat(result.getResponse().getContentAsString())
+                .contains("\"orderId\":" + orderId);
+
+        // 주문 상태 점검
+        Order savedOrder =
+                orderService.getDetail(memberId, orderId);
+
+        assertThat(savedOrder.getMemberId())
+                .isEqualTo(memberId);
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(
+                        PAYMENT_COMPLETED
+                );
+        assertThat(savedOrder.getRequestKey())
+                .isEqualTo(requestKey);
+
+        assertThat(savedOrder.getOrderItems())
+                .hasSize(1);
+
+        // 주문 아이템 점검
+        OrderItem savedItem =
+                savedOrder.getOrderItems().getFirst();
+
+        assertThat(savedItem.getProductId())
+                .isEqualTo(productId);
+        assertThat(savedItem.getProductNameSnapshot())
+                .isEqualTo("주문생성 상품");
+        assertThat(savedItem.getUnitPriceSnapshot())
+                .isEqualTo(10_000);
+        assertThat(savedItem.getQuantity())
+                .isEqualTo(2);
+
+        // 주문정보 점검
+        assertThat(savedOrder.getSubtotal())
+                .isEqualTo(20_000);
+        assertThat(savedOrder.getShippingFee())
+                .isEqualTo(3_000);
+        assertThat(savedOrder.getTotalPrice())
+                .isEqualTo(23_000);
+
+        Product updatedProduct =
+                productService.getPublicDetail(productId);
+
+        // 재고 차감 확인
+        assertThat(updatedProduct.getStock())
+                .isEqualTo(8);
+    }
+
+    @Test
+    void 동일한_requestKey로_주문을_다시_생성하면_409를_반환한다() throws Exception {
+
+        // given
+        String email = uniqueEmail("duplicate-request");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "중복주문회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create(
+                "중복주문 카테고리",
+                null
+        );
+
+        Long productId = createProduct(
+                categoryId,
+                "중복주문 상품",
+                10_000,
+                10
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        String requestKey =
+                "duplicate-order-" + UUID.randomUUID();
+
+        String requestBody = createOrderJson(
+                productId,
+                2,
+                requestKey
+        );
+
+        // 첫 번쨰 요청은 성공
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content(requestBody)
+                )
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        Product productAfterFirstOrder = productService.getPublicDetail(productId);
+
+        // 재고 차감 검증
+        assertThat(productAfterFirstOrder.getStock())
+                .isEqualTo(8);
+
+
+        // when & then : 같은 requestKey 재사용
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content(requestBody)       // 여기에 같은 requestKey 재사용
+                )
+                .andExpect(status().isConflict())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.status")
+                        .value(409))
+                .andExpect(jsonPath("$.message")
+                        .value("이미 처리된 주문 요청입니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/orders"));
+
+        List<Order> orders =
+                orderService.getMyOrders(memberId);
+
+        assertThat(orders).hasSize(1);
+        assertThat(orders.getFirst().getRequestKey())
+                .isEqualTo(requestKey);
+
+        Product productAfterDuplicateRequest =
+                productService.getPublicDetail(productId);
+
+        // 중복 요청에서는 재고 차감 안됨
+        assertThat(productAfterDuplicateRequest.getStock())
+                .isEqualTo(8);
+    }
+
+    @Test
+    void 상품_재고가_부족하면_409를_반환하고_주문을_저장하지_않는다() throws Exception {
+
+        // given
+        String email = uniqueEmail("insufficient-stock");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "재고부족회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create(
+                "재고부족 카테고리",
+                null
+        );
+
+        Long productId = createProduct(
+                categoryId,
+                "재고부족 상품",
+                10_000,
+                1
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        String requestKey =
+                "insufficient-stock-" + UUID.randomUUID();
+
+        /**
+         * POST /api/v1/orders
+         * → SecurityFilterChain
+         * → OrderApiController
+         * → OrderService.checkout()
+         * → Product.decreaseStock()
+         * → ConflictException 발생
+         * → 트랜잭션 롤백
+         * → ApiGlobalExceptionHandler
+         * → ResponseEntity의 409 JSON 응답
+         */
+        // when & then
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .with(csrf())
+                                .session(session)
+                                .contentType(APPLICATION_JSON)
+                                .content(createOrderJson(
+                                        productId,
+                                        2,
+                                        requestKey
+                                ))
+                )
+                .andExpect(status().isConflict())       // Product 도메인에서 체크 후 예외 발생
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.status")
+                        .value(409))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/orders"));
+
+        /*
+         * 주문이 저장되지 않아야 한다.
+         */
+        assertThat(orderService.getMyOrders(memberId))
+                .isEmpty();
+
+        /*
+         * 재고 부족으로 차감에 실패했으므로 기존 재고가 유지되어야 한다.
+         */
+        Product unchangedProduct =
+                productService.getPublicDetail(productId);
+
+        assertThat(unchangedProduct.getStock())
+                .isEqualTo(1);
+    }
+
 
     //------------------------------------------------------------------------------------------------------//
 
@@ -562,5 +883,41 @@ public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
                 .isInstanceOf(MockHttpSession.class);
 
         return (MockHttpSession) session;
+    }
+
+    private String createOrderJson(
+            Long productId,
+            int quantity,
+            String requestKey
+    ) {
+        return """
+                {
+                  "items": [
+                    {
+                      "productId": %d,
+                      "quantity": %d
+                    }
+                  ],
+                  "recipientName": "주문회원",
+                  "phoneNumber": "010-1111-2222",
+                  "zipCode": "12345",
+                  "address": "서울시 테스트구",
+                  "addressDetail": "101호",
+                  "requestMessage": "문 앞에 놓아주세요",
+                  "requestKey": "%s"
+                }
+                """.formatted(
+                productId,
+                quantity,
+                requestKey
+        );
+    }
+
+    private Long extractOrderId(String location) {
+        int lastSlashIndex = location.lastIndexOf('/');
+
+        return Long.valueOf(
+                location.substring(lastSlashIndex + 1)
+        );
     }
 }

@@ -38,6 +38,9 @@ public class ApiGlobalExceptionHandler {
 
     /**
      * 서비스, 도메인에서 발생한 비즈니스 예외
+     * RuntimeException
+     * └── BusinessException
+     *     └── ConflictException
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusinessException(

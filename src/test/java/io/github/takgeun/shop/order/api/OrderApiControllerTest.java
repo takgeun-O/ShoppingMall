@@ -1,18 +1,18 @@
 package io.github.takgeun.shop.order.api;
 
 import io.github.takgeun.shop.global.error.api.ApiGlobalExceptionHandler;
-import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
+import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
-import io.github.takgeun.shop.order.domain.OrderRepository;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
@@ -22,14 +22,14 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class OrderApiControllerTest {
 
@@ -141,6 +141,287 @@ class OrderApiControllerTest {
                 .andExpect(jsonPath("$.orders").isEmpty());
 
         verify(orderService).getMyOrders(memberId);
+    }
+
+    @Test
+    void 로그인_회원은_주문을_생성할_수_있다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        Long orderId = 100L;
+
+        authenticate(memberId);
+
+        when(orderService.checkout(
+                eq(memberId),
+                anyList(),
+                any(CreateOrderCommand.class)
+        )).thenReturn(orderId);
+
+        // when & then
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "items": [
+                                            {
+                                              "productId": 10,
+                                              "quantity": 2
+                                            },
+                                            {
+                                              "productId": 20,
+                                              "quantity": 1
+                                            }
+                                          ],
+                                          "recipientName": "수령인",
+                                          "phoneNumber": "010-1234-5678",
+                                          "zipCode": "12345",
+                                          "address": "서울시 테스트구",
+                                          "addressDetail": "101호",
+                                          "requestMessage": "문 앞에 놓아주세요",
+                                          "requestKey": "request-key-100"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(header().string(
+                        "Location",
+                        "/api/v1/orders/100"
+                ))
+                .andExpect(jsonPath("$.orderId")
+                        .value(orderId));
+
+        /**
+         * Controller가 HTTP 요청 DTO를 Application 계층용 Command로 정확하게 변환해서
+         * OrderService.checkout()에 전달했는지 검증
+         * CreateOrderRequest
+         * ├─ items → List<CheckoutItemCommand>
+         * └─ 배송·요청 정보 → CreateOrderCommand
+         *
+         * checkout() 호출 여부만 확인하는 것이 아니라 실제 전달된 두 Command를 포착해
+         * 내부 값까지 검사하기 위한 코드
+         */
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CheckoutItemCommand>> itemCaptor =
+                ArgumentCaptor.forClass(List.class);
+
+        ArgumentCaptor<CreateOrderCommand> commandCaptor =
+                ArgumentCaptor.forClass(CreateOrderCommand.class);
+
+        // 테스트 실행 중 checkout 메서드가 한 번이라도 호출됐는지 확인하고, checkoutItems, command 포착
+        verify(orderService).checkout(
+                eq(memberId),
+                itemCaptor.capture(),
+                commandCaptor.capture()
+        );
+
+        assertThat(itemCaptor.getValue())
+                .containsExactly(
+                        new CheckoutItemCommand(10L, 2),
+                        new CheckoutItemCommand(20L, 1)
+                );
+
+        CreateOrderCommand capturedCommand = commandCaptor.getValue();
+
+        assertThat(capturedCommand.recipientName())
+                .isEqualTo("수령인");
+        assertThat(capturedCommand.phoneNumber())
+                .isEqualTo("010-1234-5678");
+        assertThat(capturedCommand.zipCode())
+                .isEqualTo("12345");
+        assertThat(capturedCommand.address())
+                .isEqualTo("서울시 테스트구");
+        assertThat(capturedCommand.addressDetail())
+                .isEqualTo("101호");
+        assertThat(capturedCommand.requestMessage())
+                .isEqualTo("문 앞에 놓아주세요");
+        assertThat(capturedCommand.requestKey())
+                .isEqualTo("request-key-100");
+    }
+
+    @Test
+    void 주문_상품이_없으면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        /**
+         * 1. POST /api/v1/orders 요청
+         * 2. DispatcherServlet이 OrderApiController 메서드 탐색
+         * 3. JSON을 CreateOrderRequest로 역직렬화
+         * 4. @Valid로 CreateOrderRequest 검증
+         * 5. items의 @NotEmpty 검증 실패
+         * 6. MethodArgumentNotValidException 발생
+         * 7. Controller 메서드 본문은 실행되지 않음
+         * 8. ApiGlobalExceptionHandler가 예외 처리
+         * 9. 400 INVALID_INPUT JSON 응답 반환
+         */
+        // when & then
+        mockMvc.perform(
+                post("/api/v1/orders")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "items": [],
+                                    "recipientName": "수령인",
+                                    "phoneNumber": "010-1234-5678",
+                                    "zipCode": "12345",
+                                    "address": "서울시 테스트구",
+                                    "addressDetail": "101호",
+                                    "requestMessage": "문 앞에 놓아주세요",
+                                    "requestKey": "request-key-100"
+                                }
+                                """)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("items")));
+
+        verify(orderService, never()).checkout(
+                any(),
+                anyList(),
+                any()
+        );
+    }
+
+    @Test
+    void 주문_상품의_필드가_잘못되면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        // when & then
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "items": [
+                                        {
+                                          "productId": null,
+                                          "quantity": 0
+                                        }
+                                      ],
+                                      "recipientName": "수령인",
+                                      "phoneNumber": "010-1234-5678",
+                                      "zipCode": "12345",
+                                      "address": "서울시 테스트구",
+                                      "addressDetail": "101호",
+                                      "requestMessage": "문 앞에 놓아주세요",
+                                      "requestKey": "request-key-100"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fieldErrors")
+                        .isArray())
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("items[0].productId")))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("items[0].quantity")));
+
+        verify(orderService, never()).checkout(
+                any(),
+                anyList(),
+                any()
+        );
+    }
+
+    @Test
+    void 주문_배송정보가_누락되면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        // when & then
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "items": [
+                                        {
+                                          "productId": 10,
+                                          "quantity": 2
+                                        }
+                                      ],
+                                      "recipientName": "",
+                                      "phoneNumber": "",
+                                      "zipCode": "",
+                                      "address": "",
+                                      "requestKey": ""
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("recipientName")))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("phoneNumber")))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("zipCode")))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("address")))
+                .andExpect(jsonPath("$.fieldErrors[*].field")
+                        .value(hasItem("requestKey")));
+
+        verify(orderService, never()).checkout(
+                any(),
+                anyList(),
+                any()
+        );
+    }
+
+    @Test
+    void 주문생성_JSON_문법이_잘못되면_400을_반환한다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        // when & then
+        mockMvc.perform(
+                        post("/api/v1/orders")
+                                .contentType(APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "items": [
+                                        {
+                                          "productId": 10,
+                                          "quantity": 2
+                                        }
+                                      ],
+                                      "recipientName": "수령인",
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status")
+                        .value(400))
+                .andExpect(jsonPath("$.code")
+                        .value("MALFORMED_JSON"));
+
+        verify(orderService, never()).checkout(
+                any(),
+                anyList(),
+                any()
+        );
     }
 
     private Order order(Long memberId, Long orderId) {
