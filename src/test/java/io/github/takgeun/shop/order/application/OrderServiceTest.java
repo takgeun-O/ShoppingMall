@@ -363,6 +363,10 @@ class OrderServiceTest {
 
     @Test
     void 주문_항목에_잘못된_수량이_포함되면_주문을_생성하지_않는다() {
+        /**
+         * 이 부분에서 수량 테스트 실패하면 트랜잭션을 의심해본다.
+         * 현재 테스트에 @Transactional이 걸려있어서 예상한 방향으로 작동하지 않을 수 있으니 감안하기
+         */
         // given
         Long memberId = memberService.signup(
                 "mixed-items@test.com",
@@ -396,6 +400,7 @@ class OrderServiceTest {
 
         CreateOrderCommand command = defaultCreateOrderCommand();
 
+        // 10
         int validProductStockBefore =
                 productService.getForOrder(validProductId).getStock();
 
@@ -404,7 +409,7 @@ class OrderServiceTest {
                 () -> orderService.checkout(memberId, checkoutItems, command)
         )
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("주문 수량은 1 이상이어야 합니다.");
+                .hasMessage("주문 수량은 1개 이상이어야 합니다.");
 
         assertThat(productService.getForOrder(validProductId).getStock())
                 .isEqualTo(validProductStockBefore);

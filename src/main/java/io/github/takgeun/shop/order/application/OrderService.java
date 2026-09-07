@@ -72,8 +72,6 @@ public class OrderService {
 
         for (CheckoutItemCommand checkoutItem : checkoutItems) {
 
-            validateCheckoutItem(checkoutItem);
-
             Product product = productService.getForOrder(checkoutItem.productId());
 
             requireOnSale(product);
@@ -175,7 +173,11 @@ public class OrderService {
 
     private void validateCheckoutItems(List<CheckoutItemCommand> checkoutItems) {
         if (checkoutItems == null || checkoutItems.isEmpty()) {
-            throw new ConflictException("주문 상품이 없습니다.");
+            throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+        }
+
+        for(CheckoutItemCommand checkoutItem : checkoutItems) {
+            validateCheckoutItem(checkoutItem);
         }
     }
 
