@@ -119,6 +119,8 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/assets/**",
                                 "/webjars/**",
+                                // Swagger
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/error",
