@@ -138,6 +138,41 @@ MySQL
 
 ## 로컬 실행
 
+### Docker로 빠르게 실행
+
+Docker와 Docker Compose가 설치되어 있으면 별도의 JDK나 로컬 MySQL 없이 애플리케이션을 실행할 수 있습니다.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+실행 후 다음 주소를 확인합니다.
+
+- 웹 화면: [http://localhost:8080](http://localhost:8080)
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+Compose는 애플리케이션에 `demo,mybatis` 프로필을 전달하고, MySQL healthcheck가 성공한 뒤 애플리케이션을 시작합니다. 컨테이너 내부에서는 `db:3306`을 사용하며, 호스트에서는 로컬 MySQL과의 충돌을 피하도록 기본적으로 `localhost:3307`에 공개합니다. 호스트 DB 포트는 `.env`의 `MYSQL_HOST_PORT`로 변경할 수 있습니다.
+
+`.env.example`의 `change-me` 예시값은 로컬 실행 전에 원하는 값으로 변경하세요. `.env`는 Git에서 제외되며 실제 DB 비밀번호와 관리자 비밀번호를 저장소에 커밋하면 안 됩니다.
+
+종료하려면 다음 명령을 사용합니다.
+
+```bash
+docker compose down
+```
+
+데이터 볼륨까지 삭제하고 데모 DB를 새로 만들려는 경우에만 다음 명령을 사용합니다.
+
+```bash
+docker compose down -v
+```
+
+> `demo` 프로필은 애플리케이션 시작 시 `schema.sql`과 `data.sql`을 적용하므로 개인 데이터가 있는 데이터베이스에는 사용하지 마세요.
+
+### 직접 실행
+
 ### 사전 준비
 
 - JDK 21
