@@ -138,57 +138,119 @@ MySQL
 
 ## 로컬 실행
 
-### Docker로 빠르게 실행
+### 권장: Docker로 빠르게 실행
 
-Docker와 Docker Compose가 설치되어 있으면 별도의 JDK나 로컬 MySQL 없이 애플리케이션을 실행할 수 있습니다.
+#### 사전 준비
+
+- Git
+- Docker Desktop
+
+Docker 방식에서는 Java, Gradle, MySQL을 별도로 설치할 필요가 없습니다. Gradle Wrapper와 Java 21 런타임, MySQL 8.4가 Docker 이미지 안에서 준비됩니다.
+
+#### macOS / Linux
+
+저장소를 처음 클론한 뒤 다음 네 줄로 실행할 수 있습니다.
 
 ```bash
+git clone https://github.com/takgeun-O/ShoppingMall.git
+cd ShoppingMall
 cp .env.example .env
 docker compose up --build
 ```
 
-실행 후 다음 주소를 확인합니다.
+#### Windows PowerShell
 
-- 웹 화면: [http://localhost:8080](http://localhost:8080)
+```powershell
+git clone https://github.com/takgeun-O/ShoppingMall.git
+cd ShoppingMall
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+최초 실행은 다음 작업 때문에 시간이 다소 걸릴 수 있습니다.
+
+- Java 및 MySQL Docker 이미지 다운로드
+- Gradle 의존성 다운로드
+- Spring Boot 애플리케이션 빌드
+- MySQL 초기화
+- 데모 데이터 생성
+
+#### 환경변수
+
+`.env.example`은 Git에 포함되는 환경변수 예시 파일입니다. 이 파일을 `.env`로 복사하면 Docker Compose가 실제 로컬 실행값으로 읽습니다. `.env`는 Git에서 제외되며, 실제 DB 비밀번호와 관리자 비밀번호를 Git에 커밋하면 안 됩니다. `.env.example`에는 실행 구조를 보여주기 위한 예시값만 들어 있습니다.
+
+| 환경변수 | 역할 |
+| --- | --- |
+| `MYSQL_DATABASE` | MySQL 컨테이너에 생성할 데이터베이스 이름 |
+| `MYSQL_USER` | 애플리케이션이 사용할 MySQL 사용자 |
+| `MYSQL_PASSWORD` | 애플리케이션용 MySQL 사용자의 비밀번호 |
+| `MYSQL_ROOT_PASSWORD` | MySQL root 계정의 비밀번호 |
+| `MYSQL_HOST_PORT` | 호스트에 공개할 MySQL 포트, 기본값 `3307` |
+| `ADMIN_EMAIL` | `demo` 프로필에서 생성할 관리자 이메일 |
+| `ADMIN_PASSWORD` | `demo` 프로필에서 생성할 관리자 비밀번호 |
+| `ADMIN_NAME` | 데모 관리자 이름 |
+| `ADMIN_PHONE` | 데모 관리자 전화번호 |
+
+관리자 계정 정보는 공개하지 않습니다. 관리자 기능 시연이 필요하면 별도로 문의해 주세요.
+
+#### Docker 구성
+
+- `app`: Java 21에서 실행되는 Spring Boot 애플리케이션
+- `db`: MySQL 8.4 데이터베이스
+- MySQL healthcheck가 성공한 뒤 `app`이 실행됩니다.
+- 컨테이너 내부에서 애플리케이션은 `db:3306`으로 MySQL에 연결합니다.
+- 호스트에서 MySQL에 접근할 때는 기본적으로 `localhost:3307`을 사용합니다.
+- 애플리케이션은 `demo,mybatis` 프로필로 실행됩니다.
+- `demo` 프로필은 시작 시 `schema.sql`과 `data.sql`을 적용해 스키마와 데모 데이터를 준비합니다.
+
+#### 접속 주소
+
+- 쇼핑몰: [http://localhost:8080](http://localhost:8080)
 - Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- MySQL 호스트 포트: `localhost:3307`
 
-Compose는 애플리케이션에 `demo,mybatis` 프로필을 전달하고, MySQL healthcheck가 성공한 뒤 애플리케이션을 시작합니다. 컨테이너 내부에서는 `db:3306`을 사용하며, 호스트에서는 로컬 MySQL과의 충돌을 피하도록 기본적으로 `localhost:3307`에 공개합니다. 호스트 DB 포트는 `.env`의 `MYSQL_HOST_PORT`로 변경할 수 있습니다.
+일반 사용자 데모 계정은 다음과 같습니다.
 
-`.env.example`의 `change-me` 예시값은 로컬 실행 전에 원하는 값으로 변경하세요. `.env`는 Git에서 제외되며 실제 DB 비밀번호와 관리자 비밀번호를 저장소에 커밋하면 안 됩니다.
+| 이메일 | 비밀번호 |
+| --- | --- |
+| `user1@test.com` | `pw12341234!` |
 
-종료하려면 다음 명령을 사용합니다.
+#### 실행 상태와 로그 확인
+
+```bash
+docker compose ps
+docker compose logs -f app
+docker compose logs -f db
+```
+
+#### 종료
+
+일반 종료:
 
 ```bash
 docker compose down
 ```
 
-데이터 볼륨까지 삭제하고 데모 DB를 새로 만들려는 경우에만 다음 명령을 사용합니다.
+컨테이너와 MySQL 데이터 볼륨까지 삭제:
 
 ```bash
 docker compose down -v
 ```
 
-> `demo` 프로필은 애플리케이션 시작 시 `schema.sql`과 `data.sql`을 적용하므로 개인 데이터가 있는 데이터베이스에는 사용하지 마세요.
+> `docker compose down -v`는 볼륨에 저장된 DB 데이터를 삭제합니다. 데모 DB를 완전히 초기화해야 할 때만 사용하세요. 또한 `demo` 프로필은 시작 시 `schema.sql`과 `data.sql`을 적용하므로 개인 데이터가 있는 데이터베이스에는 사용하지 마세요.
 
-### 직접 실행
+### 선택: 로컬 JDK와 MySQL로 직접 실행
 
-### 사전 준비
+#### 사전 준비
 
+- Git
 - JDK 21
 - MySQL
-- Git
 
 Gradle은 Wrapper가 포함되어 있어 별도로 설치할 필요가 없습니다.
 
-### 1. 저장소 복제
-
-```bash
-git clone https://github.com/takgeun-O/ShoppingMall.git
-cd ShoppingMall
-```
-
-### 2. 데이터베이스와 전용 계정 생성
+#### 1. 데이터베이스와 전용 계정 생성
 
 MySQL에 접속한 뒤 아래 예시를 실행합니다. 비밀번호는 원하는 값으로 변경하세요.
 
@@ -208,7 +270,7 @@ FLUSH PRIVILEGES;
 
 이미 사용할 MySQL 계정이 있다면 데이터베이스만 생성해도 됩니다.
 
-### 3. 환경변수 설정
+#### 2. 환경변수 설정
 
 `application.yml`을 수정하거나 비밀번호를 커밋하지 말고 환경변수를 사용하세요.
 
@@ -238,7 +300,7 @@ ADMIN_NAME
 ADMIN_PHONE
 ```
 
-### 4. 애플리케이션 실행
+#### 3. 애플리케이션 실행
 
 macOS / Linux:
 
