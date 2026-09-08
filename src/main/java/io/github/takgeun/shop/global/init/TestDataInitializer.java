@@ -5,8 +5,8 @@ import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.order.application.OrderService;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
 import io.github.takgeun.shop.product.api.dto.request.ProductCreateRequest;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -357,7 +357,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 1) user1: 맥북 1개 주문
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(macbookId, 1)),
+                List.of(new CheckoutItemCommand(macbookId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -372,7 +372,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 2) user2: 무선 마우스 2개 주문
         orderService.checkout(
                 userId2,
-                List.of(CheckoutItem.of(mouseId, 2)),
+                List.of(new CheckoutItemCommand(mouseId, 2)),
                 createOrderCommand(
                         userId2,
                         "테스트2",
@@ -388,8 +388,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(
-                        CheckoutItem.of(qhdMonitorId, 1),
-                        CheckoutItem.of(keyboardId, 1)
+                        new CheckoutItemCommand(qhdMonitorId, 1),
+                        new CheckoutItemCommand(keyboardId, 1)
                 ),
                 createOrderCommand(
                         userId1,
@@ -405,7 +405,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 4) user1: 갤럭시 S24 1개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(galaxyId, 1)),
+                List.of(new CheckoutItemCommand(galaxyId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -420,7 +420,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 5) user1: 인체공학 사무의자 1개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(ergoChairId, 1)),
+                List.of(new CheckoutItemCommand(ergoChairId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -436,8 +436,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(
-                        CheckoutItem.of(tshirtId, 2),
-                        CheckoutItem.of(jeansId, 1)
+                        new CheckoutItemCommand(tshirtId, 2),
+                        new CheckoutItemCommand(jeansId, 1)
                 ),
                 createOrderCommand(
                         userId1,
@@ -453,7 +453,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 7) user1: 원목 식탁 의자 2개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(woodenChairId, 2)),
+                List.of(new CheckoutItemCommand(woodenChairId, 2)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -468,7 +468,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 8) user1: 윈도우 울트라북 1개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(ultrabookId, 1)),
+                List.of(new CheckoutItemCommand(ultrabookId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -484,8 +484,8 @@ public class TestDataInitializer implements ApplicationRunner {
         orderService.checkout(
                 userId1,
                 List.of(
-                        CheckoutItem.of(storageId, 1),
-                        CheckoutItem.of(meshChairId, 1)
+                        new CheckoutItemCommand(storageId, 1),
+                        new CheckoutItemCommand(meshChairId, 1)
                 ),
                 createOrderCommand(
                         userId1,
@@ -501,7 +501,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 10) user1: 옥스포드 셔츠 2개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(shirtId, 2)),
+                List.of(new CheckoutItemCommand(shirtId, 2)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -516,7 +516,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 11) user1: 게이밍 데스크탑 1개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(gamingDesktopId, 1)),
+                List.of(new CheckoutItemCommand(gamingDesktopId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -531,7 +531,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 12) user1: 수납장 1개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(storageId, 1)),
+                List.of(new CheckoutItemCommand(storageId, 1)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -546,7 +546,7 @@ public class TestDataInitializer implements ApplicationRunner {
         // 13) user1: 베이직 티셔츠 3개
         orderService.checkout(
                 userId1,
-                List.of(CheckoutItem.of(tshirtId, 3)),
+                List.of(new CheckoutItemCommand(tshirtId, 3)),
                 createOrderCommand(
                         userId1,
                         "테스트",
@@ -596,7 +596,7 @@ public class TestDataInitializer implements ApplicationRunner {
             if (i % 2 == 0) {
                 orderService.checkout(
                         memberId,
-                        List.of(CheckoutItem.of(mouseId, 1)),
+                        List.of(new CheckoutItemCommand(mouseId, 1)),
                         createOrderCommand(
                                 memberId,
                                 name,
@@ -613,8 +613,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(
-                                CheckoutItem.of(tshirtId, 2),
-                                CheckoutItem.of(jeansId, 1)
+                                new CheckoutItemCommand(tshirtId, 2),
+                                new CheckoutItemCommand(jeansId, 1)
                         ),
                         createOrderCommand(
                                 memberId,
@@ -632,8 +632,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(
-                                CheckoutItem.of(qhdMonitorId, 1),
-                                CheckoutItem.of(keyboardId, 1)
+                                new CheckoutItemCommand(qhdMonitorId, 1),
+                                new CheckoutItemCommand(keyboardId, 1)
                         ),
                         createOrderCommand(
                                 memberId,
@@ -650,7 +650,7 @@ public class TestDataInitializer implements ApplicationRunner {
             if (i == 7 || i == 13 || i == 19) {
                 orderService.checkout(
                         memberId,
-                        List.of(CheckoutItem.of(galaxyId, 1)),
+                        List.of(new CheckoutItemCommand(galaxyId, 1)),
                         createOrderCommand(
                                 memberId,
                                 name,
@@ -667,8 +667,8 @@ public class TestDataInitializer implements ApplicationRunner {
                 orderService.checkout(
                         memberId,
                         List.of(
-                                CheckoutItem.of(storageId, 1),
-                                CheckoutItem.of(meshChairId, 1)
+                                new CheckoutItemCommand(storageId, 1),
+                                new CheckoutItemCommand(meshChairId, 1)
                         ),
                         createOrderCommand(
                                 memberId,
@@ -685,7 +685,7 @@ public class TestDataInitializer implements ApplicationRunner {
             if (i == 11 || i == 17) {
                 orderService.checkout(
                         memberId,
-                        List.of(CheckoutItem.of(macbookId, 1)),
+                        List.of(new CheckoutItemCommand(macbookId, 1)),
                         createOrderCommand(
                                 memberId,
                                 name,

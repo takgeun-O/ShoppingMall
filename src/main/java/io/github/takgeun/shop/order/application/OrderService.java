@@ -1,5 +1,6 @@
 package io.github.takgeun.shop.order.application;
 
+import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.ForbiddenException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
@@ -7,14 +8,12 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.Member;
 import io.github.takgeun.shop.member.domain.MemberStatus;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
-import io.github.takgeun.shop.order.dto.response.OrderResponse;
-import io.github.takgeun.shop.order.view.form.CheckoutForm;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
 import io.github.takgeun.shop.product.domain.ProductStatus;
@@ -48,9 +47,10 @@ public class OrderService {
      * 세션 모름 (서비스가 세션에 의존하는 문제점 해결)
      */
     @Transactional
-    public Long checkout(Long memberId,
-                         List<CheckoutItem> checkoutItems,
-                         CreateOrderCommand cmd
+    public Long checkout(
+            Long memberId,
+            List<CheckoutItemCommand> checkoutItems,
+            CreateOrderCommand cmd
     ) {
         requireAuthenticated(memberId);
         validateCreateOrderCommand(cmd);
@@ -61,7 +61,7 @@ public class OrderService {
         requireActiveMember(member);
 
         // 이미 처리된 requestKey인지 먼저 확인
-        orderRepository.findByRequestKey(cmd.getRequestKey())
+        orderRepository.findByRequestKey(cmd.requestKey())
                 .ifPresent(existing -> {
                     throw new ConflictException("이미 처리된 주문 요청입니다.");
                 });
@@ -70,20 +70,15 @@ public class OrderService {
         List<OrderItem> orderItems = new ArrayList<>();
         int subtotal = 0;
 
-        for (CheckoutItem checkoutItem : checkoutItems) {
-            if(checkoutItem == null) {
-                continue;
-            }
-            if(checkoutItem.getQuantity() <= 0) {
-                continue;
-            }
+        for (CheckoutItemCommand checkoutItem : checkoutItems) {
 
-            Product product = productService.getForOrder(checkoutItem.getProductId());
+            Product product = productService.getForOrder(checkoutItem.productId());
+
             requireOnSale(product);
 
             // 트랜잭션 주의
             // 재고를 먼저 줄이고 주문 저장
-            product.decreaseStock(checkoutItem.getQuantity());  // 여기서 예외 발생 시 롤백
+            product.decreaseStock(checkoutItem.quantity());  // 여기서 예외 발생 시 롤백
             productService.save(product);
 
             OrderItem orderItem = OrderItem.of(
@@ -91,7 +86,7 @@ public class OrderService {
                     product.getName(),
                     product.getPrice(),
                     product.getOriginalPrice(),
-                    checkoutItem.getQuantity(),
+                    checkoutItem.quantity(),
                     product.getImageUrl()
             );
 
@@ -99,24 +94,24 @@ public class OrderService {
             subtotal += orderItem.lineTotal();
         }
 
-        if(orderItems.isEmpty()) {
-            throw new ConflictException("유효한 주문 상품이 없습니다.");
-        }
+        int shippingFee =
+                (subtotal >= FREE_SHIPPING_THRESHOLD)
+                        ? 0
+                        : SHIPPING_FEE;
 
-        int shippingFee = (subtotal >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_FEE;
         String orderNumber = generateOrderNumber();
 
         Order order = Order.create(
                 memberId,
                 orderNumber,
-                cmd.getRequestKey(),
+                cmd.requestKey(),
                 orderItems,
-                cmd.getRecipientName(),
-                cmd.getPhoneNumber(),
-                cmd.getZipCode(),
-                cmd.getAddress(),
-                cmd.getAddressDetail(),
-                cmd.getRequestMessage(),
+                cmd.recipientName(),
+                cmd.phoneNumber(),
+                cmd.zipCode(),
+                cmd.address(),
+                cmd.addressDetail(),
+                cmd.requestMessage(),
                 shippingFee
         );
 
@@ -129,7 +124,7 @@ public class OrderService {
                 savedOrder.getId(),
                 savedOrder.getOrderNumber(),
                 memberId,
-                cmd.getRequestKey(),
+                cmd.requestKey(),
                 orderItems.size(),
                 subtotal,
                 shippingFee,
@@ -143,13 +138,13 @@ public class OrderService {
         return orderRepository.findAllByMemberId(memberId);     // 각 주문에 orderItems를 붙인 주문을 반환
     }
 
-    public OrderResponse getDetail(Long memberId, Long orderId) {
+    public Order getDetail(Long memberId, Long orderId) {
         requireAuthenticated(memberId);
 
         Order order = getOrderOrThrow(orderId);
         requireOwner(memberId, order);
 
-        return OrderResponse.from(order);
+        return order;
     }
 
     @Transactional
@@ -159,59 +154,55 @@ public class OrderService {
         Order order = getOrderOrThrow(orderId);
         requireOwner(memberId, order);
 
-        if(order.getStatus() == OrderStatus.CANCELED) {
-            throw new ConflictException("이미 취소된 주문입니다.");
-        }
+        order.cancel();
 
-        order.changeStatus(OrderStatus.CANCELED);
-
-        // 재고 원복
         for (OrderItem item : order.getOrderItems()) {
-            productService.increaseStock(item.getProductId(), item.getQuantity());
+            productService.increaseStock(
+                    item.getProductId(),
+                    item.getQuantity()
+            );
         }
 
         orderRepository.save(order);
     }
 
 
-
-
     // 아래는 Helper 메소드들
 
-    private void validateCheckoutForm(CheckoutForm form) {
-        if(form == null) throw new IllegalArgumentException("form은 필수입니다.");
-    }
+    private void validateCheckoutItems(List<CheckoutItemCommand> checkoutItems) {
+        if (checkoutItems == null || checkoutItems.isEmpty()) {
+            throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+        }
 
-    private void validateCheckoutItems(List<CheckoutItem> checkoutItems) {
-        if(checkoutItems == null || checkoutItems.isEmpty()) {
-            throw new ConflictException("주문 상품이 없습니다.");
+        for(CheckoutItemCommand checkoutItem : checkoutItems) {
+            validateCheckoutItem(checkoutItem);
         }
     }
 
     private void requireAuthenticated(Long memberId) {
-        if(memberId == null) throw new UnauthorizedException("로그인이 필요합니다.");
+        if (memberId == null) throw new UnauthorizedException("로그인이 필요합니다.");
     }
 
     private void requireActiveMember(Member member) {
-        if(member == null) throw new UnauthorizedException("로그인이 필요합니다.");
-        if(member.getStatus() != MemberStatus.ACTIVE) throw new ForbiddenException("비활성 회원은 주문할 수 없습니다.");
+        if (member == null) throw new UnauthorizedException("로그인이 필요합니다.");
+        if (member.getStatus() != MemberStatus.ACTIVE) throw new ForbiddenException("비활성 회원은 주문할 수 없습니다.");
     }
 
     private void requireOnSale(Product product) {
-        if(product.getStatus() != ProductStatus.ON_SALE) {
+        if (product.getStatus() != ProductStatus.ON_SALE) {
             throw new ConflictException("판매 중인 상품만 주문할 수 있습니다.");
         }
     }
 
     private Order getOrderOrThrow(Long orderId) {
-        if(orderId == null || orderId <= 0) throw new IllegalArgumentException("orderId는 양수여야 합니다.");
+        if (orderId == null || orderId <= 0) throw new IllegalArgumentException("orderId는 양수여야 합니다.");
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("주문이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ORDER_NOT_FOUND));
     }
 
     private void requireOwner(Long memberId, Order order) {
-        if(!memberId.equals(order.getMemberId())) {
-            throw new ForbiddenException("본인 주문만 처리할 수 있습니다.");
+        if (!memberId.equals(order.getMemberId())) {
+            throw new ForbiddenException(ErrorCode.ORDER_ACCESS_DENIED);
         }
     }
 
@@ -230,11 +221,35 @@ public class OrderService {
     }
 
     private void validateCreateOrderCommand(CreateOrderCommand cmd) {
-        if(cmd == null) {
+        if (cmd == null) {
             throw new IllegalArgumentException("주문 생성 정보는 필수입니다.");
         }
-        if(cmd.getRequestKey() == null || cmd.getRequestKey().isBlank()) {
+        if (cmd.requestKey() == null || cmd.requestKey().isBlank()) {
             throw new IllegalArgumentException("requestKey는 필수입니다.");
+        }
+    }
+
+    private void validateCheckoutItem(
+            CheckoutItemCommand checkoutItem
+    ) {
+
+        if (checkoutItem == null) {
+            throw new IllegalArgumentException(
+                    "주문 상품 정보는 필수입니다."
+            );
+        }
+
+        if (checkoutItem.productId() == null
+                || checkoutItem.productId() <= 0) {
+            throw new IllegalArgumentException(
+                    "productId는 양수여야 합니다."
+            );
+        }
+
+        if (checkoutItem.quantity() <= 0) {
+            throw new IllegalArgumentException(
+                    "주문 수량은 1개 이상이어야 합니다."
+            );
         }
     }
 }

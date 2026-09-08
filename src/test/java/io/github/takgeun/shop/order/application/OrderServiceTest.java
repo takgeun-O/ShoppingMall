@@ -9,17 +9,17 @@ import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.member.application.MemberService;
 import io.github.takgeun.shop.member.domain.MemberStatus;
 import io.github.takgeun.shop.member.infra.memory.MemoryMemberRepository;
+import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
 import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderRepository;
 import io.github.takgeun.shop.order.domain.OrderStatus;
-import io.github.takgeun.shop.order.dto.request.CheckoutItem;
-import io.github.takgeun.shop.order.dto.response.OrderResponse;
 import io.github.takgeun.shop.order.infra.memory.MemoryOrderRepository;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.ProductStatus;
 import io.github.takgeun.shop.product.infra.memory.MemoryProductRepository;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -29,7 +29,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class OrderServiceTest {
 
@@ -56,7 +59,7 @@ class OrderServiceTest {
         this.orderRepository = orderRepository;
         this.categoryService = new CategoryService(categoryRepository, productRepository);
         this.productService = new ProductService(productRepository, categoryService);
-        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4),eventPublisher);
+        this.memberService = new MemberService(memberRepository, new BCryptPasswordEncoder(4), eventPublisher);
         this.orderService = new OrderService(orderRepository, productService, memberService);
     }
 
@@ -71,7 +74,7 @@ class OrderServiceTest {
         int quantity = 2;
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         Long orderId = orderService.checkout(memberId, checkoutItems, cmd);
@@ -97,13 +100,13 @@ class OrderServiceTest {
         assertEquals(3000, saved.getShippingFee());
         assertEquals(1000 * quantity + 3000, saved.getTotalPrice());
 
-        assertEquals(cmd.getRecipientName(), saved.getRecipientName());
-        assertEquals(cmd.getPhoneNumber(), saved.getRecipientPhone());
-        assertEquals(cmd.getZipCode(), saved.getShippingZipCode());
-        assertEquals(cmd.getAddress(), saved.getShippingAddress());
-        assertEquals(cmd.getAddressDetail(), saved.getShippingAddressDetail());
-        assertEquals(cmd.getRequestMessage(), saved.getRequestMessage());
-        assertEquals(cmd.getRequestKey(), saved.getRequestKey());
+        assertEquals(cmd.recipientName(), saved.getRecipientName());
+        assertEquals(cmd.phoneNumber(), saved.getRecipientPhone());
+        assertEquals(cmd.zipCode(), saved.getShippingZipCode());
+        assertEquals(cmd.address(), saved.getShippingAddress());
+        assertEquals(cmd.addressDetail(), saved.getShippingAddressDetail());
+        assertEquals(cmd.requestMessage(), saved.getRequestMessage());
+        assertEquals(cmd.requestKey(), saved.getRequestKey());
 
         assertEquals(beforeStock - quantity, afterStock);
     }
@@ -115,7 +118,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(UnauthorizedException.class,
@@ -136,7 +139,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getAdminDetail(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ForbiddenException.class,
@@ -155,7 +158,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.DISCONTINUED);
         int beforeStock = productService.getAdminDetail(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ConflictException.class,
@@ -174,10 +177,10 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 0));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 0));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
-        assertThrows(ConflictException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> orderService.checkout(memberId, checkoutItems, cmd));
 
         int afterStock = productService.getForOrder(productId).getStock();
@@ -193,7 +196,7 @@ class OrderServiceTest {
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
         int beforeStock = productService.getForOrder(productId).getStock();
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 11));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 11));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(ConflictException.class,
@@ -209,7 +212,7 @@ class OrderServiceTest {
                 "userTest@test.com", "pw12341234!", "테스트", "010-1111-2222"
         );
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(999L, 2));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(999L, 2));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
 
         assertThrows(NotFoundException.class,
@@ -224,19 +227,31 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
 
-        Long orderId = createOrder(memberId, productId, 2);
+        CreateOrderCommand command = defaultCreateOrderCommand();
 
-        OrderResponse response = orderService.getDetail(memberId, orderId);
+        Long orderId = createOrder(memberId, productId, 2, command);
 
-        assertNotNull(response);
-        assertEquals(orderId, response.getOrderId());
-        assertEquals(OrderStatus.PAYMENT_COMPLETED, response.getStatus());
-        assertNotNull(response.getItems());
-        assertEquals(1, response.getItems().size());
-        assertEquals(2000, response.getSubtotal());
-        assertEquals(3000, response.getShippingFee());
-        assertEquals(5000, response.getTotalPrice());
-        assertEquals("테스트", response.getRecipientName());
+        Order order = orderService.getDetail(memberId, orderId);
+
+        assertNotNull(order);
+        assertEquals(orderId, order.getId());
+        assertEquals(memberId, order.getMemberId());
+        assertEquals(OrderStatus.PAYMENT_COMPLETED, order.getStatus());
+
+        assertNotNull(order.getOrderItems());
+        assertEquals(1, order.getOrderItems().size());
+
+        assertEquals(2000, order.getSubtotal());
+        assertEquals(3000, order.getShippingFee());
+        assertEquals(5000, order.getTotalPrice());
+
+        assertEquals(command.recipientName(), order.getRecipientName());
+        assertEquals(command.phoneNumber(), order.getRecipientPhone());
+        assertEquals(command.zipCode(), order.getShippingZipCode());
+        assertEquals(command.address(), order.getShippingAddress());
+        assertEquals(command.addressDetail(), order.getShippingAddressDetail());
+        assertEquals(command.requestMessage(), order.getRequestMessage());
+        assertEquals(command.requestKey(), order.getRequestKey());
     }
 
     @Test
@@ -281,6 +296,16 @@ class OrderServiceTest {
     }
 
     @Test
+    void 주문_상세조회_실패_주문ID가_양수가_아님() {
+        Long memberId = memberService.signup(
+                "invalid-order-id@test.com", "pw12341234!", "테스트", "010-1111-2222"
+        );
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderService.getDetail(memberId, 0L));
+    }
+
+    @Test
     void 주문_생성_실패_동일_requestKey_중복_제출() {
         Long memberId = memberService.signup(
                 "dup@test.com", "pw12341234!", "중복테스트", "010-9999-8888"
@@ -288,15 +313,12 @@ class OrderServiceTest {
         Long categoryId = categoryService.create("전자", null);
         Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
 
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, 1));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, 1));
 
         String requestKey = "duplicate-key-1";
 
-        CreateOrderCommand firstCmd = defaultCreateOrderCommand();
-        firstCmd.setRequestKey(requestKey);
-
-        CreateOrderCommand secondCmd = defaultCreateOrderCommand();
-        secondCmd.setRequestKey(requestKey);
+        CreateOrderCommand firstCmd = defaultCreateOrderCommand(requestKey);
+        CreateOrderCommand secondCmd = defaultCreateOrderCommand(requestKey);
 
         Long firstOrderId = orderService.checkout(memberId, checkoutItems, firstCmd);
 
@@ -305,10 +327,404 @@ class OrderServiceTest {
                 () -> orderService.checkout(memberId, checkoutItems, secondCmd));
     }
 
+    @Test
+    void 회원의_주문_목록을_조회한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "test@test.com",
+                "pw12341234!",
+                "테스트",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = createProduct(categoryId, "노트북", 1000, 10, ProductStatus.ON_SALE);
+
+        Long orderId1 = createOrder(memberId, productId, 1);
+        Long orderId2 = createOrder(memberId, productId, 2);
+
+        // when
+        List<Order> result = orderService.getMyOrders(memberId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(Order::getId)
+                .containsExactlyInAnyOrder(orderId1, orderId2);
+    }
+
+    @Test
+    void 회원ID가_null이면_주문_목록을_조회할_수_없다() {
+        assertThatThrownBy(
+                () -> orderService.getMyOrders(null))
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void 주문_항목에_잘못된_수량이_포함되면_주문을_생성하지_않는다() {
+        /**
+         * 이 부분에서 수량 테스트 실패하면 트랜잭션을 의심해본다.
+         * 현재 테스트에 @Transactional이 걸려있어서 예상한 방향으로 작동하지 않을 수 있으니 감안하기
+         */
+        // given
+        Long memberId = memberService.signup(
+                "mixed-items@test.com",
+                "pw12341234!",
+                "테스트",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        Long validProductId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        Long invalidProductId = createProduct(
+                categoryId,
+                "마우스",
+                500,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        List<CheckoutItemCommand> checkoutItems = List.of(
+                new CheckoutItemCommand(validProductId, 2),
+                new CheckoutItemCommand(invalidProductId, 0)
+        );
+
+        CreateOrderCommand command = defaultCreateOrderCommand();
+
+        // 10
+        int validProductStockBefore =
+                productService.getForOrder(validProductId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.checkout(memberId, checkoutItems, command)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("주문 수량은 1개 이상이어야 합니다.");
+
+        assertThat(productService.getForOrder(validProductId).getStock())
+                .isEqualTo(validProductStockBefore);
+    }
+
+    @Test
+    void 주문_취소에_성공한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "cancel-success@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, 2);
+
+        // when
+        orderService.cancel(memberId, orderId);
+
+        // then
+        Order canceledOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(canceledOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELED);
+
+        assertThat(canceledOrder.getCanceledAt())
+                .isNotNull();
+    }
+
+    @Test
+    void 주문을_취소하면_상품_재고가_복구된다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "stock-restore@test.com",
+                "pw12341234!",
+                "재고복구회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int orderQuantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(
+                memberId,
+                productId,
+                orderQuantity
+        );
+
+        int stockAfterOrder = productService.getForOrder(productId).getStock();
+
+        assertThat(stockAfterOrder)
+                .isEqualTo(originalStock - orderQuantity);
+
+        // when
+        orderService.cancel(memberId, orderId);
+
+        // then
+        int stockAfterCancel = productService.getForOrder(productId).getStock();
+
+        assertThat(stockAfterCancel)
+                .isEqualTo(originalStock);
+    }
+
+    @Test
+    void 존재하지_않는_주문은_취소할_수_없다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "cancel-not-found@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, 999L)
+        )
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void 다른_회원의_주문은_취소할_수_없다() {
+
+        // given
+        Long ownerId = memberService.signup(
+                "cancel-owner@test.com",
+                "pw12341234!",
+                "주문회원",
+                "010-1111-2222"
+        );
+
+        Long otherMemberId = memberService.signup(
+                "cancel-other@test.com",
+                "pw12341234!",
+                "다른회원",
+                "010-3333-4444"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(ownerId, productId, quantity);
+
+
+        int stockBeforeCancelAttempt =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(otherMemberId, orderId)
+        )
+                .isInstanceOf(ForbiddenException.class);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(order.getStatus())
+                .isEqualTo(OrderStatus.PAYMENT_COMPLETED);
+
+        assertThat(order.getCanceledAt())
+                .isNull();
+
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockBeforeCancelAttempt);
+    }
+
+    @Test
+    void 이미_취소된_주문은_다시_취소할_수_없다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "duplicate-cancel@test.com",
+                "pw12341234!",
+                "중복취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, quantity);
+
+        orderService.cancel(memberId, orderId);
+
+        int stockAfterFirstCancel =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, orderId)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
+
+        Order canceledOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(canceledOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELED);
+
+        assertThat(canceledOrder.getCanceledAt())
+                .isNotNull();
+
+        // 두 번째 취소 시 재고가 추가로 증가하지 않았는지 확인
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockAfterFirstCancel)
+                .isEqualTo(originalStock);
+    }
+
+    @Test
+    void 취소할_수_없는_상태의_주문은_취소할_수_없다() {
+        // given
+        Long memberId = memberService.signup(
+                "non-cancelable@test.com",
+                "pw12341234!",
+                "배송준비회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, quantity);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        order.changeStatus(OrderStatus.PREPARING);
+        orderRepository.save(order);
+
+        int stockBeforeCancelAttempt =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, orderId)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
+
+        Order unchangedOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(unchangedOrder.getStatus())
+                .isEqualTo(OrderStatus.PREPARING);
+
+        assertThat(unchangedOrder.getCanceledAt())
+                .isNull();
+
+        // 취소 실패 시 재고가 복구되지 않아야 함
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockBeforeCancelAttempt)
+                .isEqualTo(originalStock - quantity);
+    }
+
+    @Test
+    void 로그인하지_않으면_주문을_취소할_수_없다() {
+        assertThatThrownBy(
+                () -> orderService.cancel(null, 1L)
+        )
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void 주문ID가_양수가_아니면_취소할_수_없다() {
+        Long memberId = memberService.signup(
+                "invalid-cancel-id@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, 0L)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("orderId는 양수여야 합니다.");
+    }
+
+
+    // ---------------------------------------------------------------------------------------------------
+
     private Long createOrder(Long memberId, Long productId, int quantity) {
-        List<CheckoutItem> checkoutItems = List.of(CheckoutItem.of(productId, quantity));
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();
         return orderService.checkout(memberId, checkoutItems, cmd);
+    }
+
+    private Long createOrder(
+            Long memberId,
+            Long productId,
+            int quantity,
+            CreateOrderCommand command
+    ) {
+        List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
+
+        return orderService.checkout(
+                memberId,
+                checkoutItems,
+                command
+        );
     }
 
     private Long createProduct(Long categoryId, String name, int price, int stock, ProductStatus status) {
@@ -325,38 +741,55 @@ class OrderServiceTest {
     }
 
     private CreateOrderCommand defaultCreateOrderCommand() {
-        return createOrderCommand(
-                "테스트",
-                "010-1234-5678",
-                "12345",
-                "서울시 영등포구",
-                "101동 202호",
-                "문 앞"
+        return defaultCreateOrderCommand(
+                "test-request-" + UUID.randomUUID()
         );
     }
 
-    private CreateOrderCommand createOrderCommand(String recipientName,
-                                                  String phoneNumber,
-                                                  String zipCode,
-                                                  String address,
-                                                  String addressDetail,
-                                                  String requestMessage) {
-        CreateOrderCommand cmd = new CreateOrderCommand(
+    private CreateOrderCommand createOrderCommand(
+            String recipientName,
+            String phoneNumber,
+            String zipCode,
+            String address,
+            String addressDetail,
+            String requestMessage,
+            String requestKey
+    ) {
+
+        return new CreateOrderCommand(
                 recipientName,
                 phoneNumber,
                 zipCode,
                 address,
                 addressDetail,
                 requestMessage,
-                "test-request-" + UUID.randomUUID()
+                requestKey
         );
-        cmd.setRequestKey("test-request-" + UUID.randomUUID());
-        cmd.setRecipientName(recipientName);
-        cmd.setPhoneNumber(phoneNumber);
-        cmd.setZipCode(zipCode);
-        cmd.setAddress(address);
-        cmd.setAddressDetail(addressDetail);
-        cmd.setRequestMessage(requestMessage);
-        return cmd;
+    }
+
+    private CreateOrderCommand defaultCreateOrderCommand(String requestKey) {
+        return new CreateOrderCommand(
+                "주문회원",
+                "010-1111-2222",
+                "12345",
+                "서울시",
+                "101호",
+                "문앞",
+                requestKey
+        );
+    }
+
+    private Order order(
+            Long memberId,
+            Long orderId
+    ) {
+        Order order = mock(Order.class);
+
+        when(order.getId())
+                .thenReturn(orderId);
+        when(order.getMemberId())
+                .thenReturn(memberId);
+
+        return order;
     }
 }

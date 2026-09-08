@@ -129,6 +129,18 @@ public enum ErrorCode {
             "존재하지 않는 상품입니다."
     ),
 
+    // ORDER
+    ORDER_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "ORDER_NOT_FOUND",
+            "주문이 존재하지 않습니다."
+    ),
+    ORDER_ACCESS_DENIED(
+            HttpStatus.FORBIDDEN,
+            "ORDER_ACCESS_DENIED",
+            "본인 주문만 처리할 수 있습니다."
+    ),
+
     // 서버 오류
     INTERNAL_SERVER_ERROR(
             HttpStatus.INTERNAL_SERVER_ERROR,

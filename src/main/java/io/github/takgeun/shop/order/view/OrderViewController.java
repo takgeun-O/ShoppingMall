@@ -121,12 +121,6 @@ public class OrderViewController {
             Model model,
             RedirectAttributes ra) {
 
-        /** Spring Security 전환 전
-         * 기존 세션 기반으로 memberID 추출
-         */
-//        HttpSession session = request.getSession(false);    // 이미 인터셉터에서 "/orders" 경로는 세션이 있음을 보장하므로 null 체크 안해도 됨.
-//        Long memberId = getRequiredLoginMemberId(session);          // 그럼에도 불구하고 방어적 코드로 작성하고 memberId 추출
-
         /** Spring Security 전환 후
          * principal 기반으로 memberID 추출
          */
@@ -185,23 +179,14 @@ public class OrderViewController {
                            @AuthenticationPrincipal ShopUserPrincipal principal,
                            HttpServletRequest request,
                            Model model) {
-
-        /**
-         * Spring Security 전환 전
-         * 기존 세션 기반 방식
-         */
-//        HttpSession session = request.getSession(false);
-//        Long memberId = getRequiredLoginMemberId(session);
-
         /**
          * Spring Security 전환 후
          * Principal 기반 방식
          */
         Long memberId = principal.getMemberId();
 
-        HttpSession session = request.getSession(false);
-
-        OrderCompleteView view = orderCheckoutService.getOrderCompleteView(session, memberId, orderId);
+        // 여기서 OrderService.getDetail()에서 이미 소유권 검사함.
+        OrderCompleteView view = orderCheckoutService.getOrderCompleteView(memberId, orderId);
 
         model.addAttribute("order", view);
         return "public/orders/complete";

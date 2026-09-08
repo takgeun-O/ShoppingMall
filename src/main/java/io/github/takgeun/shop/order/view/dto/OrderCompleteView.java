@@ -1,5 +1,7 @@
 package io.github.takgeun.shop.order.view.dto;
 
+import io.github.takgeun.shop.order.domain.Order;
+import io.github.takgeun.shop.order.domain.OrderItem;
 import io.github.takgeun.shop.order.domain.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,6 +24,21 @@ public class OrderCompleteView {
     private ShippingView shipping;          // 배송 정보
     private PaymentView payment;            // 결제 정보
 
+    public static OrderCompleteView from(Order order) {
+        return new OrderCompleteView(
+                order.getId(),
+                order.getOrderedAt(),
+                order.getStatus(),
+
+                order.getOrderItems().stream()
+                        .map(OrderItemView::from)
+                        .toList(),
+
+                ShippingView.from(order),
+                PaymentView.from(order)
+        );
+    }
+
     @Getter
     @AllArgsConstructor
     public static class OrderItemView {
@@ -31,6 +48,17 @@ public class OrderCompleteView {
         private Integer originalPrice;
         private int quantity;
         private String imageUrl;
+
+        public static OrderItemView from(OrderItem item) {
+            return new OrderItemView(
+                    item.getProductId(),
+                    item.getProductNameSnapshot(),
+                    item.getUnitPriceSnapshot(),
+                    item.getOriginalPriceSnapshot(),
+                    item.getQuantity(),
+                    item.getImageUrlSnapshot()
+            );
+        }
     }
 
     @Getter
@@ -42,6 +70,17 @@ public class OrderCompleteView {
         private String address;
         private String addressDetail;
         private String requestMessage;
+
+        public static ShippingView from(Order order) {
+            return new ShippingView(
+                    order.getRecipientName(),
+                    order.getRecipientPhone(),
+                    order.getShippingZipCode(),
+                    order.getShippingAddress(),
+                    order.getShippingAddressDetail(),
+                    order.getRequestMessage()
+            );
+        }
     }
 
     @Getter
@@ -50,5 +89,13 @@ public class OrderCompleteView {
         private int subtotal;
         private int shippingFee;
         private int total;
+
+        public static PaymentView from(Order order) {
+            return new PaymentView(
+                    order.getSubtotal(),
+                    order.getShippingFee(),
+                    order.getTotalPrice()
+            );
+        }
     }
 }
