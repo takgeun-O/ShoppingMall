@@ -1,6 +1,10 @@
 package io.github.takgeun.shop.order.api;
 
 import io.github.takgeun.shop.global.error.api.ApiGlobalExceptionHandler;
+import io.github.takgeun.shop.global.error.code.ErrorCode;
+import io.github.takgeun.shop.global.error.exception.ConflictException;
+import io.github.takgeun.shop.global.error.exception.ForbiddenException;
+import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.member.domain.MemberRole;
 import io.github.takgeun.shop.member.domain.MemberStatus;
@@ -27,8 +31,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class OrderApiControllerTest {
@@ -423,6 +427,116 @@ class OrderApiControllerTest {
                 any()
         );
     }
+
+    @Test
+    void 로그인_회원은_본인의_주문을_취소할_수_있다() throws Exception {
+
+        // given
+        Long memberId = 7L;
+        Long orderId = 42L;
+
+        authenticate(memberId);
+
+        // when & then
+        mockMvc.perform(
+                patch("/api/v1/orders/{orderId}/cancel", orderId)
+        )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(orderService).cancel(memberId, orderId);
+    }
+
+    @Test
+    void 취소할_주문ID가_양수가_아니면_400을_반환한다() throws Exception {
+        // given
+        Long memberId = 7L;
+        authenticate(memberId);
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", 0)
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verify(orderService, never()).cancel(
+                any(),  // 인자에 null이 전달될 가능성까지 포괄하려면 anyLong보다 any()가 나음.
+                any()
+        );
+    }
+
+    @Test
+    void 존재하지_않는_주문을_취소하면_404를_반환한다() throws Exception {
+        // given
+        Long memberId = 7L;
+        Long orderId = 999L;
+
+        authenticate(memberId);
+
+        doThrow(new NotFoundException(ErrorCode.ORDER_NOT_FOUND))
+                .when(orderService)
+                .cancel(memberId, orderId);
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", orderId)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"));
+
+        verify(orderService).cancel(memberId, orderId);
+    }
+
+    @Test
+    void 다른_회원의_주문을_취소하면_403을_반환한다() throws Exception {
+        // given
+        Long memberId = 7L;
+        Long orderId = 42L;
+
+        authenticate(memberId);
+
+        doThrow(new ForbiddenException(ErrorCode.ORDER_ACCESS_DENIED))
+                .when(orderService)
+                .cancel(memberId, orderId);
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", orderId)
+                )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("ORDER_ACCESS_DENIED"));
+
+        verify(orderService).cancel(memberId, orderId);
+    }
+
+    @Test
+    void 이미_취소된_주문을_다시_취소하면_409를_반환한다() throws Exception {
+        // given
+        Long memberId = 7L;
+        Long orderId = 42L;
+
+        authenticate(memberId);
+
+        doThrow(new ConflictException(
+                "주문완료 및 결제완료 상태에서만 취소할 수 있습니다."
+        ))
+                .when(orderService)
+                .cancel(memberId, orderId);
+
+        // when & then
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", orderId)
+                )
+                .andExpect(status().isConflict());
+
+        verify(orderService).cancel(memberId, orderId);
+    }
+
+
+    // ------------------------------------------------------------------------------------
 
     private Order order(Long memberId, Long orderId) {
         OrderItem item = OrderItem.of(

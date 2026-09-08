@@ -119,4 +119,18 @@ public class OrderApiController {
                 .created(location)
                 .body(new CreateOrderResponse(orderId));
     }
+
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<Void> cancelOrder(
+            @AuthenticationPrincipal ShopUserPrincipal principal,
+            @PathVariable @Positive Long orderId
+    ) {
+
+        orderService.cancel(
+                principal.getMemberId(),
+                orderId
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

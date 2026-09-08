@@ -26,8 +26,7 @@ import static io.github.takgeun.shop.order.domain.OrderStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -802,6 +801,376 @@ public class OrderApiSecurityIntegrationTest extends IntegrationTestSupport {
 
         assertThat(unchangedProduct.getStock())
                 .isEqualTo(1);
+    }
+
+    @Test
+    void 비로그인_사용자가_주문_취소_API를_요청하면_401을_반환한다() throws Exception {
+
+        // given
+        Long orderId = 1L;
+
+        // when & then
+        /**
+         * PATCH /api/v1/orders/1/cancel
+         * → SecurityFilterChain 진입
+         * → CsrfFilter 실행
+         * → CSRF 토큰 확인
+         * → 토큰 없음
+         * → AccessDeniedException 성격의 CSRF 오류
+         * → AccessDeniedHandler
+         * → 403 Forbidden
+         */
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", orderId)
+                                .with(csrf())   // 쓰기 요청이므로 CSRF 토큰을 포함해야 인증 실패인 401까지 도달한다.
+                        // 만약 csrf 토큰을 제외하면 csrf 토큰이 없는 요청은 사용자 로그인 여부와 별개로
+                        // 요청의 신뢰성을 확인할 수 없으므로 Spring Security가 거부한다.
+                        // 403은 서버가 요청을 허용하지 않음 상태이므로 403 응답이 발생한다.
+                )
+                .andExpect(status().isUnauthorized())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTICATION_REQUIRED"))
+                .andExpect(jsonPath("$.message")
+                        .value("로그인이 필요합니다."))
+                .andExpect(jsonPath("$.path")
+                        .value("/api/v1/orders/1/cancel"))
+                .andExpect(jsonPath("$.fieldErrors").isArray())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
+    }
+
+    @Test
+    void 본인_주문을_취소하면_상태와_취소일시를_변경하고_재고를_복구한다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail("order-cancel");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "주문취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create(
+                "주문취소 카테고리",
+                null
+        );
+
+        int originalStock = 10;
+        int orderQuantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "주문취소 상품",
+                10_000,
+                originalStock
+        );
+
+        // 여기서 주문
+        Long orderId = createOrder(
+                memberId,
+                productId,
+                orderQuantity
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        // 주문 후: 재고 10 → 8
+        assertThat(
+                productService
+                        .getPublicDetail(productId)
+                        .getStock()
+        ).isEqualTo(8);
+
+        // when: 첫 번째 취소
+        mockMvc.perform(
+                        patch(
+                                "/api/v1/orders/{orderId}/cancel",
+                                orderId
+                        )
+                                .with(csrf())
+                                .session(session)
+                )
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        // then: 주문 상태와 취소 시각 확인
+        Order canceledOrder =
+                orderService.getDetail(memberId, orderId);
+
+        assertThat(canceledOrder.getStatus())
+                .isEqualTo(CANCELED);
+
+        assertThat(canceledOrder.getCanceledAt())
+                .isNotNull();
+
+        // 주문 취소 후: 재고 8 → 10
+        int stockAfterFirstCancel =
+                productService
+                        .getPublicDetail(productId)
+                        .getStock();
+
+        assertThat(stockAfterFirstCancel)
+                .isEqualTo(originalStock);
+
+        // when: 같은 주문을 다시 취소
+        mockMvc.perform(
+                        patch(
+                                "/api/v1/orders/{orderId}/cancel",
+                                orderId
+                        )
+                                .with(csrf())
+                                .session(session)
+                )
+                .andExpect(status().isConflict())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message")
+                        .value("주문완료 및 결제완료 상태에서만 취소할 수 있습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value(
+                                "/api/v1/orders/"
+                                        + orderId
+                                        + "/cancel"
+                        ));
+
+        // then: 중복 취소로 재고가 10보다 더 증가하지 않음
+        int stockAfterSecondCancelAttempt =
+                productService
+                        .getPublicDetail(productId)
+                        .getStock();
+
+        assertThat(stockAfterSecondCancelAttempt)
+                .isEqualTo(stockAfterFirstCancel)
+                .isEqualTo(originalStock);
+
+        Order stillCanceledOrder =
+                orderService.getDetail(memberId, orderId);
+
+        assertThat(stillCanceledOrder.getStatus())
+                .isEqualTo(CANCELED);
+
+        assertThat(stillCanceledOrder.getCanceledAt())
+                .isNotNull();
+    }
+
+    @Test
+    void 다른_회원의_주문을_취소하면_403을_반환하고_재고를_복구하지_않는다()
+            throws Exception {
+
+        // given: 주문 소유자
+        Long ownerId = memberService.signup(
+                uniqueEmail("cancel-owner"),
+                PASSWORD,
+                "주문소유자",
+                "010-1111-1111"
+        );
+
+        Long categoryId = categoryService.create(
+                "소유권검증 카테고리",
+                null
+        );
+
+        int originalStock = 10;
+        int orderQuantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "소유권검증 상품",
+                10_000,
+                originalStock
+        );
+
+        Long orderId = createOrder(
+                ownerId,
+                productId,
+                orderQuantity
+        );
+
+        // 주문 후 재고는 8
+        int stockBeforeCancelAttempt =
+                productService
+                        .getPublicDetail(productId)
+                        .getStock();
+
+        assertThat(stockBeforeCancelAttempt)
+                .isEqualTo(8);
+
+        // given: 다른 회원 로그인
+        String otherEmail = uniqueEmail("cancel-other");
+
+        memberService.signup(
+                otherEmail,
+                PASSWORD,
+                "다른회원",
+                "010-2222-2222"
+        );
+
+        MockHttpSession otherSession =
+                loginAndGetSession(otherEmail, PASSWORD);
+
+        // when & then
+        mockMvc.perform(
+                        patch(
+                                "/api/v1/orders/{orderId}/cancel",
+                                orderId
+                        )
+                                .with(csrf())
+                                .session(otherSession)
+                )
+                .andExpect(status().isForbidden())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code")
+                        .value("ORDER_ACCESS_DENIED"))
+                .andExpect(jsonPath("$.message")
+                        .value("본인 주문만 처리할 수 있습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value(
+                                "/api/v1/orders/"
+                                        + orderId
+                                        + "/cancel"
+                        ));
+
+        // 취소되지 않고 기존 상태 유지
+        Order unchangedOrder =
+                orderService.getDetail(ownerId, orderId);
+
+        assertThat(unchangedOrder.getStatus())
+                .isEqualTo(PAYMENT_COMPLETED);
+
+        assertThat(unchangedOrder.getCanceledAt())
+                .isNull();
+
+        // 취소에 실패했으므로 재고도 8로 유지
+        assertThat(
+                productService
+                        .getPublicDetail(productId)
+                        .getStock()
+        ).isEqualTo(stockBeforeCancelAttempt);
+    }
+
+    @Test
+    void 존재하지_않는_주문을_취소하면_404를_반환한다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail("cancel-missing");
+
+        memberService.signup(
+                email,
+                PASSWORD,
+                "주문취소회원",
+                "010-1111-2222"
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        long missingOrderId = 999_999_999L;
+
+        // when & then
+        mockMvc.perform(
+                        patch(
+                                "/api/v1/orders/{orderId}/cancel",
+                                missingOrderId
+                        )
+                                .with(csrf())
+                                .session(session)
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(content()
+                        .contentTypeCompatibleWith(APPLICATION_JSON))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code")
+                        .value("ORDER_NOT_FOUND"))
+                .andExpect(jsonPath("$.message")
+                        .value("주문이 존재하지 않습니다."))
+                .andExpect(jsonPath("$.path")
+                        .value(
+                                "/api/v1/orders/"
+                                        + missingOrderId
+                                        + "/cancel"
+                        ))
+                .andExpect(jsonPath("$.fieldErrors").isArray())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
+    }
+
+    @Test
+    void CSRF_토큰_없이_주문을_취소하면_403을_반환한다()
+            throws Exception {
+
+        // given
+        String email = uniqueEmail("cancel-without-csrf");
+
+        Long memberId = memberService.signup(
+                email,
+                PASSWORD,
+                "주문취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create(
+                "CSRF검증 카테고리",
+                null
+        );
+
+        Long productId = createProduct(
+                categoryId,
+                "CSRF검증 상품",
+                10_000,
+                10
+        );
+
+        Long orderId = createOrder(
+                memberId,
+                productId,
+                2
+        );
+
+        MockHttpSession session =
+                loginAndGetSession(email, PASSWORD);
+
+        int stockBeforeRequest =
+                productService
+                        .getPublicDetail(productId)
+                        .getStock();
+
+        // when & then
+        mockMvc.perform(
+                        patch(
+                                "/api/v1/orders/{orderId}/cancel",
+                                orderId
+                        )
+                                .session(session)
+                        // .with(csrf())를 의도적으로 넣지 않는다.
+                )
+                .andExpect(status().isForbidden());
+
+        // Controller에 진입하지 않았으므로 주문과 재고가 유지되어야 한다.
+        Order unchangedOrder =
+                orderService.getDetail(memberId, orderId);
+
+        assertThat(unchangedOrder.getStatus())
+                .isEqualTo(PAYMENT_COMPLETED);
+
+        assertThat(unchangedOrder.getCanceledAt())
+                .isNull();
+
+        assertThat(
+                productService
+                        .getPublicDetail(productId)
+                        .getStock()
+        ).isEqualTo(stockBeforeRequest);
     }
 
 

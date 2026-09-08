@@ -415,6 +415,297 @@ class OrderServiceTest {
                 .isEqualTo(validProductStockBefore);
     }
 
+    @Test
+    void 주문_취소에_성공한다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "cancel-success@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                10,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, 2);
+
+        // when
+        orderService.cancel(memberId, orderId);
+
+        // then
+        Order canceledOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(canceledOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELED);
+
+        assertThat(canceledOrder.getCanceledAt())
+                .isNotNull();
+    }
+
+    @Test
+    void 주문을_취소하면_상품_재고가_복구된다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "stock-restore@test.com",
+                "pw12341234!",
+                "재고복구회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int orderQuantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(
+                memberId,
+                productId,
+                orderQuantity
+        );
+
+        int stockAfterOrder = productService.getForOrder(productId).getStock();
+
+        assertThat(stockAfterOrder)
+                .isEqualTo(originalStock - orderQuantity);
+
+        // when
+        orderService.cancel(memberId, orderId);
+
+        // then
+        int stockAfterCancel = productService.getForOrder(productId).getStock();
+
+        assertThat(stockAfterCancel)
+                .isEqualTo(originalStock);
+    }
+
+    @Test
+    void 존재하지_않는_주문은_취소할_수_없다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "cancel-not-found@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, 999L)
+        )
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void 다른_회원의_주문은_취소할_수_없다() {
+
+        // given
+        Long ownerId = memberService.signup(
+                "cancel-owner@test.com",
+                "pw12341234!",
+                "주문회원",
+                "010-1111-2222"
+        );
+
+        Long otherMemberId = memberService.signup(
+                "cancel-other@test.com",
+                "pw12341234!",
+                "다른회원",
+                "010-3333-4444"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(ownerId, productId, quantity);
+
+
+        int stockBeforeCancelAttempt =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(otherMemberId, orderId)
+        )
+                .isInstanceOf(ForbiddenException.class);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(order.getStatus())
+                .isEqualTo(OrderStatus.PAYMENT_COMPLETED);
+
+        assertThat(order.getCanceledAt())
+                .isNull();
+
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockBeforeCancelAttempt);
+    }
+
+    @Test
+    void 이미_취소된_주문은_다시_취소할_수_없다() {
+
+        // given
+        Long memberId = memberService.signup(
+                "duplicate-cancel@test.com",
+                "pw12341234!",
+                "중복취소회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, quantity);
+
+        orderService.cancel(memberId, orderId);
+
+        int stockAfterFirstCancel =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, orderId)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
+
+        Order canceledOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(canceledOrder.getStatus())
+                .isEqualTo(OrderStatus.CANCELED);
+
+        assertThat(canceledOrder.getCanceledAt())
+                .isNotNull();
+
+        // 두 번째 취소 시 재고가 추가로 증가하지 않았는지 확인
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockAfterFirstCancel)
+                .isEqualTo(originalStock);
+    }
+
+    @Test
+    void 취소할_수_없는_상태의_주문은_취소할_수_없다() {
+        // given
+        Long memberId = memberService.signup(
+                "non-cancelable@test.com",
+                "pw12341234!",
+                "배송준비회원",
+                "010-1111-2222"
+        );
+
+        Long categoryId = categoryService.create("전자", null);
+
+        int originalStock = 10;
+        int quantity = 2;
+
+        Long productId = createProduct(
+                categoryId,
+                "노트북",
+                1000,
+                originalStock,
+                ProductStatus.ON_SALE
+        );
+
+        Long orderId = createOrder(memberId, productId, quantity);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        order.changeStatus(OrderStatus.PREPARING);
+        orderRepository.save(order);
+
+        int stockBeforeCancelAttempt =
+                productService.getForOrder(productId).getStock();
+
+        // when & then
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, orderId)
+        )
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("주문완료 및 결제완료 상태에서만 취소할 수 있습니다.");
+
+        Order unchangedOrder = orderRepository.findById(orderId)
+                .orElseThrow();
+
+        assertThat(unchangedOrder.getStatus())
+                .isEqualTo(OrderStatus.PREPARING);
+
+        assertThat(unchangedOrder.getCanceledAt())
+                .isNull();
+
+        // 취소 실패 시 재고가 복구되지 않아야 함
+        assertThat(productService.getForOrder(productId).getStock())
+                .isEqualTo(stockBeforeCancelAttempt)
+                .isEqualTo(originalStock - quantity);
+    }
+
+    @Test
+    void 로그인하지_않으면_주문을_취소할_수_없다() {
+        assertThatThrownBy(
+                () -> orderService.cancel(null, 1L)
+        )
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void 주문ID가_양수가_아니면_취소할_수_없다() {
+        Long memberId = memberService.signup(
+                "invalid-cancel-id@test.com",
+                "pw12341234!",
+                "취소회원",
+                "010-1111-2222"
+        );
+
+        assertThatThrownBy(
+                () -> orderService.cancel(memberId, 0L)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("orderId는 양수여야 합니다.");
+    }
+
+
+    // ---------------------------------------------------------------------------------------------------
+
     private Long createOrder(Long memberId, Long productId, int quantity) {
         List<CheckoutItemCommand> checkoutItems = List.of(new CheckoutItemCommand(productId, quantity));
         CreateOrderCommand cmd = defaultCreateOrderCommand();

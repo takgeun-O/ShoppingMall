@@ -154,15 +154,13 @@ public class OrderService {
         Order order = getOrderOrThrow(orderId);
         requireOwner(memberId, order);
 
-        if (order.getStatus() == OrderStatus.CANCELED) {
-            throw new ConflictException("이미 취소된 주문입니다.");
-        }
+        order.cancel();
 
-        order.changeStatus(OrderStatus.CANCELED);
-
-        // 재고 원복
         for (OrderItem item : order.getOrderItems()) {
-            productService.increaseStock(item.getProductId(), item.getQuantity());
+            productService.increaseStock(
+                    item.getProductId(),
+                    item.getQuantity()
+            );
         }
 
         orderRepository.save(order);
