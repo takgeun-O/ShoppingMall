@@ -1,428 +1,329 @@
-# 프로젝트 소개
+# ShoppingMall
 
-Spring Boot 기반으로 구현한 이커머스 쇼핑몰 백엔드 프로젝트.
+Spring Boot로 구현한 이커머스 백엔드 개인 프로젝트입니다.
 
-상품 조회, 장바구니, 주문, 회원가입 및 로그인, 관리자 기능 등 쇼핑몰의 핵심 도메인을 직접 설계하고 구현했습니다.
+Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인증부터 상품 조회, 장바구니, 주문 생성·조회·취소, 관리자 운영 기능까지 쇼핑몰의 핵심 흐름을 구현했습니다.
 
+> 현재 `main` 브랜치는 MyBatis + MySQL을 사용합니다. REST API는 카테고리·상품 조회와 일반 회원·주문 영역까지 구현되어 있으며, 장바구니와 관리자 기능은 현재 서버 사이드 렌더링 방식으로 제공합니다.
 
-현재는 MyBatis + MySQL 기반으로 데이터 저장소를 구현했으며,
-추후 JPA 기반 구현으로 확장하고 REST API 중심 구조로 발전시키는 것을 목표로 하고 있습니다.
+## 빠른 확인
 
----
-# 프로젝트 특징
+- 데모: [쇼핑몰 바로가기](https://exporter-bucket-flick.ngrok-free.dev/)
+- API 문서: [Swagger UI](https://exporter-bucket-flick.ngrok-free.dev/swagger-ui.html)
+- 로컬 Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
-- MyBatis 기반 Repository 구현 및 향후 JPA 구현체 추가 가능 구조
-- 서비스 계층 트랜잭션 분리 (readOnly / write)
-- 주문 생성과 재고 차감을 단일 트랜잭션으로 처리
-- requestKey를 이용한 중복 주문 요청 방지 및 주문 생성 멱등성 처리
-- 사용자 / 관리자 기능 및 표현 계층 분리
-- 조회 / 변경 작업에 따른 트랜잭션 경계 분리
-- Domain 객체와 View DTO 분리
-- 도메인 중심 패키지 구조 설계
+> Ngrok 주소는 개발 서버가 실행 중일 때만 접속할 수 있습니다. Ngrok 안내 화면이 나타나면 **Visit Site**를 선택해 주세요.
 
-# 프로젝트 목적
+### 데모 계정
 
-이 프로젝트는 단순 CRUD 구현이 아니라 다음을 목표로 진행
+| 구분 | 이메일 | 비밀번호 |
+| --- | --- | --- |
+| 일반 회원 | `user1@test.com` | `pw12341234!` |
 
-- 실제 쇼핑몰의 도메인 흐름 이해
-- 계층형 백엔드 아키텍처 설계 (컨트롤러, 서비스, 도메인, 리포지토리)
-- 비즈니스 로직 중심 서비스 구현
-- 사용자 / 관리자 기능 분리
-- UI와 백엔드 흐름 연결 경험
-- 저장소 기술 전환을 고려한 구조 설계
+관리자 계정은 데이터 변경·삭제 권한이 있어 공개하지 않습니다. 관리자 기능 시연이 필요하면 별도로 문의해 주세요.
 
----
+## 핵심 구현 내용
 
-# 실행 환경
+- Spring Security 기반 세션 인증 및 사용자·관리자 URL 인가
+- 화면 요청과 API 요청에 서로 다른 인증 실패 응답 적용
+  - 화면: 로그인 페이지로 이동
+  - API: 표준화된 JSON 오류 응답
+- 주문 생성과 상품 재고 차감을 하나의 트랜잭션으로 처리
+- 주문 취소 시 주문 상태 변경과 상품 재고 복구
+- `requestKey`를 이용한 중복 주문 요청 감지
+- 주문 상세 조회·취소 시 주문 소유권 검증
+- 주문 시점의 상품명·가격·이미지를 주문 항목에 스냅샷으로 저장
+- 카테고리 계층, 상품 판매 상태, 회원 상태, 주문 상태 전이 규칙을 도메인 객체로 관리
+- Repository 인터페이스와 MyBatis 구현체 분리
+- Thymeleaf View DTO와 REST API 요청·응답 DTO 분리
+- Bean Validation과 전역 예외 처리를 이용한 일관된 API 오류 계약
+- Controller, Service, 도메인, Security·DB 통합 테스트 구성
 
-- **Java**: 21
-- **Spring Boot**: 4.0.1
-- **Build Tool**: Gradle
-- **Template Engine**: Thymeleaf
-- **Database**: MySQL
-- **Persistence**: MyBatis
-- **IDE**: IntelliJ IDEA 권장
-- **OS**: macOS / Windows / Linux
+## 제공 기능
 
----
+| 영역 | 웹 화면 | REST API | 주요 기능 |
+| --- | :---: | :---: | --- |
+| 카테고리 | O | O | 공개 카테고리 목록·상세 조회, 관리자 CRUD |
+| 상품 | O | O | 목록·상세 조회, 상태·재고 검증, 관리자 관리 |
+| 회원 | O | O | 회원가입·로그인, 내 정보 조회·수정, 비밀번호 변경, 탈퇴 |
+| 장바구니 | O | - | 세션 장바구니, 수량 변경·삭제, 주문 금액 계산 |
+| 주문 | O | O | 목록·상세 조회, 생성, 중복 요청 차단, 취소·재고 복구 |
+| 관리자 | O | - | 대시보드, 상품·카테고리·주문·회원 관리 |
 
-# 실행 방법
+## REST API
 
-본 프로젝트는 MyBatis + MySQL 기반으로 동작합니다.
+### 공개 API
 
-개발 환경에서는 Spring Profile 설정에 따라 MyBatis Repository가 활성화됩니다.
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| `GET` | `/api/v1/categories` | 공개 카테고리 목록 조회 |
+| `GET` | `/api/v1/categories/{categoryId}` | 공개 카테고리 상세 조회 |
+| `GET` | `/api/v1/products` | 공개 상품 목록 조회 |
+| `GET` | `/api/v1/products/{productId}` | 공개 상품 상세 조회 |
 
-`demo` 프로필을 함께 활성화하면 `schema.sql`과 `data.sql`을 이용하여 테이블과 시연용 데이터가 초기화됩니다.
+### 인증 필요 API
 
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| `GET` | `/api/v1/members/me` | 내 회원 정보 조회 |
+| `PATCH` | `/api/v1/members/me` | 이름·전화번호 수정 |
+| `PATCH` | `/api/v1/members/me/password` | 현재 비밀번호 확인 후 비밀번호 변경 |
+| `DELETE` | `/api/v1/members/me` | 현재 비밀번호 확인 후 회원 탈퇴 |
+| `GET` | `/api/v1/orders` | 내 주문 목록 조회 |
+| `GET` | `/api/v1/orders/{orderId}` | 내 주문 상세 조회 |
+| `POST` | `/api/v1/orders` | 주문 생성 |
+| `PATCH` | `/api/v1/orders/{orderId}/cancel` | 내 주문 취소 |
 
-## 실행 방법 1. 로컬에서 실행
+인증은 Spring Security의 HTTP 세션을 사용합니다. 상태 변경 요청에는 CSRF 검증이 적용됩니다. 자세한 요청·응답 형식은 Swagger UI에서 확인할 수 있습니다.
 
-### 1. 프로젝트 클론
+## 기술 스택
+
+| 분류 | 기술 |
+| --- | --- |
+| Language | Java 21 |
+| Framework | Spring Boot 4.0.1, Spring MVC, Spring Security |
+| Persistence | MyBatis 4.0.1 |
+| Database | MySQL |
+| View | Thymeleaf, HTML, CSS, JavaScript |
+| API | REST, Bean Validation, springdoc-openapi 3.0.3 |
+| Test | JUnit 5, AssertJ, Mockito, MockMvc, Spring Security Test |
+| Build | Gradle Wrapper |
+
+## 아키텍처
+
+도메인을 기준으로 패키지를 나누고, 각 도메인 내부에서 표현·애플리케이션·도메인·인프라 계층을 분리했습니다.
+
+```text
+io.github.takgeun.shop
+├── category
+│   ├── api
+│   ├── application
+│   ├── domain
+│   ├── infra
+│   └── view
+├── product
+├── member
+├── order
+├── cart
+├── admin
+└── global
+    ├── api
+    ├── config
+    ├── error
+    ├── init
+    ├── security
+    ├── validation
+    └── view
+```
+
+의존 흐름은 다음을 기준으로 합니다.
+
+```text
+API / View Controller
+        ↓
+Application Service
+        ↓
+Domain + Repository Interface
+        ↓
+MyBatis Repository Implementation
+        ↓
+MySQL
+```
+
+- Controller: HTTP 요청·응답 처리, 입력 검증, DTO 변환
+- Application Service: 유스케이스 실행과 트랜잭션 조정
+- Domain: 상태 전이와 핵심 비즈니스 규칙
+- Repository Interface: 저장소 추상화
+- `infra/mybatis`: MyBatis 기반 데이터 접근 구현
+
+## 로컬 실행
+
+### 사전 준비
+
+- JDK 21
+- MySQL
+- Git
+
+Gradle은 Wrapper가 포함되어 있어 별도로 설치할 필요가 없습니다.
+
+### 1. 저장소 복제
 
 ```bash
 git clone https://github.com/takgeun-O/ShoppingMall.git
-```
-
-프로젝트 디렉토리로 이동합니다.
-
-```bash
 cd ShoppingMall
 ```
 
-### 2. 데이터베이스 준비
-MySQL에서 프로젝트용 데이터베이스를 생성합니다.
+### 2. 데이터베이스와 전용 계정 생성
+
+MySQL에 접속한 뒤 아래 예시를 실행합니다. 비밀번호는 원하는 값으로 변경하세요.
 
 ```sql
-CREATE DATABASE shoppingmall;
+CREATE DATABASE shoppingmall
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+CREATE USER 'shoppingmall_app'@'localhost'
+    IDENTIFIED BY 'change-me';
+
+GRANT ALL PRIVILEGES ON shoppingmall.*
+    TO 'shoppingmall_app'@'localhost';
+
+FLUSH PRIVILEGES;
 ```
 
-`demo` 프로필로 애플리케이션을 실행하면 `schema.sql`과 `data.sql`을 통해 필요한 테이블과 시연용 데이터가 초기화됩니다.
+이미 사용할 MySQL 계정이 있다면 데이터베이스만 생성해도 됩니다.
 
+### 3. 환경변수 설정
 
-※ application.yml에서 DB 연결 정보 (url, username, password)를 환경에 맞게 수정해야 합니다.
-
-예시)
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/shoppingmall
-    username: your_username
-    password: your_password
-```
-
-### 3. 애플리케이션 실행
-
-MyBatis Repository와 Demo 데이터를 함께 사용하는 경우 다음과 같이 실행합니다.
+`application.yml`을 수정하거나 비밀번호를 커밋하지 말고 환경변수를 사용하세요.
 
 macOS / Linux:
 
 ```bash
-./gradlew bootRun --args='--spring.profiles.active=mybatis,demo'
+export DB_URL='jdbc:mysql://localhost:3306/shoppingmall?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
+export DB_USERNAME='shoppingmall_app'
+export DB_PASSWORD='change-me'
+export ADMIN_PASSWORD='change-admin-password'
 ```
 
-Windows: 
+Windows PowerShell:
+
+```powershell
+$env:DB_URL='jdbc:mysql://localhost:3306/shoppingmall?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
+$env:DB_USERNAME='shoppingmall_app'
+$env:DB_PASSWORD='change-me'
+$env:ADMIN_PASSWORD='change-admin-password'
+```
+
+`ADMIN_PASSWORD`는 `demo` 프로필에서 시연용 관리자 계정을 초기화하기 위해 필요합니다. 관리자 이메일·이름·전화번호는 필요할 때 다음 환경변수로 변경할 수 있습니다.
+
+```text
+ADMIN_EMAIL
+ADMIN_NAME
+ADMIN_PHONE
+```
+
+### 4. 애플리케이션 실행
+
+macOS / Linux:
 
 ```bash
-gradlew.bat bootRun --args='--spring.profiles.active=mybatis,demo'
+./gradlew bootRun --args='--spring.profiles.active=demo,mybatis'
 ```
 
+Windows:
 
-## 실행 방법 2. Ngrok 데모 접속
+```powershell
+.\gradlew.bat bootRun --args="--spring.profiles.active=demo,mybatis"
+```
 
-별도의 설치와 실행 없이 아래 링크에서 바로 확인하실 수 있습니다.
+실행 후 다음 주소를 확인합니다.
 
-> Ngrok 데모는 개발 서버가 실행 중인 경우에만 접속 가능합니다.
+- 웹 화면: [http://localhost:8080](http://localhost:8080)
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
-- [데모 사이트 접속](https://exporter-bucket-flick.ngrok-free.dev/)
+> **주의:** `demo` 프로필은 실행할 때 `schema.sql`과 `data.sql`을 적용하며 기존 데모 테이블 데이터를 초기화합니다. 개인 데이터가 있는 데이터베이스에는 사용하지 마세요.
 
-Ngrok 안내 화면이 나타나면 `Visit Site`를 선택해 주세요.
+## 테스트 실행
 
----
+통합 테스트는 운영용 데이터와 분리된 MySQL 테스트 데이터베이스를 사용합니다.
 
-## 4. 데모 계정
+### 1. 테스트 데이터베이스 생성
 
-일반 사용자 계정
-- 이메일 : `user1@test.com`
-- 패스워드 : `pw12341234!`
+```sql
+CREATE DATABASE shoppingmall_test
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
 
-> 관리자 계정은 데이터 변경 및 삭제가 가능하므로 공개하지 않습니다.
+GRANT ALL PRIVILEGES ON shoppingmall_test.*
+    TO 'shoppingmall_app'@'localhost';
+```
 
-> 관리자 기능 시연이 필요한 경우 별도로 문의해 주세요.
+### 2. 테스트 환경변수 설정
 
----
+macOS / Linux:
 
-## 5. 데모 확인 가이드
+```bash
+export TEST_DB_URL='jdbc:mysql://localhost:3306/shoppingmall_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
+export TEST_DB_USERNAME='shoppingmall_app'
+export TEST_DB_PASSWORD='change-me'
+```
 
-현재 프로젝트는 MVP 단계까지 개발한 상태이며, 아래 핵심 흐름을 중심으로 확인할 수 있습니다.
+Windows PowerShell:
 
-### 사용자 핵심 Flow
-1. 데모 사이트 접속
-2. 테스트 계정으로 로그인
-3. 상품 목록 및 상품 상세 조회
-4. 상품을 장바구니에 추가
-5. 장바구니 수량 변경 및 주문 금액 확인
-6. 주문서 작성 및 주문 생성
-7. 마이페이지에서 주문 내역 확인
-8. 마이페이지 수정 및 탈퇴 (비밀번호 변경 미구현)
+```powershell
+$env:TEST_DB_URL='jdbc:mysql://localhost:3306/shoppingmall_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
+$env:TEST_DB_USERNAME='shoppingmall_app'
+$env:TEST_DB_PASSWORD='change-me'
+```
 
-### 주요 구현 포인트
+### 3. 전체 테스트 실행
 
-- 상품 상태와 재고를 검증한 장바구니 처리
-- 주문 생성과 재고 차감을 하나의 트랜잭션으로 처리
-- `requestKey`를 활용한 중복 주문 방지
-- 사용자와 관리자 기능 분리
-- 도메인 중심 패키지 구조
-- MyBatis 기반 Repository 구현
+macOS / Linux:
 
-### 관리자 기능
+```bash
+./gradlew clean test
+```
 
-관리자 화면에서는 상품, 주문, 회원 및 카테고리를 관리할 수 있습니다.
+Windows:
 
-관리자 기능은 데이터 변경 및 삭제가 가능하므로 계정을 공개하지 않습니다.
+```powershell
+.\gradlew.bat clean test
+```
 
-필요 시 요청주시면 별도로 제공드립니다.
+테스트 결과 보고서는 다음 경로에서 확인할 수 있습니다.
 
-### 참고 사항
+```text
+build/reports/tests/test/index.html
+```
 
-현재 프로젝트는 MVP 개발 단계이므로 일부 화면과 기능이 미완성일 수 있습니다.
+## 화면 확인 경로
 
-외부 결제, 배송 시스템, 커뮤니티 등 실제 연동 기능은 포함하지 않습니다.
+| 화면 | URL |
+| --- | --- |
+| 메인 | `/` |
+| 상품 목록 | `/products` |
+| 로그인 | `/login` |
+| 회원가입 | `/signup` |
+| 장바구니 | `/cart` |
+| 마이페이지 | `/members/me` |
+| 주문서 | `/orders/checkout` |
+| 관리자 대시보드 | `/admin` |
 
-Ngrok 데모는 로컬 서버가 실행 중인 시간에만 접속할 수 있습니다.
+## 주요 설계 결정
 
----
+### 주문과 재고의 트랜잭션 일관성
 
-# 더미데이터 설명
-경로 : src/main/resources/data.sql
+주문 생성 과정에서 회원 상태와 상품 판매 상태를 확인한 뒤 재고를 차감하고 주문을 저장합니다. 이 흐름을 하나의 트랜잭션으로 묶어 중간 실패 시 전체 작업이 롤백되도록 구성했습니다. 주문 취소 시에는 취소 가능 상태와 소유권을 검증한 후 주문 수량만큼 재고를 복구합니다.
 
-`demo` 프로필에서 애플리케이션 실행 시 테스트용 데이터가 자동으로 생성됩니다.
+### 주문 상품 스냅샷
 
-생성 데이터
-- 관리자 계정
-- 일반 회원 계정
-- 카테고리 데이터
-- 상품 데이터
-- 주문 데이터
+상품 정보가 나중에 변경되더라도 주문 당시 내역을 유지할 수 있도록 상품명, 판매 가격, 정가, 이미지 URL을 `OrderItem`에 복사하여 저장합니다.
 
----
+### 중복 주문 요청 방지
 
-# 주요 접속 URL
+클라이언트가 전달한 `requestKey`의 기존 처리 여부를 확인해 같은 요청이 반복 처리되는 것을 막습니다. 현재 구현은 중복 요청에 기존 결과를 재반환하는 방식이 아니라 충돌 응답으로 차단하는 방식입니다.
 
-## 로컬 접속
-- 메인 페이지: http://localhost:8080
-- 상품 목록: http://localhost:8080/products
-- 로그인: http://localhost:8080/login
-- 회원가입 : http://localhost:8080/signup
-- 마이페이지 : http://localhost:8080/members/me
-- 관리자 대시보드 : http://localhost:8080/admin
+### 화면과 REST API의 공존
 
-## Ngrok 접속
-- 메인페이지 : https://exporter-bucket-flick.ngrok-free.dev/
-- 상품 목록 : https://exporter-bucket-flick.ngrok-free.dev/products
-- 로그인 : https://exporter-bucket-flick.ngrok-free.dev/login
-- 회원가입 : https://exporter-bucket-flick.ngrok-free.dev/signup
-- 마이페이지 : https://exporter-bucket-flick.ngrok-free.dev/members/me
-- 관리자 대시보드 : https://exporter-bucket-flick.ngrok-free.dev/admin
+기존 Thymeleaf 화면을 유지하면서 도메인별 `api` 패키지에 REST Controller와 전용 DTO를 추가했습니다. 화면 Form·View DTO와 REST 요청·응답 DTO를 분리해 각 표현 계층의 변경이 서로에게 미치는 영향을 줄였습니다.
 
----
+### 표준화된 API 오류 응답
 
-# 기술 스택
+인증 실패, 권한 부족, 입력값 검증 실패, 잘못된 JSON, 지원하지 않는 미디어 타입, 리소스 미존재, 비즈니스 충돌 등을 공통 JSON 형식으로 반환합니다.
 
-## Backend
+## 제한 사항
 
-- Java 21
-- Spring Boot
-- Spring MVC
-- MyBatis
-- Lombok
+- 외부 결제 시스템과 배송 시스템은 연동하지 않았으며 주문 생성 시 결제 성공을 가정합니다.
+- 장바구니는 HTTP 세션 기반으로 동작하며 REST API는 아직 제공하지 않습니다.
+- 관리자 기능은 Thymeleaf 화면으로 제공하며 관리자 REST API는 아직 구현하지 않았습니다.
+- Ngrok 데모는 개발 서버가 실행 중일 때만 이용할 수 있습니다.
 
-## Frontend
+## 향후 계획
 
-- Thymeleaf (SSR 기반 View)
-- HTML / CSS
-
-## Architecture
-
-- Controller
-- Service
-- Domain
-- Repository Interface
-- MyBatis Repository Implementation
-- DTO / ViewModel
-
----
-
-# 주요 기능
-
-## 상품 기능
-
-- 상품 목록 조회
-- 상품 상세 조회
-- 할인율 계산
-- 품절 상태 표시
-- 품절 상품 주문 차단
-
-## 장바구니 기능
-
-- 상품 장바구니 추가 (상품 재고 검증을 거침)
-- 수량 증가 / 감소
-- 상품 삭제
-- 장바구니 요약 계산 (주문금액에 따른 배송비 계산)
-- 품절 상품 주문 불가
-- 수량 최소값 검증
-- 장바구니 상태 검증
-
-## 주문 기능
-
-- 주문 생성
-- 주문 상태 관리
-  - ORDERED
-  - PAYMENT_COMPLETED
-  - PREPARING
-  - SHIPPING
-  - DELIVERED
-  - CANCELED
-
-## 관리자 기능
-
-관리자 페이지에서 다음과 같은 기능을 제공
-
-### 관리자 대시보드
-
-- 전체 주문 요약
-- 전체 상품 현황
-- 전체 회원 현황
-- 최근 주문 목록
-- 상품 추가 페이지 진입
-- 카테고리 관리 페이지 진입
-- 회원 관리 페이지 진입
-
-### 상품 관리
-
-- 상품 목록 관리
-- 상품 상태 관리
-- 상품 추가
-- 전체 상품 현황
-
-### 카테고리 관리
-
-- 카테고리 추가
-- 하위 카테고리 추가
-- 카테고리 수정
-- 카테고리 삭제
-- 카테고리별 상품 개수 현황
-- 전체 카테고리 현황
-
-### 주문 관리
-
-- 전체 주문 목록
-- 주문 정보 검색
-- 주문 상태별 필터링
-- 주문 상세 조회
-- 주문 상태 변경
-- 전체 주문 현황
-
-### 회원 관리
-
-- 전체 회원 현황
-- 회원 검색 및 필터링
-- 전체 회원 목록 조회
-- 회원 수정
-- 회원 상세 보기
-
----
-
-# 프로젝트 구조
-
-도메인 중심 패키지 구조를 적용하여
-category, member, order, product 등 도메인별로 코드를 분리하고 각 도메인의 응집도를 높이도록 설계하였음.
-
-또한 관리자 기능은 일반 사용자 기능과 성격이 다르므로 admin 전용 컨트롤러와 View DTO 등 표현 계층은 별도로 분리하여 관리자 기능을 명확하게 구분 (각 도메인별 view 패키지에 모아서 정리)
-
-## category
-
-- api (JSON 기반 REST API를 제공하는 컨트롤러 포함)
-- application
-- domain
-- repository
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## product
-
-- api (JSON 기반 REST API를 제공하는 컨트롤러 포함)
-- application
-- domain
-- repository
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## order
-
-- api (JSON 기반 REST API를 제공하는 컨트롤러 포함)
-- application
-- domain
-- repository
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## member
-
-- api (JSON 기반 REST API를 제공하는 컨트롤러 포함)
-- application
-- domain
-- repository
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## admin
-
-- application
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## cart
-
-- application
-- domain
-- repository
-- view (SSR을 위한 페이지 컨트롤러 포함)
-
-## global
-
-- Webconfig (인터셉터 설정용)
-- error (global 레벨에서의 예외 처리 설정용)
-- init (테스트 더미 데이터)
-- interceptor (일반 사용자 / 관리자 로그인 검증)
-- session (세션에 저장하는 키 이름을 한 곳에서 관리)
-- validation (검증 순서 설정용)
-- view (전역 View 데이터 구성용)
-
----
-
-# 아키텍처
-
-- Controller -> HTTP 요청/응답 및 입력 검증
-- Application(Service) -> 유스케이스 흐름 및 트랜잭션 조정
-- Domain -> 핵심 비즈니스 규칙과 상태 변경
-- Repository -> 데이터 접근
-
----
-
-# 설계 포인트
-
-## Repository 인터페이스 분리
-
-Repository 인터페이스와 MyBatis 구현체를 분리하여 설계했습니다.
-현재는 MyBatis 기반으로 데이터 접근을 처리하고 있으며,
-추후 JPA 기반 구현체로 확장하거나 교체할 수 있도록 구조를 분리했습니다.
-
-## View DTO 분리
-도메인 객체를 View에 직접 노출하지 않고 화면 전용 View DTO로 변환하여 전달
-
-이 방식으로
-- View 책임 분리
-- 엔티티 보호
-- 각 화면별로 쓰일 데이터로 구성하여 유지보수 용이
-
-라는 장점을 누리게 하였습니다.
-
-## 도메인 중심 패키지 구조
-
-category, member, order, product 등 도메인 기준으로 패키지를 분리하고,
-각 도메인의 응집도를 높이도록 설계했습니다.
-
----
-
-# 예외 처리
-
-커스텀 예외를 사용하여 비즈니스 오류를 명확하게 표현
-
-- NotFoundException
-- ConflictException
-- ForbiddenException
-
----
-
-# 추후 진행 계획
-
-현재 프로젝트는 다음 단계를 계획 중
-
-- (1순위) MyBatis Repository와 동일한 인터페이스를 구현하는 JPA Repository 추가
-- REST API 중심 아키텍처로 확장
-
+- JPA 기반 Repository 구현 추가
+- QueryDSL을 이용한 동적 검색·필터링
+- 장바구니 및 관리자 기능 REST API 확장
+- API 문서와 테스트 시나리오 보강
+- 배포 환경과 CI 파이프라인 구성
