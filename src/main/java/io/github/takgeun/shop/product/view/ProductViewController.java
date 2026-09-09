@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -89,7 +90,10 @@ public class ProductViewController {
     public String detail(@PathVariable @Positive Long productId,
                          Model model,
                          HttpServletRequest request,
-                         RedirectAttributes ra) {
+                         RedirectAttributes ra
+    ) {
+
+        ensureCsrfTokenLoaded(request);
 
         try {
             Product product = productService.getPublicDetail(productId);
@@ -131,5 +135,38 @@ public class ProductViewController {
             case "latest", "best", "sale", "price-low", "price-high", "rating" -> sort;
             default -> "latest";
         };
+    }
+
+    private void ensureCsrfTokenLoaded(HttpServletRequest request) {
+
+        /**
+         * 상품 상세 HTML 렌더링
+         * → 일부 응답이 브라우저로 전송됨
+         * → Thymeleaf가 POST Form 처리
+         * → CSRF 토큰 요청
+         * → 토큰 저장을 위한 HttpSession 생성 시도
+         * → 이미 응답이 전송됨
+         * → 세션 생성 불가
+         * → 예외 발생
+         *
+         * 즉, 상품 상세 페이지 위쪽에는 상품별 상세 정보가 반복 출력된다.
+         * 이처럼 HTML 출력량이 커서 <form>에 도달하기 전에 응답 버퍼가 먼저 전송된다.
+         * 상품 상세 페이지를 렌더링하는 도중에 CSRF토큰을 세션에 저장하려 했는데
+         * 이미 HTTP 응답이 전송되기 시작해서 세션을 만들 수 없었던 것.
+         *
+         * 해결책) 컨트롤러에서 view 렌더링 시작 전에 CSRF 토큰을 미리 생성하도록 한다.
+         */
+        CsrfToken csrfToken = (CsrfToken) request.getAttribute(
+                CsrfToken.class.getName()
+        );
+
+        if(csrfToken != null) {
+            /**
+             * Deferred CSRF 토큰을 View 렌더링 전에 실제로 생성한다.
+             * 따라서 Thymeleaf가 POST Form을 처리할 때
+             * 응답 커밋 이후 새 세션을 만들지 않음.
+             */
+            csrfToken.getToken();
+        }
     }
 }
