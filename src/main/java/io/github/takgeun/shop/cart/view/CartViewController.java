@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.cart.view;
 
 import io.github.takgeun.shop.cart.application.CartService;
-import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.cart.application.dto.CartResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.global.view.ViewController;
@@ -26,10 +26,10 @@ public class CartViewController {
     @GetMapping
     public String cart(HttpSession session, Model model) {
 
-        CartViewResult view = cartService.getCartView(session);
+        CartResult cart = cartService.getCart(session);
 
-        model.addAttribute("items", view.getItems());
-        model.addAttribute("summary", view.getSummary());
+        model.addAttribute("items", cart.items());
+        model.addAttribute("summary", cart.summary());
 
         return "public/cart/index";
     }

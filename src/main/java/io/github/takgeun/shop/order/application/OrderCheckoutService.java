@@ -2,9 +2,8 @@ package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.infra.SessionCartRepository;
-import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.cart.application.dto.CartResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
-import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import io.github.takgeun.shop.order.domain.Order;
@@ -13,7 +12,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -63,18 +61,18 @@ public class OrderCheckoutService {
     ) {
         validateSession(session);
 
-        CartViewResult cartView = cartService.getCartView(session);
+        CartResult cartView = cartService.getCart(session);
 
-        if(cartView.getItems().isEmpty()) {
+        if(cartView.items().isEmpty()) {
             throw new ConflictException("장바구니가 비어있습니다.");
         }
 
         // 실제 상품 기준으로 검증 + 재고 차감 + 주문 아이템 생성
         List<CheckoutItemCommand> checkoutItems =
-                cartView.getItems().stream()
+                cartView.items().stream()
                         .map(item -> new CheckoutItemCommand(
-                                item.getProductId(),
-                                item.getQuantity()
+                                item.productId(),
+                                item.quantity()
                         ))
                         .toList();
 

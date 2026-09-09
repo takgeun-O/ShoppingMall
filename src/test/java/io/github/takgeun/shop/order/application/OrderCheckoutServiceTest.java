@@ -2,10 +2,9 @@ package io.github.takgeun.shop.order.application;
 
 import io.github.takgeun.shop.cart.application.CartService;
 import io.github.takgeun.shop.cart.infra.SessionCartRepository;
-import io.github.takgeun.shop.cart.view.dto.CartItemView;
-import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.cart.application.dto.CartItemResult;
+import io.github.takgeun.shop.cart.application.dto.CartResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
-import io.github.takgeun.shop.global.error.exception.UnauthorizedException;
 import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.order.application.dto.CreateOrderCommand;
 import jakarta.servlet.http.HttpSession;
@@ -14,8 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,25 +50,25 @@ class OrderCheckoutServiceTest {
         HttpSession session = mock(HttpSession.class);
         CreateOrderCommand command = createOrderCommand();
 
-        CartItemView firstItem = mock(CartItemView.class);
-        CartItemView secondItem = mock(CartItemView.class);
-        CartViewResult cartView = mock(CartViewResult.class);
+        CartItemResult firstItem = mock(CartItemResult.class);
+        CartItemResult secondItem = mock(CartItemResult.class);
+        CartResult cartView = mock(CartResult.class);
 
-        when(firstItem.getProductId())
+        when(firstItem.productId())
                 .thenReturn(10L);
-        when(firstItem.getQuantity())
+        when(firstItem.quantity())
                 .thenReturn(2);
 
-        when(secondItem.getProductId())
+        when(secondItem.productId())
                 .thenReturn(20L);
-        when(secondItem.getQuantity())
+        when(secondItem.quantity())
                 .thenReturn(3);
 
-        when(cartView.getItems()).thenReturn(
+        when(cartView.items()).thenReturn(
                 List.of(firstItem, secondItem)
         );
 
-        when(cartService.getCartView(session))
+        when(cartService.getCart(session))
                 .thenReturn(cartView);
 
         /**
@@ -144,15 +141,15 @@ class OrderCheckoutServiceTest {
         HttpSession session = mock(HttpSession.class);
         CreateOrderCommand command = createOrderCommand();
 
-        CartItemView cartItem = mock(CartItemView.class);
-        CartViewResult cartView = mock(CartViewResult.class);
+        CartItemResult cartItem = mock(CartItemResult.class);
+        CartResult cartView = mock(CartResult.class);
 
-        when(cartItem.getProductId()).thenReturn(10L);
-        when(cartItem.getQuantity()).thenReturn(2);
-        when(cartView.getItems())
+        when(cartItem.productId()).thenReturn(10L);
+        when(cartItem.quantity()).thenReturn(2);
+        when(cartView.items())
                 .thenReturn(List.of(cartItem));
 
-        when(cartService.getCartView(session))
+        when(cartService.getCart(session))
                 .thenReturn(cartView);
 
         when(orderService.checkout(
@@ -183,15 +180,15 @@ class OrderCheckoutServiceTest {
         HttpSession session = mock(HttpSession.class);  // 가짜 세션 생성
         CreateOrderCommand command = createOrderCommand();  // 주문 정보 생성
 
-        CartItemView cartItem = mock(CartItemView.class);
-        CartViewResult cartView = mock(CartViewResult.class);
+        CartItemResult cartItem = mock(CartItemResult.class);
+        CartResult cartView = mock(CartResult.class);
 
-        when(cartItem.getProductId()).thenReturn(10L);  // 가짜 장바구니 항목에서 상품 ID를 조회하면 10L을 반환하도록 설정한다.
-        when(cartItem.getQuantity()).thenReturn(2);
-        when(cartView.getItems())
+        when(cartItem.productId()).thenReturn(10L);  // 가짜 장바구니 항목에서 상품 ID를 조회하면 10L을 반환하도록 설정한다.
+        when(cartItem.quantity()).thenReturn(2);
+        when(cartView.items())
                 .thenReturn(List.of(cartItem));
 
-        when(cartService.getCartView(session))
+        when(cartService.getCart(session))
                 .thenReturn(cartView);
 
         when(orderService.checkout(
@@ -208,11 +205,11 @@ class OrderCheckoutServiceTest {
                  * createOrderFromCart 내부 실행 과정
                  * 1. 장바구니 조회 결과 가져오기
                  * List<CheckoutItemCommand> items =
-                 *         cartView.getItems().stream()
+                 *         cartView.items).stream()
                  *                 .map(item ->
                  *                         new CheckoutItemCommand(
-                 *                                 item.getProductId(),
-                 *                                 item.getQuantity()
+                 *                                 item.productId(),
+                 *                                 item.quantity)
                  *                         )
                  *                 )
                  *                 .toList();
@@ -249,11 +246,11 @@ class OrderCheckoutServiceTest {
 
         HttpSession session = mock(HttpSession.class);
         CreateOrderCommand command = createOrderCommand();
-        CartViewResult emptyCart = mock(CartViewResult.class);
+        CartResult emptyCart = mock(CartResult.class);
 
-        when(emptyCart.getItems()).thenReturn(List.of());
+        when(emptyCart.items()).thenReturn(List.of());
 
-        when(cartService.getCartView(session))
+        when(cartService.getCart(session))
                 .thenReturn(emptyCart);
 
         // when & then
