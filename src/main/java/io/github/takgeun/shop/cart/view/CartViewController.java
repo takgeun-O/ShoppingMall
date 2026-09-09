@@ -45,16 +45,13 @@ public class CartViewController {
                           HttpSession session,
                           RedirectAttributes ra) {
 
-        // 1 이하 방지
-        int resolvedQty = Math.max(quantity, 1);
-
         try {
-            cartService.add(session, productId, resolvedQty);       // ConflictException, NotFoundException
+            cartService.add(session, productId, quantity);       // ConflictException, NotFoundException
 
             ra.addFlashAttribute("success", "장바구니에 담았습니다.");
             ra.addFlashAttribute("added", true);
             ra.addFlashAttribute("addedProductId", productId);
-            ra.addFlashAttribute("addedQty", resolvedQty);
+            ra.addFlashAttribute("addedQty", quantity);
         } catch (ConflictException | IllegalArgumentException e) {
             // 에러 터지면 뷰에다가 그냥 에러 정보만 보내주고 끝.
             ra.addFlashAttribute("error", e.getMessage());
@@ -79,7 +76,7 @@ public class CartViewController {
             HttpSession session,
             RedirectAttributes ra) {
 
-        if(delta == 0) {
+        if (delta == 0) {
             return "redirect:/cart";
         }
 
@@ -125,17 +122,19 @@ public class CartViewController {
      * 비어있거나 외부 URL이면 fallback
      */
     private String resolveReturnUrl(String returnUrl, String fallback) {
-        if(returnUrl == null) {
+        if (returnUrl == null) {
             return fallback;
         }
 
         String trimmed = returnUrl.trim();
-        if(trimmed.isEmpty()) {
+        if (trimmed.isEmpty()) {
             return fallback;
         }
 
         // 내부 경로만 허용 ("/products/1", "/cart" 등등)
-        if(trimmed.startsWith("/")) {
+        // //example.com 도 막기
+        if (trimmed.startsWith("/")
+                && !trimmed.startsWith("//")) {
             return trimmed;
         }
         return fallback;

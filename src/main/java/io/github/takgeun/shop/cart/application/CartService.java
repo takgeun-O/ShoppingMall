@@ -1,15 +1,14 @@
 package io.github.takgeun.shop.cart.application;
 
-import io.github.takgeun.shop.cart.domain.CartRepository;
 import io.github.takgeun.shop.cart.application.dto.CartItemResult;
-import io.github.takgeun.shop.cart.application.dto.CartSummaryResult;
 import io.github.takgeun.shop.cart.application.dto.CartResult;
+import io.github.takgeun.shop.cart.application.dto.CartSummaryResult;
+import io.github.takgeun.shop.cart.domain.CartRepository;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.error.exception.NotFoundException;
 import io.github.takgeun.shop.order.application.dto.CheckoutItemCommand;
 import io.github.takgeun.shop.product.application.ProductService;
 import io.github.takgeun.shop.product.domain.Product;
-import io.github.takgeun.shop.product.domain.ProductStatus;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,7 +44,7 @@ public class CartService {
                 .stream()
                 .map(entry -> {
                     validateProductId(entry.getKey());
-                    validateQuantity(entry.getValue());
+                    validatePositiveQuantity(entry.getValue());
 
                     return new CheckoutItemCommand(
                             entry.getKey(),
@@ -117,7 +116,7 @@ public class CartService {
 
         validateSession(session);
         validateProductId(productId);
-        validateQuantity(quantity); // 요청 수량 검증
+        validateAddQuantity(quantity); // 요청 수량 검증
 
         // .getForOrder()에서 NotFound, ON_SALE 검증
         Product product = productService.getForOrder(productId);
@@ -166,7 +165,7 @@ public class CartService {
         }
 
         Product product = productService.getForOrder(productId);
-        validateCartQuantity(product, nextQty);             // 주문 수량 검증 (0 이하라던가, 재고보다 많이 담았다던가)
+        validateStock(product, nextQty);
 
         cartRepository.put(session, productId, nextQty);
     }
@@ -175,26 +174,39 @@ public class CartService {
      * 장바구니 수량을 특정 값으로 직접 변경
      * 장바구니 페이지에서 input number 같은 UI가 있을 때 사용하기
      */
-    public void updateQuantity(HttpSession session, Long productId, int quantity) {
+    public void updateQuantity(
+            HttpSession session,
+            Long productId,
+            int quantity
+    ) {
         validateSession(session);
         validateProductId(productId);
+        validateUpdateQuantity(quantity);
 
         Map<Long, Integer> cart = cartRepository.findAll(session);
-        if (cart == null || cart.isEmpty()) {
-            return;
+
+        /**
+         * 세션·상품 ID·수량 형식 검증
+         * → 장바구니에 상품이 존재하는지 확인
+         * → 수량 0이면 제거 후 종료
+         * → 수량 1 이상이면 상품 판매 상태와 재고 확인
+         * → 수량 변경
+         */
+        if(cart == null || !cart.containsKey(productId)) {
+            throw new NotFoundException(
+                    "장바구니에 해당 상품이 없습니다."
+            );
         }
 
-        if (!cart.containsKey(productId)) {
-            return;
-        }
-
-        if (quantity < 1) {
+        // 수량 0은 장바구니에서 제거
+        if(quantity == 0) {
             cartRepository.remove(session, productId);
             return;
         }
 
         Product product = productService.getForOrder(productId);
-        validateCartQuantity(product, quantity);
+
+        validateStock(product, quantity);
 
         cartRepository.put(session, productId, quantity);
     }
@@ -217,15 +229,6 @@ public class CartService {
         cartRepository.clear(session);
     }
 
-    private void validateCartQuantity(Product product, int quantity) {
-        if (quantity < 1) {
-            throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
-        }
-        if (product.getStock() < quantity) {
-            throw new ConflictException("주문 수량이 판매 중인 상품의 재고보다 많습니다. 현재 재고 : " + product.getStock());
-        }
-    }
-
     private void validateProductId(Long productId) {
         if (productId == null || productId <= 0) {
             throw new IllegalArgumentException("productId는 양수여야 합니다.");
@@ -238,7 +241,23 @@ public class CartService {
         }
     }
 
-    private void validateQuantity(int quantity) {
+    private void validateAddQuantity(int quantity) {
+        if(quantity < 1) {
+            throw new IllegalArgumentException(
+                    "수량은 1 이상이어야 합니다."
+            );
+        }
+    }
+
+    private void validateUpdateQuantity(int quantity) {
+        if(quantity < 0) {
+            throw new IllegalArgumentException(
+                    "수량은 0 이상이어야 합니다."
+            );
+        }
+    }
+
+    private void validatePositiveQuantity(int quantity) {
         if(quantity < 1) {
             throw new IllegalArgumentException(
                     "수량은 1 이상이어야 합니다."

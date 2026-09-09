@@ -113,16 +113,19 @@ public class SecurityConfig {
                                 "/cart/**",
                                 "/api/v1/categories/**",
                                 "/api/v1/products/**",
+                                "/api/v1/cart/**",
                                 "/security/forbidden",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/assets/**",
                                 "/webjars/**",
+
                                 // Swagger
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
+
                                 "/error",
                                 "/favicon.ico"
                         ).permitAll()

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -234,6 +235,9 @@ public class ApiGlobalExceptionHandler {
 
     /**
      * 컨트롤러 파라미터 검증 실패
+     *
+     * @PathVariable, @RequestParam의 직접 제약조건과
+     * @Valid @RequestBody 검증이 메서드 단위로 처리될 때 발생한다.
      */
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodValidation(
@@ -242,10 +246,32 @@ public class ApiGlobalExceptionHandler {
     ) {
         ErrorCode errorCode = ErrorCode.INVALID_INPUT;
 
-        ApiErrorResponse response = ApiErrorResponse.of(
+        List<FieldErrorResponse> fieldErrors =
+                e.getParameterValidationResults()
+                        .stream()
+                        .flatMap(result -> {
+                            if(result instanceof ParameterErrors errors) {
+                                return errors.getFieldErrors()
+                                        .stream()
+                                        .map(this::toFieldErrorResponse);
+                            }
+
+                            String parameterName = result.getMethodParameter()
+                                    .getParameterName();
+
+                            return result.getResolvableErrors()
+                                    .stream()
+                                    .map(error -> new FieldErrorResponse(
+                                            parameterName,
+                                            error.getDefaultMessage()
+                                    ));
+                        })
+                        .toList();
+
+        ApiErrorResponse response = ApiErrorResponse.validation(
                 errorCode,
-                errorCode.getDefaultMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                fieldErrors
         );
 
         return ResponseEntity
