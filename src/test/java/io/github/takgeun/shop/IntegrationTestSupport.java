@@ -11,6 +11,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles({"test", "mybatis"})
 public abstract class IntegrationTestSupport {
 
-    @Autowired protected MockMvc mockMvc;
-
+    @Autowired
+    protected MockMvc mockMvc;
 }
