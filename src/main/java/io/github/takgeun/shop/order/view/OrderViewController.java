@@ -1,7 +1,7 @@
 package io.github.takgeun.shop.order.view;
 
 import io.github.takgeun.shop.cart.application.CartService;
-import io.github.takgeun.shop.cart.view.dto.CartViewResult;
+import io.github.takgeun.shop.cart.application.dto.CartResult;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
 import io.github.takgeun.shop.global.security.ShopUserPrincipal;
 import io.github.takgeun.shop.global.validation.CheckoutValidationSequence;
@@ -64,8 +64,8 @@ public class OrderViewController {
         // 로그인 안한 사용자가 접근하면 새 세션을 생성하게 되면 불필요한 세션이 증가하니 생성하지 않게 막기
         HttpSession session = request.getSession(false);        // 장바구니 정보(비로그인 장바구니를 세션에 저장해야 하니까 세션 기반 유지)
 
-        CartViewResult cartView = getCartViewOrEmpty(session);
-        if (cartView.getItems().isEmpty()) {
+        CartResult cartView = getCartViewOrEmpty(session);
+        if (cartView.items().isEmpty()) {
             // 빈 카트면 checkout 페이지 대신 cart로 보내기
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";
@@ -95,8 +95,8 @@ public class OrderViewController {
     public String orderRoot(HttpServletRequest request, RedirectAttributes ra) {
         HttpSession session = request.getSession(false);
 
-        CartViewResult cartView = getCartViewOrEmpty(session);
-        if (cartView.getItems().isEmpty()) {
+        CartResult cartView = getCartViewOrEmpty(session);
+        if (cartView.items().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";
         }
@@ -127,9 +127,9 @@ public class OrderViewController {
         Long memberId = principal.getMemberId();
         HttpSession session = request.getSession(false);
 
-        CartViewResult cartView = getCartViewOrEmpty(session);
+        CartResult cartView = getCartViewOrEmpty(session);
 
-        if (cartView.getItems().isEmpty()) {
+        if (cartView.items().isEmpty()) {
             ra.addFlashAttribute("error", "장바구니가 비어있습니다.");
             return "redirect:/cart";        // 장바구니로 리다이렉트
         }
@@ -163,7 +163,7 @@ public class OrderViewController {
             log.warn("주문 생성 실패: memberId={}, message={}", memberId, e.getMessage());
 
             // 해당 세션의 주문 정보(아이템들, 서머리)를 모델에 담고 체크아웃 에러와 함께 제자리 포워딩
-            CartViewResult lastestCartView = getCartViewOrEmpty(session);
+            CartResult lastestCartView = getCartViewOrEmpty(session);
             attachCartModel(model, lastestCartView);
             model.addAttribute("checkoutError", e.getMessage());
             return "public/orders/checkout";
@@ -196,20 +196,20 @@ public class OrderViewController {
     // -------------------------------------------------------------------------------------------------------------
 
 
-    private CartViewResult getCartViewOrEmpty(HttpSession session) {
+    private CartResult getCartViewOrEmpty(HttpSession session) {
         if (session == null) {
-            return CartViewResult.empty();
+            return CartResult.empty();
         }
-        return cartService.getCartView(session);
+        return cartService.getCart(session);
     }
 
-    private void attachCartModel(Model model, CartViewResult cartView) {
+    private void attachCartModel(Model model, CartResult cartView) {
         // checkout 전용 뷰 아이템으로 변환
-        List<CheckoutItemView> checkoutItems = cartView.getItems().stream()
+        List<CheckoutItemView> checkoutItems = cartView.items().stream()
                 .map(CheckoutItemView::from)
                 .toList();
 
         model.addAttribute("items", checkoutItems);
-        model.addAttribute("summary", cartView.getSummary());
+        model.addAttribute("summary", cartView.summary());
     }
 }

@@ -1,6 +1,6 @@
 package io.github.takgeun.shop.order.view.dto;
 
-import io.github.takgeun.shop.cart.view.dto.CartItemView;
+import io.github.takgeun.shop.cart.application.dto.CartItemResult;
 import lombok.Getter;
 
 @Getter
@@ -23,14 +23,14 @@ public class CheckoutItemView {
         this.quantity = quantity;
     }
 
-    public static CheckoutItemView from(CartItemView item) {
+    public static CheckoutItemView from(CartItemResult item) {
         return new CheckoutItemView(
-                item.getProductId(),
-                item.getName(),
-                item.getImageUrl(),
-                item.getUnitPrice(),
-                item.getOriginalPrice(),
-                item.getQuantity()
+                item.productId(),
+                item.productName(),
+                item.imageUrl(),
+                item.unitPrice(),
+                item.originalPrice(),
+                item.quantity()
         );
     }
 
