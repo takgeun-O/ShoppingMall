@@ -2,6 +2,7 @@ package io.github.takgeun.shop.category.application;
 
 import io.github.takgeun.shop.category.domain.Category;
 import io.github.takgeun.shop.category.domain.CategoryRepository;
+import io.github.takgeun.shop.category.domain.CategoryStatus;
 import io.github.takgeun.shop.global.error.code.ErrorCode;
 import io.github.takgeun.shop.global.error.exception.BusinessException;
 import io.github.takgeun.shop.global.error.exception.ConflictException;
@@ -106,6 +107,25 @@ public class CategoryService {
         validateNoProducts(categoryId);
 
         categoryRepository.deleteById(categoryId);
+    }
+
+    @Transactional
+    public void changeStatus(
+            Long categoryId,
+            CategoryStatus newStatus) {
+
+        if(newStatus == null) {
+            throw new IllegalArgumentException("변경할 카테고리 상태는 필수입니다.");
+        }
+
+        Category category = getCategoryOrThrow(categoryId);
+
+        if(category.getStatus() == newStatus) {
+            return;
+        }
+
+        category.changeStatus(newStatus);   // 상태 변경 책임은 도메인에 위임
+        categoryRepository.save(category);
     }
 
     // 헤더 상단 대표 공개 카테고리 (루트)
