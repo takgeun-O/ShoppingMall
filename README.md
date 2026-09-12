@@ -4,7 +4,7 @@ Spring Boot로 구현한 이커머스 백엔드 개인 프로젝트입니다.
 
 Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인증부터 상품 조회, 장바구니, 주문 생성·조회·취소, 관리자 운영 기능까지 쇼핑몰의 핵심 흐름을 구현했습니다.
 
-> 현재 `main` 브랜치는 MyBatis + MySQL을 사용합니다. REST API는 카테고리·상품 조회와 일반 회원·주문 영역까지 구현되어 있으며, 장바구니와 관리자 기능은 현재 서버 사이드 렌더링 방식으로 제공합니다.
+> 현재 `main` 브랜치는 MyBatis + MySQL을 사용합니다. 공개 카테고리·상품 조회, 회원, 장바구니, 주문 API와 관리자 카테고리 관리 API를 구현했습니다. 기존 Thymeleaf 화면도 함께 유지합니다.
 
 ## 빠른 확인
 
@@ -33,6 +33,8 @@ Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인�
 - `requestKey`를 이용한 중복 주문 요청 감지
 - 주문 상세 조회·취소 시 주문 소유권 검증
 - 주문 시점의 상품명·가격·이미지를 주문 항목에 스냅샷으로 저장
+- 세션 장바구니 조회·추가·수량 변경·삭제 REST API
+- 관리자 카테고리 생성·기본 정보 수정·상태 변경 REST API와 역할 기반 접근 제어
 - 카테고리 계층, 상품 판매 상태, 회원 상태, 주문 상태 전이 규칙을 도메인 객체로 관리
 - Repository 인터페이스와 MyBatis 구현체 분리
 - Thymeleaf View DTO와 REST API 요청·응답 DTO 분리
@@ -43,12 +45,12 @@ Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인�
 
 | 영역 | 웹 화면 | REST API | 주요 기능 |
 | --- | :---: | :---: | --- |
-| 카테고리 | O | O | 공개 카테고리 목록·상세 조회, 관리자 CRUD |
+| 카테고리 | O | O | 공개 목록·상세 조회, 관리자 생성·기본 정보 수정·상태 변경 |
 | 상품 | O | O | 목록·상세 조회, 상태·재고 검증, 관리자 관리 |
 | 회원 | O | O | 회원가입·로그인, 내 정보 조회·수정, 비밀번호 변경, 탈퇴 |
 | 장바구니 | O | O | 세션 장바구니, 수량 변경·삭제, 주문 금액 계산 |
 | 주문 | O | O | 목록·상세 조회, 생성, 중복 요청 차단, 취소·재고 복구 |
-| 관리자 | O | - | 대시보드, 상품·카테고리·주문·회원 관리 |
+| 관리자 | O | 일부 | 화면 기반 운영 기능, 카테고리 관리 REST API |
 
 ## REST API
 
@@ -75,6 +77,28 @@ Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인�
 | `PATCH` | `/api/v1/orders/{orderId}/cancel` | 내 주문 취소 |
 
 인증은 Spring Security의 HTTP 세션을 사용합니다. 상태 변경 요청에는 CSRF 검증이 적용됩니다. 자세한 요청·응답 형식은 Swagger UI에서 확인할 수 있습니다.
+
+### 세션 장바구니 API
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| `GET` | `/api/v1/cart` | 장바구니 조회 |
+| `POST` | `/api/v1/cart/items` | 장바구니 상품 추가 |
+| `PATCH` | `/api/v1/cart/items/{productId}` | 장바구니 상품 수량 변경 |
+| `DELETE` | `/api/v1/cart/items/{productId}` | 장바구니 상품 삭제 |
+| `DELETE` | `/api/v1/cart/items` | 장바구니 전체 삭제 |
+
+장바구니는 HTTP 세션을 기준으로 유지하며, 변경 요청에는 CSRF 검증이 적용됩니다.
+
+### 관리자 API
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| `POST` | `/api/v1/admin/categories` | 관리자 카테고리 생성 |
+| `PUT` | `/api/v1/admin/categories/{categoryId}` | 카테고리명·상위 카테고리 수정 |
+| `PATCH` | `/api/v1/admin/categories/{categoryId}/status` | 카테고리 활성 상태 변경 |
+
+관리자 API는 `ROLE_ADMIN` 권한이 필요합니다. 비로그인 요청에는 JSON `401`, 권한이 부족한 요청에는 JSON `403`을 반환하며, 상태 변경 요청에는 CSRF 검증이 적용됩니다.
 
 ## 기술 스택
 
@@ -410,16 +434,23 @@ build/reports/tests/test/index.html
 
 인증 실패, 권한 부족, 입력값 검증 실패, 잘못된 JSON, 지원하지 않는 미디어 타입, 리소스 미존재, 비즈니스 충돌 등을 공통 JSON 형식으로 반환합니다.
 
+### 테스트 전략
+
+- Controller 단위 테스트에서는 standalone `MockMvc`, Mockito와 Bean Validation을 사용해 HTTP 계약과 Service 호출을 검증합니다.
+- Security 통합 테스트에서는 실제 Spring Security 필터 체인과 MyBatis·MySQL을 연결해 인증, 관리자 권한, CSRF 및 DB 반영 결과를 검증합니다.
+- 통합 테스트용 데이터베이스는 운영·개발 데이터베이스와 분리하며, 테스트 실행 시 환경변수로 접속 정보를 전달합니다.
+
 ## 제한 사항
 
 - 외부 결제 시스템과 배송 시스템은 연동하지 않았으며 주문 생성 시 결제 성공을 가정합니다.
-- 관리자 기능은 Thymeleaf 화면으로 제공하며 관리자 REST API는 아직 구현하지 않았습니다.
+- 관리자 상품·주문·회원 관리는 Thymeleaf 화면으로 제공하며, 관리자 REST API는 카테고리 관리 영역을 대표 기능으로 구현했습니다.
 - Ngrok 데모는 개발 서버가 실행 중일 때만 이용할 수 있습니다.
 
 ## 향후 계획
 
 - JPA 기반 Repository 구현 추가
 - QueryDSL을 이용한 동적 검색·필터링
-- 장바구니 및 관리자 기능 REST API 확장
-- API 문서와 테스트 시나리오 보강
+- 관리자 상품·주문·회원 REST API 확장
+- API/View 요청별 세션 만료 응답 정책 분리
+- API 문서와 테스트 시나리오 지속 보강
 - 배포 환경과 CI 파이프라인 구성
