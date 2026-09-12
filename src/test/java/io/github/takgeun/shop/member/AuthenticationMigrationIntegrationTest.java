@@ -645,7 +645,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
                 .contains("ROLE_ADMIN");
 
         SessionInformation sessionInformation =
-                findSessionInformation(memberId);
+                findSessionInformation(session);
 
         assertThat(sessionInformation)
                 .as("관리자 로그인 세션이 등록되어야 한다.")
@@ -700,7 +700,7 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
          * → 다음 요청
          * → ConcurrentSessionFilter가 있어야 만료 감지
          */
-        SessionInformation sessionInformation = findSessionInformation(memberId);
+        SessionInformation sessionInformation = findSessionInformation(session);
 
         assertThat(sessionInformation.getSessionId())
                 .isEqualTo(session.getId());
@@ -1083,21 +1083,16 @@ class AuthenticationMigrationIntegrationTest extends IntegrationTestSupport {
         return session;
     }
 
-    private SessionInformation findSessionInformation(Long memberId) {
-        ShopUserPrincipal principal = sessionRegistry.getAllPrincipals()
-                .stream()
-                .filter(ShopUserPrincipal.class::isInstance)
-                .map(ShopUserPrincipal.class::cast)
-                .filter(item ->
-                        memberId.equals(item.getMemberId()))
-                .findFirst()
-                .orElseThrow();
+    private SessionInformation findSessionInformation(
+            MockHttpSession session
+    ) {
+        SessionInformation sessionInformation =
+                sessionRegistry.getSessionInformation(session.getId());
 
-        return sessionRegistry.getAllSessions(
-                        principal,
-                        false
-                ).stream()
-                .findFirst()
-                .orElseThrow();
+        assertThat(sessionInformation)
+                .as("로그인 세션이 SessionRegistry에 등록되어야 한다.")
+                .isNotNull();
+
+        return sessionInformation;
     }
 }
