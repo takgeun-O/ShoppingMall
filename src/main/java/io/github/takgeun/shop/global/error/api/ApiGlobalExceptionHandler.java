@@ -33,6 +33,7 @@ import java.util.List;
 // @ResponseStatus(HttpStatus.BAD_REQUEST)를 사용하는 방법도 있으나, 이러한 방식은 HTTP 제어가 static하다. (상태코드가 컴파일 시점에 고정되므로 추후 조건에 따른 변경이 어려움)
 @Slf4j
 @RestControllerAdvice(
+        // @RestControllerAdvice는 일반적으로 DispatcherServlet 내부의 Controller 처리 과정에서 발생한 예외를 담당
         annotations = ApiController.class  // @Api 컨트롤러만 대상
 )
 public class ApiGlobalExceptionHandler {

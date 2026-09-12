@@ -43,9 +43,7 @@ public class AdminCategoryApiController {
                 .toList();
     }
 
-    @PostMapping(
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
+    @PostMapping
     public ResponseEntity<AdminCategoryResponse> create(
             @Valid @RequestBody
             CreateCategoryRequest request
@@ -58,19 +56,9 @@ public class AdminCategoryApiController {
         // 생성 후 한번 더 조회 --> 생성된 ID와 정규화된 name, slug, status를 응답하려면 필요한 과정임.
         Category category = categoryService.getAdmin(categoryId);
 
-        /**
-         * URI.create("/api/v1/admin/categories/" + categoryID);
-         * 처럼 문자열 조합으로 사용할 경우 기본 경로가 변경되면 직접 작성한 문자열과 실제 경로가 달라질 가능성이 있음.
-         *
-         * 아래와 같이 현재 요청 URL을 기준으로 만드는 방식이 더 안전함.
-         * POST /api/v1/admin/categories 요청이 들어오면
-         * /api/v1/admin/categories/15 로 자동으로 주소가 생성된다.
-         */
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{categoryId}")
-                .buildAndExpand(categoryId)
-                .toUri();
+        URI location = URI.create(
+                "/api/v1/admin/categories/" + categoryId
+        );
 
         /**
          * ResponseEntity.created(location)
@@ -95,8 +83,7 @@ public class AdminCategoryApiController {
      * → status
      */
     @PutMapping(
-            value = "/{categoryId}",
-            consumes = MediaType.APPLICATION_JSON_VALUE
+            value = "/{categoryId}"
     )
     public AdminCategoryResponse update(
             @PathVariable @Positive(message = "카테고리 ID는 양수여야 합니다.") Long categoryId,
@@ -115,9 +102,7 @@ public class AdminCategoryApiController {
     }
 
     @PatchMapping(
-            value = "/{categoryId}/status",
-            consumes = MediaType.APPLICATION_JSON_VALUE
-    )
+            value = "/{categoryId}/status")
     public AdminCategoryResponse updateStatus(
             @PathVariable @Positive(message = "카테고리 ID는 양수여야 합니다.")
             Long categoryId,
