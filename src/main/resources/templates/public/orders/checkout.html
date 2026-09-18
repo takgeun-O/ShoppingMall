@@ -233,7 +233,7 @@
                                 <div class="flex justify-between text-xl font-bold text-gray-900">
                                     <span>총 결제금액</span>
                                     <span class="text-blue-600"
-                                          th:text="${#numbers.formatInteger(summary.total, 3, 'COMMA')} + '원'">0원</span>
+                                          th:text="${#numbers.formatInteger(summary.totalPrice(), 3, 'COMMA')} + '원'">0원</span>
                                 </div>
                             </div>
 
