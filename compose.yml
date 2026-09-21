@@ -7,10 +7,13 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       TZ: Asia/Seoul
+
     ports:
       - "${MYSQL_HOST_PORT:-3307}:3306"
+
     volumes:
       - mysql-data:/var/lib/mysql
+
     healthcheck:
       test:
         - CMD-SHELL
@@ -24,16 +27,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     environment:
       SPRING_PROFILES_ACTIVE: demo,mybatis
+
       DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:?MYSQL_DATABASE is required}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
       DB_USERNAME: ${MYSQL_USER:?MYSQL_USER is required}
       DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      ADMIN_NAME: ${ADMIN_NAME:?ADMIN_NAME is required}
+      ADMIN_PHONE: ${ADMIN_PHONE:?ADMIN_PHONE is required}
+
       TZ: Asia/Seoul
+
     depends_on:
       db:
         condition: service_healthy
+
     ports:
       - "8080:8080"
 

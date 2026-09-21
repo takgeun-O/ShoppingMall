@@ -20,7 +20,7 @@ public class DemoAdminInitializer implements ApplicationRunner {
     @Value("${app.demo.admin.email}")
     private String adminEmail;
 
-    @Value("${app.demo.admin.password:}")
+    @Value("${app.demo.admin.password}")
     private String adminPassword;
 
     @Value("${app.demo.admin.name}")
