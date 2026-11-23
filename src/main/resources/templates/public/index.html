@@ -56,17 +56,15 @@
 
             <!-- rootCategories: GlobalViewModelAdvice에서 주입 -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
-                 th:if="${rootCategories != null}">
+                 th:if="${rootCategories != null}"
+                 th:with="icons=${ {'electronics':'🎧','furniture':'🪑','clothing':'👕','beauty':'🧴','sports':'🏀','books':'📚','food':'🍎','home-living':'🪴'} }">
                 <a th:each="c : ${rootCategories}"
                    th:href="@{/products(categoryId=${c.id})}"
                    class="group">
                     <div class="overflow-hidden rounded-xl border-2 border-gray-200 hover:border-gray-900 hover:shadow-lg transition-all duration-300">
-                        <!-- 이미지가 없으니 기본 카드 (추후 c.imageUrl 같은 필드가 생기면 넣기) -->
-                        <div class="aspect-square relative overflow-hidden bg-gray-100 flex items-end">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                            <div class="relative p-4 w-full">
-                                <h3 class="text-white font-semibold text-center" th:text="${c.name}">카테고리명</h3>
-                            </div>
+                        <div class="aspect-square flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-50 to-stone-100">
+                            <span aria-hidden="true" class="text-5xl" th:text="${icons[c.slug] ?: '🛍️'}">🛍️</span>
+                            <h3 class="font-semibold text-gray-900" th:text="${c.name}">카테고리명</h3>
                         </div>
                     </div>
                 </a>
@@ -78,13 +76,13 @@
         </div>
     </section>
 
-    <!-- Featured Products Section (일단 플레이스홀더) -->
+    <!-- Featured Products Section -->
     <section class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between mb-12">
                 <div>
                     <h2 class="text-3xl font-bold text-gray-900 mb-2">추천 상품</h2>
-                    <p class="text-gray-600">지금 가장 인기있는 상품들을 만나보세요</p>
+                    <p class="text-gray-600">지금 구매할 수 있는 상품을 만나보세요</p>
                 </div>
                 <a th:href="@{/products(sort='best')}"
                    class="hidden sm:inline-flex items-center rounded-md border px-4 py-2 hover:bg-white">
@@ -92,15 +90,18 @@
                 </a>
             </div>
 
-            <!-- TODO: model.addAttribute("featuredProducts", ...) 붙이면 th:each로 교체 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="rounded-xl border bg-white p-6 text-gray-600">
-                    (추천 상품 구현 시 HomeViewController 통해서 데이터 연결할 예정)
-                </div>
-                <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
-                <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
-                <div class="rounded-xl border bg-white p-6 text-gray-600"></div>
+                <a th:each="p : ${featuredProducts}" th:href="@{/products/{id}(id=${p.id})}"
+                   class="overflow-hidden rounded-xl border bg-white hover:shadow-lg transition-shadow">
+                    <img th:src="${p.imageUrl}" alt="" loading="lazy" class="aspect-square w-full object-cover bg-gray-100"
+                         th:data-fallback="@{/images/no-image.png}" onerror="this.onerror=null;this.src=this.dataset.fallback">
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900" th:text="${p.name}">상품명</h3>
+                        <p class="mt-1 text-gray-700" th:text="|${#numbers.formatInteger(p.price, 1, 'COMMA')}원|">가격</p>
+                    </div>
+                </a>
             </div>
+            <p th:if="${#lists.isEmpty(featuredProducts)}" class="text-center text-gray-500">현재 추천할 판매 상품이 없습니다.</p>
         </div>
     </section>
 
