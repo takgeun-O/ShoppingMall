@@ -8,13 +8,18 @@ Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인�
 
 ## 빠른 확인
 
-- 데모: [쇼핑몰 바로가기](https://exporter-bucket-flick.ngrok-free.dev/)
-- API 문서: [Swagger UI](https://exporter-bucket-flick.ngrok-free.dev/swagger-ui.html)
-- 로컬 Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+상품을 주문하면 주문 생성과 재고 차감을 하나의 트랜잭션에서 처리합니다.
+같은 주문 요청이 다시 들어오는 경우를 `requestKey`로 구분하고,
+주문을 취소하면 차감했던 재고를 복구합니다.
 
-> Ngrok 주소는 개발 서버가 실행 중일 때만 접속할 수 있습니다. Ngrok 안내 화면이 나타나면 **Visit Site**를 선택해 주세요.
+- [주문 생성·취소 구현 코드](src/main/java/io/github/takgeun/shop/order/application/OrderService.java)
+- [주문 서비스 테스트](src/test/java/io/github/takgeun/shop/order/application/OrderServiceTest.java)
+- [REST API 목록](#rest-api)
+- [Docker로 로컬 실행하기](#로컬-실행)
 
-### 데모 계정
+면접에서는 로컬 환경에서 상품 선택 → 장바구니 → 주문 → 취소 흐름을 시연할 수 있습니다.
+
+### `로컬 시연용 계정`
 
 | 구분  | 이메일              | 비밀번호          |
 |-----|------------------|---------------|
@@ -24,7 +29,6 @@ Thymeleaf 기반 웹 화면과 JSON REST API를 함께 제공하며, 회원 인�
 관리자 계정으로 로그인하면 관리자 카테고리 관리 기능을 확인할 수 있습니다.
 
 > 데모 전용 계정이며 실제 개인정보를 사용하지 않습니다.
-> 개인 개발 환경에서 운영되므로 서버가 일시적으로 중단될 수 있습니다.
 
 ## 핵심 구현 내용
 
@@ -450,4 +454,3 @@ build/reports/tests/test/index.html
 - 관리자 REST API는 카테고리 관리 영역을 대표 기능으로 구현했습니다.
 - 관리자 상품·주문·회원 기능은 기존 Thymeleaf 화면으로 제공합니다.
 - 세션 만료 요청에 대한 API·View별 응답 분리는 후속 개선 범위로 남겨두었습니다.
-- Ngrok 데모는 개발 서버가 실행 중일 때만 이용할 수 있습니다.
