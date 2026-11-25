@@ -1,0 +1,12 @@
+services:
+  db:
+    ports: !override []
+    volumes:
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+
+  app:
+    environment:
+      SPRING_SQL_INIT_MODE: never
+    ports: !override
+      - "127.0.0.1:18080:8080"
